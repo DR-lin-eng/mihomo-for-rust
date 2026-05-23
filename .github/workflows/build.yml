@@ -55,8 +55,9 @@ jobs:
         run: rustc --version && cargo --version
 
       - name: Set variables
+        shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME,,}-$(git rev-parse --short HEAD)"
+          VERSION="$(printf '%s' "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)"
           VERSION="${VERSION//\//-}"
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION=${{ github.event.inputs.version }}
