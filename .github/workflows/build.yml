@@ -39,7 +39,7 @@ jobs:
           - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v2, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: shell }
           - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v3, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v3", smoke: shell }
           - { runner: macos-latest, target: aarch64-apple-darwin, output: darwin-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v1, binary_name: mihomo.exe, archive: zip, verify: test, rustflags: "-C target-cpu=x86-64-v1", smoke: powershell }
+          - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v1, binary_name: mihomo.exe, archive: zip, verify: test, smoke: powershell }
           - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v2, binary_name: mihomo.exe, archive: zip, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: powershell }
           - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v3, binary_name: mihomo.exe, archive: zip, verify: test, smoke: powershell }
     steps:
