@@ -463,6 +463,19 @@ fn refresh_http_rule_provider_source(
         &provider.proxy,
         tunnel,
     )
+    .or_else(|_| {
+        if provider.proxy.trim().is_empty() {
+            Err(io::Error::new(io::ErrorKind::Other, "direct fetch already attempted"))
+        } else {
+            fetch_http_provider_bytes(
+                &provider.url,
+                &provider.header,
+                provider.size_limit,
+                "",
+                tunnel,
+            )
+        }
+    })
     .or_else(|_| read_http_provider_cache(home_dir, &provider.path))
     {
         Ok(content) => content,
@@ -492,6 +505,19 @@ fn refresh_http_proxy_provider_source(
         &provider.proxy,
         tunnel,
     )
+    .or_else(|_| {
+        if provider.proxy.trim().is_empty() {
+            Err(io::Error::new(io::ErrorKind::Other, "direct fetch already attempted"))
+        } else {
+            fetch_http_provider_bytes(
+                &provider.url,
+                &provider.header,
+                provider.size_limit,
+                "",
+                tunnel,
+            )
+        }
+    })
     .or_else(|_| read_http_provider_cache(home_dir, &provider.path))
     {
         Ok(content) => content,
@@ -519,14 +545,17 @@ fn fetch_http_provider_bytes(
         return fetch_http_provider_bytes_via_proxy(tunnel, url, header, size_limit, proxy);
     }
     let mut request = ureq::get(url).timeout(Duration::from_secs(30));
-    for (name, values) in header {
-        for value in values {
-            request = request.set(name, value);
-        }
+    for (name, value) in provider_request_headers(header) {
+        request = request.set(&name, &value);
     }
     let response = request
         .call()
-        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err.to_string()))?;
+        .map_err(|err| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("failed to fetch provider url {url}: {err}"),
+            )
+        })?;
     let mut reader = response.into_reader();
     let mut content = Vec::new();
     if size_limit > 0 {
@@ -572,7 +601,15 @@ fn fetch_http_provider_bytes_via_proxy(
     };
     let (mut upstream, _) = tunnel
         .connect_tcp_with_system_dialer(&metadata)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+        .map_err(|err| {
+            io::Error::new(
+                io::ErrorKind::Other,
+                format!(
+                    "failed to connect provider url {} via proxy {}: {}",
+                    url, proxy_name, err
+                ),
+            )
+        })?;
     if scheme == "https" {
         let tls = mihomo_transport::TlsOptions {
             enabled: true,
@@ -584,18 +621,21 @@ fn fetch_http_provider_bytes_via_proxy(
         };
         let target = TransportTarget::new(host.to_owned(), port);
         upstream = mihomo_transport::wrap_tls_proxy_stream(upstream, target, &tls, &[])
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+            .map_err(|err| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("failed to establish tls for provider url {url}: {err}"),
+                )
+            })?;
     }
     let mut request = format!(
         "GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n"
     );
-    for (name, values) in header {
-        for value in values {
-            request.push_str(name);
-            request.push_str(": ");
-            request.push_str(value);
-            request.push_str("\r\n");
-        }
+    for (name, value) in provider_request_headers(header) {
+        request.push_str(&name);
+        request.push_str(": ");
+        request.push_str(&value);
+        request.push_str("\r\n");
     }
     request.push_str("\r\n");
     upstream.write_all(request.as_bytes())?;
@@ -627,6 +667,21 @@ fn read_http_provider_cache(home_dir: &Path, path: &str) -> std::io::Result<Vec<
         ));
     }
     Ok(fs::read(resolve_home_relative(home_dir, path))?)
+}
+
+fn provider_request_headers(
+    header: &BTreeMap<String, Vec<String>>,
+) -> Vec<(String, String)> {
+    header
+        .iter()
+        .filter_map(|(name, values)| {
+            values
+                .iter()
+                .find(|value| !value.trim().is_empty())
+                .cloned()
+                .map(|value| (name.clone(), value))
+        })
+        .collect()
 }
 
 fn store_http_provider_content(
@@ -830,6 +885,31 @@ rule-providers:
     }
 
     #[test]
+    fn bootstrap_tolerates_missing_file_provider_content() {
+        let temp = unique_temp_dir();
+        let (document, sources, registry) = bootstrap_from_yaml(
+            r#"
+proxy-providers:
+  provider1:
+    type: file
+    path: missing-provider.yaml
+rule-providers:
+  rule1:
+    type: file
+    behavior: classical
+    path: missing-rules.list
+"#,
+            &temp,
+        )
+        .unwrap();
+        assert!(document.proxy_providers.contains_key("provider1"));
+        assert!(document.rule_providers.contains_key("rule1"));
+        assert!(!sources.file_contents.contains_key("missing-provider.yaml"));
+        assert!(!sources.file_contents.contains_key("missing-rules.list"));
+        assert!(registry.providers["provider1"].members.is_empty());
+    }
+
+    #[test]
     fn bootstrap_fetches_http_proxy_provider_and_writes_cache() {
         let temp = unique_temp_dir();
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -983,6 +1063,58 @@ proxy-providers:
         assert!(fs::read_to_string(temp.join("cache-provider.yaml"))
             .unwrap()
             .contains("name: fetched-via-proxy"));
+    }
+
+    #[test]
+    fn bootstrap_falls_back_to_direct_when_provider_proxy_is_missing() {
+        let temp = unique_temp_dir();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            let body = b"proxies:\n  - type: direct\n    name: fetched-direct-fallback\n";
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0_u8; 1024];
+            loop {
+                let read = stream.read(&mut buf).unwrap();
+                assert!(read > 0);
+                request.extend_from_slice(&buf[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            stream.write_all(body).unwrap();
+        });
+
+        let (_, sources, registry) = bootstrap_from_yaml(
+            &format!(
+                r#"
+proxy-providers:
+  provider1:
+    type: http
+    url: http://{addr}/provider.yaml
+    path: cache-provider.yaml
+    proxy: missing-proxy
+"#,
+                addr = addr,
+            ),
+            &temp,
+        )
+        .unwrap();
+
+        worker.join().unwrap();
+        assert_eq!(
+            registry.providers["provider1"].members[0].name,
+            "fetched-direct-fallback"
+        );
+        assert!(sources.http_contents.contains_key(&format!(
+            "http://{addr}/provider.yaml"
+        )));
     }
 
     #[test]

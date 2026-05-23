@@ -982,6 +982,51 @@ proxies:
     }
 
     #[test]
+    fn start_accepts_allow_lan_with_implicit_wildcard_bind() {
+        let temp = unique_temp_dir("mihomo-app-allow-lan");
+        let mixed_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let mixed_port = mixed_listener.local_addr().unwrap().port();
+        drop(mixed_listener);
+        fs::write(
+            temp.join("config.yaml"),
+            format!(
+                r#"
+allow-lan: true
+mixed-port: {mixed_port}
+external-controller: 127.0.0.1:0
+secret: top-secret
+proxies:
+  - type: direct
+    name: direct-a
+"#,
+                mixed_port = mixed_port,
+            ),
+        )
+        .unwrap();
+        let options = BootOptions {
+            home_dir: Some(temp.to_string_lossy().into_owned()),
+            config_file: Some(temp.join("config.yaml").to_string_lossy().into_owned()),
+            config_base64: None,
+            external_ui: None,
+            external_controller: None,
+            external_controller_unix: None,
+            external_controller_pipe: None,
+            secret: None,
+            post_up: None,
+            post_down: None,
+            geodata_mode: false,
+            show_version: false,
+            test_config: false,
+            command: Command::Run,
+        };
+        let mut app = RunningApp::start(&options, &temp, &BootEnvironment::default()).unwrap();
+        assert!(app.has_background_services());
+        assert!(!app.listener_addrs().is_empty());
+        assert!(app.summary().contains("bound_listeners="));
+        app.shutdown();
+    }
+
+    #[test]
     fn start_honors_external_controller_override_flag() {
         let temp = unique_temp_dir("mihomo-app-override");
         fs::write(

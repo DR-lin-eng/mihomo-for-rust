@@ -3754,8 +3754,8 @@ fn parse_authentication_users(values: &[String]) -> Vec<AuthUser> {
 
 fn top_level_bind_address(document: &RuntimeConfigDocument, port: u16) -> String {
     if document.allow_lan {
-        if document.bind_address == "*" {
-            format!(":{port}")
+        if document.bind_address.is_empty() || document.bind_address == "*" {
+            format!("0.0.0.0:{port}")
         } else {
             format!("{}:{port}", document.bind_address)
         }
