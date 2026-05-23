@@ -90,6 +90,8 @@ The Rust rewrite should therefore standardize around:
 
 ## Immediate Gaps Still Open
 
-- Rust toolchain is not installed locally; verification must use Docker until a native toolchain is added.
+- The Rust workspace currently needs a newer stable toolchain baseline than the original scaffold assumed; cutover docs and CI must track the real MSRV instead of stale placeholders.
+- The default runtime, CI, and development entrypoints have started moving toward Rust, but the full release matrix and Docker publishing path still retain a large Go compatibility lane.
+- The repository still carries a legacy Go runtime path for compatibility and comparison; the cutover is not complete until release and runtime truth no longer depend on it by default.
+- The default Rust mainline still needs a clear policy for heavyweight native dependencies such as vendored OpenSSL-backed SSH transport support; today those are better treated as explicit opt-in until the default build burden is acceptable.
 - Legacy OS floors from the Go build matrix may require a separate Rust compatibility policy or custom toolchains.
-- No Rust transport implementation exists yet; this first drop creates the rewrite track and encodes the compatibility surface.

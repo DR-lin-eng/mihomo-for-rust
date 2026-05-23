@@ -31,6 +31,7 @@ pub const GLOBAL_INVARIANTS: &[&str] = &[
     "Preserve DNS, fake-ip, sniffer, NAT, statistics, and process attribution semantics.",
     "Preserve broad cross-platform release coverage, including low-end Linux and OpenWrt-style deployments.",
     "Move the data plane toward zero-copy friendly ownership and OS-specific fast paths where available.",
+    "Do not treat crate-level verification as proof that the repository default runtime, CI, and release chain have fully cut over to Rust.",
 ];
 
 pub const SUBSYSTEMS: &[SubsystemManifest] = &[
@@ -42,7 +43,7 @@ pub const SUBSYSTEMS: &[SubsystemManifest] = &[
             "version and config test entrypoints",
             "subcommand dispatch",
         ],
-        stage: RewriteStage::Verified,
+        stage: RewriteStage::InProgress,
     },
     SubsystemManifest {
         crate_name: "mihomo-runtime",
@@ -138,6 +139,9 @@ mod tests {
             .any(|manifest| manifest.crate_name == "mihomo-tun"));
         assert!(all_subsystems()
             .iter()
-            .all(|manifest| manifest.stage == RewriteStage::Verified));
+            .any(|manifest| manifest.stage == RewriteStage::Verified));
+        assert!(all_subsystems()
+            .iter()
+            .any(|manifest| manifest.stage == RewriteStage::InProgress));
     }
 }

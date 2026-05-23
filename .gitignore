@@ -23,6 +23,7 @@ vendor
 
 # Local dependency caches
 /.gomodcache/
+/.gocache/
 
 # test suite
 test/config/cache*
@@ -30,6 +31,8 @@ test/config/cache*
 .vscode/
 .fleet/
 /rust/target
+/rust/target-docker-*
+/rust/target-ci-*
 /rust/.nextest/
 /rust/coverage/
 /rust/tarpaulin-report/

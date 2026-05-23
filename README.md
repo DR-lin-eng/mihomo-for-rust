@@ -6,10 +6,13 @@
 <h3 align="center">Another Mihomo Kernel.</h3>
 
 <p align="center">
-  <a href="https://goreportcard.com/report/github.com/MetaCubeX/mihomo">
-    <img src="https://goreportcard.com/badge/github.com/MetaCubeX/mihomo?style=flat-square">
+  <a href="https://github.com/MetaCubeX/mihomo/actions/workflows/build.yml">
+    <img src="https://github.com/MetaCubeX/mihomo/actions/workflows/build.yml/badge.svg?branch=Alpha&style=flat-square" alt="Rust build workflow">
   </a>
-  <img src="https://img.shields.io/github/go-mod/go-version/MetaCubeX/mihomo/Alpha?style=flat-square">
+  <a href="https://github.com/MetaCubeX/mihomo/actions/workflows/test.yml">
+    <img src="https://github.com/MetaCubeX/mihomo/actions/workflows/test.yml/badge.svg?branch=Alpha&style=flat-square" alt="Rust test workflow">
+  </a>
+  <img src="https://img.shields.io/badge/rust-1.88%2B-cf6c3c?style=flat-square" alt="Rust 1.88+">
   <a href="https://github.com/MetaCubeX/mihomo/releases">
     <img src="https://img.shields.io/github/release/MetaCubeX/mihomo/all.svg?style=flat-square">
   </a>
@@ -45,26 +48,33 @@ Documentation can be found in [mihomo Docs](https://wiki.metacubex.one/).
 ## For development
 
 Requirements:
-[Go 1.20 or newer](https://go.dev/dl/)
+[Rust 1.88 or newer](https://www.rust-lang.org/tools/install)
 
 Build mihomo:
 
 ```shell
 git clone https://github.com/MetaCubeX/mihomo.git
-cd mihomo && go mod download
-go build
+cd mihomo
+make build
 ```
 
-Set go proxy if a connection to GitHub is not possible:
+Run the Rust workspace test suite:
 
 ```shell
-go env -w GOPROXY=https://goproxy.io,direct
+make test
 ```
 
-Build with gvisor tun stack:
+If `cargo` is not installed locally, `make build` and `make test` will fall back to Docker with the pinned minimal Rust 1.88 toolchain and isolated Docker target directories, so they do not contend with a local or concurrent Rust build for the same `target/` lock.
+
+The legacy Go implementation is still present for compatibility work and comparison, but it is no longer the default build path.
+
+If a connection to GitHub is not possible when fetching Rust crates, set a cargo mirror or proxy appropriate for your environment.
+
+To build the legacy Go entrypoint explicitly:
 
 ```shell
-go build -tags with_gvisor
+go mod download
+go build -tags "legacy_go_runtime with_gvisor"
 ```
 
 ### IPTABLES configuration

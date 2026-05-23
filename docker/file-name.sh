@@ -22,4 +22,13 @@ case $TARGETPLATFORM in
         ;;        
 esac
 file_name="$os$arch-$(cat bin/version.txt)"
-echo $file_name
+if [ -f "bin/$file_name.gz" ]; then
+    echo "$file_name"
+    exit 0
+fi
+legacy_file_name="mihomo-legacy-$os$arch-$(cat bin/version.txt)"
+if [ -f "bin/$legacy_file_name.gz" ]; then
+    echo "$legacy_file_name"
+    exit 0
+fi
+echo "$file_name"

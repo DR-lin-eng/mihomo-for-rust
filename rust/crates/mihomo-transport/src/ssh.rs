@@ -239,7 +239,7 @@ fn to_io_error(err: impl std::fmt::Display) -> io::Error {
     io::Error::new(io::ErrorKind::Other, err.to_string())
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ssh-transport-tests"))]
 mod tests {
     use std::io::{Read, Write};
     use std::net::Shutdown;

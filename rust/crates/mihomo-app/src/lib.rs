@@ -264,16 +264,21 @@ mod tests {
         TransportPlanRunner, TransportTarget,
         VmessAcceptedTestStream,
     };
+    #[cfg(feature = "ssh-transport-tests")]
     use rand_010::rng;
     use rcgen::generate_simple_self_signed;
+    #[cfg(feature = "ssh-transport-tests")]
     use russh::keys::{self as russh_keys, PrivateKey as RusshPrivateKey, PublicKeyBase64};
+    #[cfg(feature = "ssh-transport-tests")]
     use russh::server::{self as russh_server, Msg as RusshServerMsg, Server as _, Session as RusshSession};
     use sha1::{Digest as Sha1Digest, Sha1};
     use rustls::server::AllowAnyAuthenticatedClient;
     use rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig, ServerConnection, StreamOwned};
     use serde_json::Value;
     use sha2::{Sha224, Sha256};
+    #[cfg(feature = "ssh-transport-tests")]
     use tokio::io::{copy_bidirectional, AsyncWriteExt};
+    #[cfg(feature = "ssh-transport-tests")]
     use tokio::net::{TcpListener as TokioTcpListener, TcpStream as TokioTcpStream};
     use uuid::Uuid;
 
@@ -2430,6 +2435,7 @@ listeners:
         app.shutdown();
     }
 
+    #[cfg(feature = "ssh-transport-tests")]
     #[test]
     fn start_serves_custom_tunnel_listener_with_ssh_proxy_end_to_end() {
         let upstream = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -34135,6 +34141,7 @@ listeners:
         )))
     }
 
+    #[cfg(feature = "ssh-transport-tests")]
     struct TestSshServer {
         addr: SocketAddr,
         host_key: String,
@@ -34142,6 +34149,7 @@ listeners:
         thread: Option<thread::JoinHandle<()>>,
     }
 
+    #[cfg(feature = "ssh-transport-tests")]
     impl TestSshServer {
         fn start_password() -> Self {
             let (tx, rx) = mpsc::channel();
@@ -34187,9 +34195,11 @@ listeners:
         }
     }
 
+    #[cfg(feature = "ssh-transport-tests")]
     #[derive(Clone)]
     struct PasswordSshServer;
 
+    #[cfg(feature = "ssh-transport-tests")]
     impl russh_server::Server for PasswordSshServer {
         type Handler = Self;
 
@@ -34198,6 +34208,7 @@ listeners:
         }
     }
 
+    #[cfg(feature = "ssh-transport-tests")]
     impl russh_server::Handler for PasswordSshServer {
         type Error = russh::Error;
 

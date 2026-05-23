@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+default = []
+ssh-transport = ["dep:ssh2", "dep:rustls-native-certs"]
+ssh-transport-tests = ["ssh-transport", "dep:russh", "dep:ssh-key"]
+
 [dependencies]
 aes = "0.8"
 aes-gcm = "0.10"
@@ -24,12 +29,14 @@ md-5 = "0.10"
 mihomo-core = { path = "../mihomo-core" }
 rand = "0.8"
 rustls = { version = "0.21", features = ["dangerous_configuration"] }
-rustls-native-certs = "0.6"
+rustls-native-certs = { version = "0.6", optional = true }
 rustls-pemfile = "1"
+russh = { version = "0.60.3", optional = true }
 sha1 = "0.10"
 sha2 = "0.10"
 sha3 = "0.10"
-ssh2 = { version = "0.9.5", features = ["vendored-openssl"] }
+ssh2 = { version = "0.9.5", features = ["vendored-openssl"], optional = true }
+ssh-key = { version = "0.6", optional = true }
 tokio = { version = "1", features = ["rt", "sync", "io-util", "macros", "net"] }
 tokio-rustls = "0.24"
 uuid = "1"
@@ -39,8 +46,6 @@ x25519-dalek = { version = "2", features = ["static_secrets"] }
 [dev-dependencies]
 rand_010 = { package = "rand", version = "0.10" }
 rcgen = "0.13"
-russh = "0.60.3"
-ssh-key = "0.6"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "io-util", "time"] }
 
 [lib]

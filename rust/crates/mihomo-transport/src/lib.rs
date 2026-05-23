@@ -6,6 +6,7 @@ mod simple_obfs;
 mod smux_stream;
 mod ssr;
 mod ssr_http_obfs;
+#[cfg(feature = "ssh-transport")]
 mod ssh;
 mod shadowsocks;
 mod snell;
@@ -1812,6 +1813,26 @@ fn execute_ssh_connect<D: TcpDialer>(
     socket: &SocketOptions,
     target: &TransportTarget,
 ) -> Result<BoxedTcpStream, TransportError> {
+    #[cfg(not(feature = "ssh-transport"))]
+    {
+        let _ = dialer;
+        let _ = existing;
+        let _ = proxy;
+        let _ = username;
+        let _ = password;
+        let _ = private_key;
+        let _ = private_key_passphrase;
+        let _ = host_keys;
+        let _ = host_key_algorithms;
+        let _ = socket;
+        let _ = target;
+        return Err(TransportError::UnsupportedFeature {
+            proxy: "<ssh>".to_owned(),
+            feature: "ssh transport support is disabled in the default Rust build".to_owned(),
+        });
+    }
+    #[cfg(feature = "ssh-transport")]
+    {
     let stream = if let Some(stream) = existing {
         stream
     } else {
@@ -1827,6 +1848,7 @@ fn execute_ssh_connect<D: TcpDialer>(
         host_key_algorithms,
         target,
     )
+    }
 }
 
 fn open_proxy_stream<D: TcpDialer>(
