@@ -27,7 +27,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.88.0
-          profile: minimal
 
       - name: Verify Rust installation
         run: rustc --version && cargo --version
