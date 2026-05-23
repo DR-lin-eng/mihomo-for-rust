@@ -7,7 +7,7 @@ repository.workspace = true
 
 [features]
 default = []
-ssh-transport = ["dep:ssh2", "dep:rustls-native-certs"]
+ssh-transport = ["dep:ssh2"]
 ssh-transport-tests = ["ssh-transport", "dep:russh", "dep:ssh-key"]
 
 [dependencies]
@@ -29,7 +29,7 @@ md-5 = "0.10"
 mihomo-core = { path = "../mihomo-core" }
 rand = "0.8"
 rustls = { version = "0.21", features = ["dangerous_configuration"] }
-rustls-native-certs = { version = "0.6", optional = true }
+rustls-native-certs = "0.6"
 rustls-pemfile = "1"
 russh = { version = "0.60.3", optional = true }
 sha1 = "0.10"

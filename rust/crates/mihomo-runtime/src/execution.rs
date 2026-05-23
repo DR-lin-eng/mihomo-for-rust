@@ -19,7 +19,7 @@ use crate::{resolve_proxy_path, CandidateState, ProxySource, ResolveError, Runti
 
 const DEFAULT_TROJAN_ALPN: &[&str] = &["h2", "http/1.1"];
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct SocketOptions {
     pub tfo: bool,
     pub mptcp: bool,

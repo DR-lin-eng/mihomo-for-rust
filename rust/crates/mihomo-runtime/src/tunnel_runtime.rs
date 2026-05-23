@@ -14,7 +14,8 @@ use mihomo_transport::{
     GrpcOptions as TransportGrpcOptions,
     Http2Options as TransportHttp2Options,
     HttpStreamOptions as TransportHttpStreamOptions,
-    SystemTcpDialer, TcpDialer, TlsOptions as TransportTlsOptions, TransportError,
+    SocketOptions as TransportSocketOptions, SystemTcpDialer, TcpDialPurpose, TcpDialer,
+    TlsOptions as TransportTlsOptions, TransportError, TransportTarget,
     TrojanShadowsocksOptions as TransportTrojanShadowsocksOptions,
     WebsocketOptions as TransportWebsocketOptions, XHttpOptions as TransportXHttpOptions,
 };
@@ -448,6 +449,33 @@ impl RuntimeTunnel {
         metadata: &Metadata,
     ) -> Result<(UdpOutboundRoute, ExecutionPlan), ExecutionError> {
         let mode = self.mode.lock().unwrap().clone();
+        if mode == "direct" && metadata.special_proxy.trim().is_empty() {
+            let _ = metadata
+                .dst_port
+                .ok_or_else(|| ExecutionError::Transport(mihomo_transport::TransportError::MissingDestinationPort))?;
+            let _ = metadata
+                .host
+                .as_ref()
+                .filter(|value| !value.is_empty())
+                .cloned()
+                .or_else(|| metadata.dst_ip.map(|ip| ip.to_string()))
+                .ok_or_else(|| ExecutionError::Transport(mihomo_transport::TransportError::MissingDestinationHost))?;
+            let plan = ExecutionPlan {
+                requested: "DIRECT".to_owned(),
+                selected_path: vec!["DIRECT".to_owned()],
+                leaf_name: "DIRECT".to_owned(),
+                dial_chain: vec!["DIRECT".to_owned()],
+                hops: vec![crate::ExecutionHop {
+                name: "DIRECT".to_owned(),
+                kind: None,
+                source: crate::ProxySource::Builtin,
+                spec: crate::ExecutionHopSpec::Direct(crate::execution::DirectHopSpec {
+                    socket: crate::execution::SocketOptions::default(),
+                }),
+            }],
+        };
+            return Ok((UdpOutboundRoute::Direct, plan));
+        }
         let states = self.candidate_states.lock().unwrap().clone();
         let rules = Arc::clone(&self.rules.read().unwrap());
         let mut registry = self.registry.lock().unwrap();
@@ -1010,11 +1038,14 @@ impl RuntimeTunnel {
     pub fn connect_tcp_with_dialer<D>(
         &self,
         metadata: &Metadata,
-        dialer: D,
+        mut dialer: D,
     ) -> Result<(BoxedTcpStream, ExecutionPlan), ExecutionError>
     where
         D: TcpDialer,
     {
+        if let Some(result) = self.try_connect_direct_tcp(metadata, &mut dialer)? {
+            return Ok(result);
+        }
         let states = self.candidate_states.lock().unwrap().clone();
         let mut registry = self.registry.lock().unwrap();
         let mode = self.mode.lock().unwrap().clone();
@@ -1033,6 +1064,51 @@ impl RuntimeTunnel {
         metadata: &Metadata,
     ) -> Result<(BoxedTcpStream, ExecutionPlan), ExecutionError> {
         self.connect_tcp_with_dialer(metadata, SystemTcpDialer)
+    }
+
+    fn try_connect_direct_tcp<D>(
+        &self,
+        metadata: &Metadata,
+        dialer: &mut D,
+    ) -> Result<Option<(BoxedTcpStream, ExecutionPlan)>, ExecutionError>
+    where
+        D: TcpDialer,
+    {
+        if self.current_mode() != "direct" || !metadata.special_proxy.trim().is_empty() {
+            return Ok(None);
+        }
+        let port = match metadata.dst_port {
+            Some(port) => port,
+            None => return Ok(None),
+        };
+        let host = metadata
+            .host
+            .as_ref()
+            .filter(|value| !value.is_empty())
+            .cloned()
+            .or_else(|| metadata.dst_ip.map(|ip| ip.to_string()));
+        let target = match host {
+            Some(host) => TransportTarget::new(host, port),
+            None => return Ok(None),
+        };
+        let plan = ExecutionPlan {
+            requested: "DIRECT".to_owned(),
+            selected_path: vec!["DIRECT".to_owned()],
+            leaf_name: "DIRECT".to_owned(),
+            dial_chain: vec!["DIRECT".to_owned()],
+            hops: vec![crate::ExecutionHop {
+                name: "DIRECT".to_owned(),
+                kind: None,
+                source: crate::ProxySource::Builtin,
+                spec: crate::ExecutionHopSpec::Direct(crate::execution::DirectHopSpec {
+                    socket: crate::execution::SocketOptions::default(),
+                }),
+            }],
+        };
+        let stream = dialer
+            .connect(&target, &TransportSocketOptions::default(), TcpDialPurpose::FinalTarget)
+            .map_err(ExecutionError::from)?;
+        Ok(Some((stream, plan)))
     }
 
     pub fn relay_tcp_stream(
@@ -1324,7 +1400,7 @@ mod tests {
     use mihomo_rules::compile_rule_set;
     use mihomo_transport::{SocketOptions, TcpDialPurpose, TcpDialer, TransportError, TransportTarget};
 
-    use crate::{build_runtime_registry, RuntimeGroupView};
+    use crate::{build_runtime_registry, ExecutionHopSpec, RuntimeGroupView};
 
     use super::{
         RuntimeTunnel, TcpRelayStrategy, UdpAnyTlsRoute, UdpGostRelayRoute, UdpOutboundRoute,
@@ -1583,6 +1659,75 @@ proxies:
         assert_eq!(target, "1.1.1.1:53".parse().unwrap());
         assert_eq!(tunnel.pending_udp_packets(), 0);
         assert_eq!(session.writes, vec![(b"hello".to_vec(), target)]);
+    }
+
+    #[test]
+    fn tunnel_direct_mode_short_circuits_tcp_planning() {
+        let document = parse_runtime_config_document("mode: direct").unwrap();
+        let registry = build_runtime_registry(&document).unwrap();
+        let tunnel = RuntimeTunnel::new(document.mode.clone(), registry)
+            .with_tcp_strategy(TcpRelayStrategy::BufferedCopy);
+        let mut dialer = FakeDialer::new();
+        dialer.push_connection("1.1.1.1:443", b"server-data".to_vec());
+        let (stream, plan) = tunnel
+            .connect_tcp_with_dialer(
+                &Metadata {
+                    dst_ip: Some(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))),
+                    dst_port: Some(443),
+                    ..Metadata::default()
+                },
+                dialer,
+            )
+            .unwrap();
+        let _ = stream;
+        assert_eq!(plan.requested, "DIRECT");
+        assert_eq!(plan.leaf_name, "DIRECT");
+        assert_eq!(plan.selected_path, vec!["DIRECT".to_owned()]);
+        assert!(matches!(plan.hops[0].spec, ExecutionHopSpec::Direct(_)));
+    }
+
+    #[test]
+    fn tunnel_direct_mode_short_circuits_tcp_planning_for_domain_targets() {
+        let document = parse_runtime_config_document("mode: direct").unwrap();
+        let registry = build_runtime_registry(&document).unwrap();
+        let tunnel = RuntimeTunnel::new(document.mode.clone(), registry)
+            .with_tcp_strategy(TcpRelayStrategy::BufferedCopy);
+        let mut dialer = FakeDialer::new();
+        dialer.push_connection("example.com:443", b"server-data".to_vec());
+        let (stream, plan) = tunnel
+            .connect_tcp_with_dialer(
+                &Metadata {
+                    host: Some("example.com".into()),
+                    dst_port: Some(443),
+                    ..Metadata::default()
+                },
+                dialer,
+            )
+            .unwrap();
+        let _ = stream;
+        assert_eq!(plan.requested, "DIRECT");
+        assert_eq!(plan.leaf_name, "DIRECT");
+        assert_eq!(plan.selected_path, vec!["DIRECT".to_owned()]);
+        assert!(matches!(plan.hops[0].spec, ExecutionHopSpec::Direct(_)));
+    }
+
+    #[test]
+    fn tunnel_direct_mode_short_circuits_udp_planning() {
+        let document = parse_runtime_config_document("mode: direct").unwrap();
+        let registry = build_runtime_registry(&document).unwrap();
+        let tunnel = RuntimeTunnel::new(document.mode.clone(), registry);
+        let (route, plan) = tunnel
+            .resolve_udp_outbound_with_plan(&Metadata {
+                dst_ip: Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))),
+                dst_port: Some(53),
+                ..Metadata::default()
+            })
+            .unwrap();
+        assert_eq!(route, UdpOutboundRoute::Direct);
+        assert_eq!(plan.requested, "DIRECT");
+        assert_eq!(plan.leaf_name, "DIRECT");
+        assert_eq!(plan.selected_path, vec!["DIRECT".to_owned()]);
+        assert!(matches!(plan.hops[0].spec, ExecutionHopSpec::Direct(_)));
     }
 
     #[test]

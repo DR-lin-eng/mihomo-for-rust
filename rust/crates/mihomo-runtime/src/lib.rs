@@ -65,7 +65,10 @@ pub use udp::{NatMappings, QueuedUdpRelay};
 
 use mihomo_config::BootOptions;
 use mihomo_core::{RewriteStage, SubsystemManifest, GLOBAL_INVARIANTS};
-use mihomo_platform::{current_capabilities, TargetProfile, SUPPORTED_TARGETS};
+use mihomo_platform::{
+    current_capabilities, supported_optimization_variants, OptimizationVariant, TargetProfile,
+    SUPPORTED_TARGETS,
+};
 
 pub struct RuntimePlan {
     pub command: &'static str,
@@ -73,6 +76,7 @@ pub struct RuntimePlan {
     pub invariant_count: usize,
     pub subsystem_count: usize,
     pub openwrt_friendly_targets: usize,
+    pub optimization_variants: Vec<OptimizationVariant>,
 }
 
 pub fn runtime_subsystems() -> Vec<&'static SubsystemManifest> {
@@ -99,6 +103,9 @@ pub fn supported_targets() -> &'static [TargetProfile] {
 
 pub fn build_runtime_plan(options: &BootOptions) -> RuntimePlan {
     let caps = current_capabilities();
+    let openwrt_target = supported_targets()
+        .iter()
+        .find(|target| target.family == caps.family && target.openwrt_friendly);
     RuntimePlan {
         command: options.command.name(),
         current_family: caps.family,
@@ -108,18 +115,27 @@ pub fn build_runtime_plan(options: &BootOptions) -> RuntimePlan {
             .iter()
             .filter(|target| target.openwrt_friendly)
             .count(),
+        optimization_variants: openwrt_target
+            .or_else(|| supported_targets().iter().find(|target| target.family == caps.family))
+            .map(|target| supported_optimization_variants(target, &caps))
+            .unwrap_or_else(|| vec![OptimizationVariant::Standard]),
     }
 }
 
 impl RuntimePlan {
     pub fn render_human_summary(&self) -> String {
         format!(
-            "command={} platform={} invariants={} subsystems={} openwrt_profiles={}",
+            "command={} platform={} invariants={} subsystems={} openwrt_profiles={} variants={}",
             self.command,
             self.current_family,
             self.invariant_count,
             self.subsystem_count,
-            self.openwrt_friendly_targets
+            self.openwrt_friendly_targets,
+            self.optimization_variants
+                .iter()
+                .map(|variant| variant.as_str())
+                .collect::<Vec<_>>()
+                .join(",")
         )
     }
 }

@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::{self, Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Condvar, Mutex,
@@ -67,6 +67,10 @@ use mihomo_transport::{
     VmessAcceptedStream, XHttpOptions,
 };
 
+const UDP_WORKER_THREADS_MIN: usize = 2;
+const UDP_WORKER_THREADS_MAX: usize = 4;
+const LISTENER_POLL_TIMEOUT: Duration = Duration::from_millis(200);
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BoundTcpListener {
     pub name: String,
@@ -98,11 +102,21 @@ impl From<std::io::Error> for ListenerServiceError {
     }
 }
 
-#[derive(Debug)]
 pub struct RunningListenerService {
     bound_listeners: Vec<BoundTcpListener>,
     shutdown: Arc<AtomicBool>,
+    udp_queue: Arc<UdpDispatchQueue>,
     join_handles: Vec<JoinHandle<()>>,
+}
+
+impl std::fmt::Debug for RunningListenerService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RunningListenerService")
+            .field("bound_listeners", &self.bound_listeners)
+            .field("shutdown", &self.shutdown.load(Ordering::Relaxed))
+            .field("join_handle_count", &self.join_handles.len())
+            .finish()
+    }
 }
 
 impl RunningListenerService {
@@ -123,13 +137,15 @@ impl RunningListenerService {
         let mut bound_listeners = Vec::new();
         let mut join_handles = Vec::new();
         let dns_runtime = state.build_dns_runtime().ok();
+        let udp_queue = Arc::new(UdpDispatchQueue::new());
+        let mut udp_workers = spawn_udp_workers(Arc::clone(&udp_queue));
 
         if let Some(runtime) = dns_runtime.clone().filter(|runtime| {
             runtime.config.enabled && !runtime.config.listen.trim().is_empty()
         }) {
             let dns_socket = UdpSocket::bind(&runtime.config.listen)?;
             let local_addr = dns_socket.local_addr()?;
-            dns_socket.set_nonblocking(true)?;
+            dns_socket.set_read_timeout(Some(LISTENER_POLL_TIMEOUT))?;
             bound_listeners.push(BoundTcpListener {
                 name: "__dns__".into(),
                 kind: "dns".into(),
@@ -145,7 +161,7 @@ impl RunningListenerService {
         for listener in build_tcp_listener_configs(&state.document)? {
             let tcp_listener = TcpListener::bind(&listener.address)?;
             let local_addr = tcp_listener.local_addr()?;
-            tcp_listener.set_nonblocking(true)?;
+            tcp_listener.set_nonblocking(false)?;
 
             bound_listeners.push(BoundTcpListener {
                 name: listener.name.clone(),
@@ -158,8 +174,9 @@ impl RunningListenerService {
             let tunnel = tunnel.clone();
             let handler = listener.handler.clone();
             let dns_runtime = dns_runtime.clone();
+            let udp_queue = Arc::clone(&udp_queue);
             let join_handle = thread::spawn(move || {
-                accept_loop(tcp_listener, shutdown_flag, tunnel, handler, dns_runtime);
+                accept_loop(tcp_listener, shutdown_flag, tunnel, handler, dns_runtime, udp_queue);
             });
             join_handles.push(join_handle);
         }
@@ -167,7 +184,7 @@ impl RunningListenerService {
         for listener in build_udp_listener_configs(&state.document) {
             let udp_socket = UdpSocket::bind(&listener.address)?;
             let local_addr = udp_socket.local_addr()?;
-            udp_socket.set_nonblocking(true)?;
+            udp_socket.set_read_timeout(Some(LISTENER_POLL_TIMEOUT))?;
 
             bound_listeners.push(BoundTcpListener {
                 name: listener.name.clone(),
@@ -179,15 +196,19 @@ impl RunningListenerService {
             let shutdown_flag = shutdown.clone();
             let tunnel = tunnel.clone();
             let dns_runtime = dns_runtime.clone();
+            let udp_queue = Arc::clone(&udp_queue);
             let join_handle = thread::spawn(move || {
-                udp_loop(udp_socket, shutdown_flag, tunnel, listener, dns_runtime);
+                udp_loop(udp_socket, shutdown_flag, tunnel, listener, dns_runtime, udp_queue);
             });
             join_handles.push(join_handle);
         }
 
+        join_handles.append(&mut udp_workers);
+
         Ok(Self {
             bound_listeners,
             shutdown,
+            udp_queue,
             join_handles,
         })
     }
@@ -198,6 +219,7 @@ impl RunningListenerService {
 
     pub fn shutdown(&mut self) {
         self.shutdown.store(true, Ordering::Relaxed);
+        self.udp_queue.close();
         for handle in self.join_handles.drain(..) {
             let _ = handle.join();
         }
@@ -1210,6 +1232,182 @@ impl ManagedUdpListenerConfig {
     }
 }
 
+enum UdpDispatchTask {
+    Generic {
+        socket: Arc<UdpSocket>,
+        peer_addr: SocketAddr,
+        payload: Vec<u8>,
+        tunnel: Arc<RuntimeTunnel>,
+        listener: ManagedUdpListenerConfig,
+        dns_runtime: Option<DnsRuntime>,
+    },
+    Socks {
+        socket: Arc<UdpSocket>,
+        peer_addr: SocketAddr,
+        payload: Vec<u8>,
+        fragments: Arc<Mutex<HashMap<SocketAddr, Socks5UdpReassembly>>>,
+        tunnel: Arc<RuntimeTunnel>,
+        inbound_name: String,
+        inbound_user: String,
+        special_proxy: String,
+        special_rules: String,
+        dns_runtime: Option<DnsRuntime>,
+    },
+}
+
+impl UdpDispatchTask {
+    fn run(self) {
+        match self {
+            Self::Generic {
+                socket,
+                peer_addr,
+                payload,
+                tunnel,
+                listener,
+                dns_runtime,
+            } => {
+                if let Err(err) = handle_udp_packet(
+                    socket,
+                    peer_addr,
+                    payload,
+                    tunnel,
+                    listener,
+                    dns_runtime,
+                ) {
+                    log_listener_error("udp listener error", err);
+                }
+            }
+            Self::Socks {
+                socket,
+                peer_addr,
+                payload,
+                fragments,
+                tunnel,
+                inbound_name,
+                inbound_user,
+                special_proxy,
+                special_rules,
+                dns_runtime,
+            } => {
+                if let Err(err) = handle_socks_udp_packet(
+                    socket,
+                    peer_addr,
+                    payload,
+                    fragments,
+                    tunnel,
+                    inbound_name,
+                    inbound_user,
+                    special_proxy,
+                    special_rules,
+                    dns_runtime,
+                ) {
+                    log_listener_error("socks udp relay error", err);
+                }
+            }
+        }
+    }
+}
+
+struct UdpDispatchQueue {
+    state: Mutex<UdpDispatchQueueState>,
+    ready: Condvar,
+}
+
+struct UdpDispatchQueueState {
+    closed: bool,
+    tasks: VecDeque<UdpDispatchTask>,
+}
+
+impl UdpDispatchQueue {
+    fn new() -> Self {
+        Self {
+            state: Mutex::new(UdpDispatchQueueState {
+                closed: false,
+                tasks: VecDeque::new(),
+            }),
+            ready: Condvar::new(),
+        }
+    }
+
+    fn push(&self, task: UdpDispatchTask) {
+        let mut state = self.state.lock().unwrap();
+        if state.closed {
+            return;
+        }
+        state.tasks.push_back(task);
+        self.ready.notify_one();
+    }
+
+    fn close(&self) {
+        let mut state = self.state.lock().unwrap();
+        state.closed = true;
+        self.ready.notify_all();
+    }
+
+    fn pop(&self) -> Option<UdpDispatchTask> {
+        let mut state = self.state.lock().unwrap();
+        loop {
+            if let Some(task) = state.tasks.pop_front() {
+                return Some(task);
+            }
+            if state.closed {
+                return None;
+            }
+            state = self.ready.wait(state).unwrap();
+        }
+    }
+}
+
+fn spawn_udp_workers(queue: Arc<UdpDispatchQueue>) -> Vec<JoinHandle<()>> {
+    let worker_count = std::thread::available_parallelism()
+        .map(|count| count.get().clamp(UDP_WORKER_THREADS_MIN, UDP_WORKER_THREADS_MAX))
+        .unwrap_or(UDP_WORKER_THREADS_MIN);
+    (0..worker_count)
+        .map(|_| {
+            let queue = Arc::clone(&queue);
+            thread::spawn(move || {
+                while let Some(task) = queue.pop() {
+                    task.run();
+                }
+            })
+        })
+        .collect()
+}
+
+fn log_listener_error(err_prefix: &str, err: impl std::fmt::Display) {
+    let message = format!("{err_prefix}: {err}");
+    eprintln!("{message}");
+    push_log(LogLevel::Error, message);
+}
+
+fn accept_with_shutdown_poll(
+    listener: &TcpListener,
+    shutdown: &Arc<AtomicBool>,
+) -> io::Result<(TcpStream, SocketAddr)> {
+    listener.set_nonblocking(true)?;
+    loop {
+        if shutdown.load(Ordering::Relaxed) {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "listener shutdown requested",
+            ));
+        }
+        match listener.accept() {
+            Ok(accepted) => {
+                let _ = listener.set_nonblocking(false);
+                return Ok(accepted);
+            }
+            Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
+                thread::sleep(LISTENER_POLL_TIMEOUT);
+            }
+            Err(err) => {
+                let _ = listener.set_nonblocking(false);
+                return Err(err);
+            }
+        }
+    }
+}
+
 fn build_tcp_listener_configs(
     document: &RuntimeConfigDocument,
 ) -> Result<Vec<ManagedTcpListenerConfig>, ListenerServiceError> {
@@ -1344,28 +1542,30 @@ fn accept_loop(
     tunnel: Arc<RuntimeTunnel>,
     handler: ManagedTcpListenerHandler,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) {
     while !shutdown.load(Ordering::Relaxed) {
-        match listener.accept() {
+        match accept_with_shutdown_poll(&listener, &shutdown) {
             Ok((stream, _)) => {
-                let _ = stream.set_nonblocking(false);
                 let peer_addr = stream.peer_addr().ok();
                 let tunnel = tunnel.clone();
                 let handler = handler.clone();
                 let dns_runtime = dns_runtime.clone();
+                let udp_queue = Arc::clone(&udp_queue);
                 thread::spawn(move || {
-                    if let Err(err) =
-                        dispatch_connection(handler, tunnel, stream, peer_addr, dns_runtime)
-                    {
-                        let message = format!("listener dispatch error: {err}");
-                        eprintln!("{message}");
-                        push_log(LogLevel::Error, message);
+                    if let Err(err) = dispatch_connection(
+                        handler,
+                        tunnel,
+                        stream,
+                        peer_addr,
+                        dns_runtime,
+                        udp_queue,
+                    ) {
+                        log_listener_error("listener dispatch error", err);
                     }
                 });
             }
-            Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(10));
-            }
+            Err(err) if err.kind() == std::io::ErrorKind::TimedOut => {}
             Err(err) => {
                 let message = format!("listener accept error: {err}");
                 eprintln!("{message}");
@@ -1382,6 +1582,7 @@ fn dispatch_connection(
     stream: TcpStream,
     peer_addr: Option<SocketAddr>,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) -> Result<(), ListenerRuntimeError> {
     match handler {
         ManagedTcpListenerHandler::Http(config) => {
@@ -1394,10 +1595,10 @@ fn dispatch_connection(
             )?;
         }
         ManagedTcpListenerHandler::Socks(config) => {
-            handle_socks5_connection(config, tunnel, stream, peer_addr, dns_runtime)?;
+            handle_socks5_connection(config, tunnel, stream, peer_addr, dns_runtime, udp_queue)?;
         }
         ManagedTcpListenerHandler::Mixed(config) => {
-            handle_mixed_connection(config, tunnel, stream, peer_addr, dns_runtime)?;
+            handle_mixed_connection(config, tunnel, stream, peer_addr, dns_runtime, udp_queue)?;
         }
         ManagedTcpListenerHandler::Tunnel(config) => {
             let _ = dispatch_tunnel_tcp_stream_with_dialer(
@@ -2977,6 +3178,7 @@ fn handle_mixed_connection(
     stream: TcpStream,
     peer_addr: Option<SocketAddr>,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) -> Result<(), ListenerRuntimeError> {
     let mut first = [0_u8; 1];
     let peeked = stream.peek(&mut first).map_err(ListenerRuntimeError::Io)?;
@@ -2984,7 +3186,7 @@ fn handle_mixed_connection(
         return Ok(());
     }
     if first[0] == 0x05 {
-        handle_socks5_connection(config, tunnel, stream, peer_addr, dns_runtime)
+        handle_socks5_connection(config, tunnel, stream, peer_addr, dns_runtime, udp_queue)
     } else {
         let http_config = http_config_from_tls_config(&config);
         let _ = dispatch_http_proxy_tcp_stream_with_dialer(
@@ -3004,6 +3206,7 @@ fn handle_socks5_connection(
     stream: TcpStream,
     peer_addr: Option<SocketAddr>,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) -> Result<(), ListenerRuntimeError> {
     match prepare_socks5_dispatch(&config, stream, peer_addr)? {
         PreparedSocks5Dispatch::Connect(mut context) => {
@@ -3014,7 +3217,7 @@ fn handle_socks5_connection(
             )?;
         }
         PreparedSocks5Dispatch::UdpAssociate(associate) => {
-            handle_socks5_udp_associate(config, tunnel, associate, dns_runtime)?;
+            handle_socks5_udp_associate(config, tunnel, associate, dns_runtime, udp_queue)?;
         }
     }
     Ok(())
@@ -3278,6 +3481,7 @@ fn udp_loop(
     tunnel: Arc<RuntimeTunnel>,
     listener: ManagedUdpListenerConfig,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) {
     let socket = Arc::new(socket);
     while !shutdown.load(Ordering::Relaxed) {
@@ -3285,28 +3489,16 @@ fn udp_loop(
         match socket.recv_from(&mut buf) {
             Ok((read, peer_addr)) => {
                 let payload = buf[..read].to_vec();
-                let socket = Arc::clone(&socket);
-                let tunnel = Arc::clone(&tunnel);
-                let listener = listener.clone();
-                let dns_runtime = dns_runtime.clone();
-                thread::spawn(move || {
-                    if let Err(err) = handle_udp_packet(
-                        socket,
-                        peer_addr,
-                        payload,
-                        tunnel,
-                        listener,
-                        dns_runtime,
-                    ) {
-                        let message = format!("udp listener error: {err}");
-                        eprintln!("{message}");
-                        push_log(LogLevel::Error, message);
-                    }
+                udp_queue.push(UdpDispatchTask::Generic {
+                    socket: Arc::clone(&socket),
+                    peer_addr,
+                    payload,
+                    tunnel: Arc::clone(&tunnel),
+                    listener: listener.clone(),
+                    dns_runtime: dns_runtime.clone(),
                 });
             }
-            Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(10));
-            }
+            Err(err) if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) => {}
             Err(err) => {
                 let message = format!("udp listener recv error: {err}");
                 eprintln!("{message}");
@@ -3338,9 +3530,7 @@ fn dns_loop(socket: UdpSocket, shutdown: Arc<AtomicBool>, runtime: Arc<Mutex<Dns
                     }
                 }
             }
-            Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(10));
-            }
+            Err(err) if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) => {}
             Err(err) => {
                 let message = format!("dns listener recv error: {err}");
                 eprintln!("{message}");
@@ -3356,13 +3546,14 @@ fn handle_socks5_udp_associate(
     tunnel: Arc<RuntimeTunnel>,
     mut associate: PreparedSocks5UdpAssociate,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) -> Result<(), ListenerRuntimeError> {
     if !config.udp {
         return Err(ListenerRuntimeError::SocksUnsupportedCommand(0x03));
     }
 
     let udp_socket = UdpSocket::bind(bind_ephemeral(&config.base.listen))?;
-    udp_socket.set_nonblocking(true)?;
+    udp_socket.set_read_timeout(Some(LISTENER_POLL_TIMEOUT))?;
     let bind_addr = udp_socket.local_addr()?;
     write_socks5_udp_associate_reply(&mut *associate.stream, bind_addr)?;
 
@@ -3375,6 +3566,7 @@ fn handle_socks5_udp_associate(
     let special_proxy = associate.special_proxy.clone();
     let special_rules = associate.special_rules.clone();
     let inbound_user = associate.inbound_user.clone();
+    let udp_queue_for_worker = Arc::clone(&udp_queue);
     let udp_worker = thread::spawn(move || {
         socks_udp_loop(
             udp_socket,
@@ -3385,6 +3577,7 @@ fn handle_socks5_udp_associate(
             special_proxy,
             special_rules,
             dns_runtime_for_loop,
+            udp_queue_for_worker,
         );
     });
 
@@ -3411,6 +3604,7 @@ fn socks_udp_loop(
     special_proxy: String,
     special_rules: String,
     dns_runtime: Option<DnsRuntime>,
+    udp_queue: Arc<UdpDispatchQueue>,
 ) {
     let fragments = Arc::new(Mutex::new(HashMap::<SocketAddr, Socks5UdpReassembly>::new()));
     while !stop.load(Ordering::Relaxed) {
@@ -3418,36 +3612,20 @@ fn socks_udp_loop(
         match socket.recv_from(&mut buf) {
             Ok((read, peer_addr)) => {
                 let payload = buf[..read].to_vec();
-                let socket = Arc::clone(&socket);
-                let tunnel = Arc::clone(&tunnel);
-                let dns_runtime = dns_runtime.clone();
-                let inbound_name = inbound_name.clone();
-                let inbound_user = inbound_user.clone();
-                let special_proxy = special_proxy.clone();
-                let special_rules = special_rules.clone();
-                let fragments = Arc::clone(&fragments);
-                thread::spawn(move || {
-                    if let Err(err) = handle_socks_udp_packet(
-                        socket,
-                        peer_addr,
-                        payload,
-                        fragments,
-                        tunnel,
-                        inbound_name,
-                        inbound_user,
-                        special_proxy,
-                        special_rules,
-                        dns_runtime,
-                    ) {
-                        let message = format!("socks udp relay error: {err}");
-                        eprintln!("{message}");
-                        push_log(LogLevel::Error, message);
-                    }
+                udp_queue.push(UdpDispatchTask::Socks {
+                    socket: Arc::clone(&socket),
+                    peer_addr,
+                    payload,
+                    fragments: Arc::clone(&fragments),
+                    tunnel: Arc::clone(&tunnel),
+                    inbound_name: inbound_name.clone(),
+                    inbound_user: inbound_user.clone(),
+                    special_proxy: special_proxy.clone(),
+                    special_rules: special_rules.clone(),
+                    dns_runtime: dns_runtime.clone(),
                 });
             }
-            Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(10));
-            }
+            Err(err) if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) => {}
             Err(err) => {
                 let message = format!("socks udp listener recv error: {err}");
                 eprintln!("{message}");

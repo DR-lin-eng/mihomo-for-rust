@@ -147,13 +147,20 @@ enum RunLoopExit {
 fn render_version_output() -> String {
     let rust_version = option_env!("MIHOMO_RUSTC_VERSION").unwrap_or("rustc unknown");
     let build_time = option_env!("MIHOMO_BUILD_TIME").unwrap_or("unknown time");
+    let variants = mihomo_runtime::build_runtime_plan(&mihomo_config::BootOptions::default())
+        .optimization_variants
+        .into_iter()
+        .map(|variant| variant.as_str())
+        .collect::<Vec<_>>()
+        .join(",");
     format!(
-        "Mihomo Meta {} {} {} with {} {}\n",
+        "Mihomo Meta {} {} {} with {} {} variants={}\n",
         env!("CARGO_PKG_VERSION"),
         std::env::consts::OS,
         std::env::consts::ARCH,
         rust_version,
         build_time,
+        variants,
     )
 }
 

@@ -15,6 +15,8 @@ use crate::{connect_target, CandidateState, ExecutionError, RuntimeRegistry};
 pub enum TcpRelayStrategy {
     BufferedCopy,
     ZeroCopyPreferred,
+    PlatformZeroCopyRequired,
+    OpenWrtFlowOffloadPreferred,
 }
 
 #[derive(Debug)]
@@ -54,8 +56,11 @@ pub struct TcpRelayStats {
 
 impl TcpRelayStrategy {
     pub fn for_current_platform() -> Self {
-        if current_capabilities().supports_zero_copy_tcp {
+        let caps = current_capabilities();
+        if caps.supports_zero_copy_tcp {
             Self::ZeroCopyPreferred
+        } else if caps.supports_openwrt_flow_offload {
+            Self::OpenWrtFlowOffloadPreferred
         } else {
             Self::BufferedCopy
         }
@@ -172,7 +177,7 @@ where
     W: Write + ?Sized,
 {
     let mut total = 0_u64;
-    let mut buf = [0_u8; 16 * 1024];
+    let mut buf = [0_u8; 64 * 1024];
     loop {
         let read = reader.read(&mut buf)?;
         if read == 0 {
@@ -333,7 +338,10 @@ mod tests {
         let strategy = TcpRelayStrategy::for_current_platform();
         assert!(matches!(
             strategy,
-            TcpRelayStrategy::BufferedCopy | TcpRelayStrategy::ZeroCopyPreferred
+            TcpRelayStrategy::BufferedCopy
+                | TcpRelayStrategy::ZeroCopyPreferred
+                | TcpRelayStrategy::PlatformZeroCopyRequired
+                | TcpRelayStrategy::OpenWrtFlowOffloadPreferred
         ));
     }
 
