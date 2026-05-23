@@ -1,0 +1,26 @@
+[workspace]
+members = [
+    "crates/mihomo-api",
+    "crates/mihomo-app",
+    "crates/mihomo-buf",
+    "crates/mihomo-config",
+    "crates/mihomo-core",
+    "crates/mihomo-dns",
+    "crates/mihomo-inbound",
+    "crates/mihomo-outbound",
+    "crates/mihomo-platform",
+    "crates/mihomo-rules",
+    "crates/mihomo-runtime",
+    "crates/mihomo-transport",
+    "crates/mihomo-tun",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/MetaCubeX/mihomo"
+version = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"

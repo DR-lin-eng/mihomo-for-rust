@@ -1,0 +1,31 @@
+[package]
+name = "mihomo-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+mihomo-core = { path = "../mihomo-core" }
+mihomo-config = { path = "../mihomo-config" }
+mihomo-dns = { path = "../mihomo-dns" }
+mihomo-inbound = { path = "../mihomo-inbound" }
+mihomo-outbound = { path = "../mihomo-outbound" }
+mihomo-runtime = { path = "../mihomo-runtime" }
+mihomo-rules = { path = "../mihomo-rules" }
+libc = "0.2"
+rustls = "0.21"
+rustls-pemfile = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+sha1 = "0.10"
+
+[dev-dependencies]
+ mihomo-transport = { path = "../mihomo-transport" }
+rcgen = "0.13"
+
+[lib]
+path = "src/lib.rs"

@@ -1,0 +1,15 @@
+[package]
+name = "mihomo-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mihomo-inbound = { path = "../mihomo-inbound" }
+mihomo-outbound = { path = "../mihomo-outbound" }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+
+[lib]
+path = "src/lib.rs"

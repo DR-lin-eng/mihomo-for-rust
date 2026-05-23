@@ -1,0 +1,15 @@
+[package]
+name = "mihomo-dns"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = "0.22"
+mihomo-config = { path = "../mihomo-config" }
+mihomo-core = { path = "../mihomo-core" }
+mihomo-rules = { path = "../mihomo-rules" }
+
+[lib]
+path = "src/lib.rs"

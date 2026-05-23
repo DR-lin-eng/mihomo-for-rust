@@ -21,8 +21,22 @@ vendor
 # macOS file
 .DS_Store
 
+# Local dependency caches
+/.gomodcache/
+
 # test suite
 test/config/cache*
 /output
 .vscode/
 .fleet/
+/rust/target
+/rust/.nextest/
+/rust/coverage/
+/rust/tarpaulin-report/
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+*.stderr
+*.stdout
+/.toolchain/

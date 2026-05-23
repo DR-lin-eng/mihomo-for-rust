@@ -1,0 +1,30 @@
+[package]
+name = "mihomo-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = "0.22"
+mihomo-buf = { path = "../mihomo-buf" }
+mihomo-config = { path = "../mihomo-config" }
+mihomo-core = { path = "../mihomo-core" }
+mihomo-dns = { path = "../mihomo-dns" }
+mihomo-inbound = { path = "../mihomo-inbound" }
+mihomo-outbound = { path = "../mihomo-outbound" }
+mihomo-platform = { path = "../mihomo-platform" }
+mihomo-rules = { path = "../mihomo-rules" }
+mihomo-transport = { path = "../mihomo-transport" }
+mihomo-tun = { path = "../mihomo-tun" }
+regex = "1"
+serde_yaml = "0.9"
+ureq = "2"
+url = "2"
+
+[dev-dependencies]
+rcgen = "0.13"
+rustls = { version = "0.21", features = ["dangerous_configuration"] }
+
+[lib]
+path = "src/lib.rs"

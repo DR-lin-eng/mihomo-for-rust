@@ -1,0 +1,46 @@
+[package]
+name = "mihomo-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = "0.22"
+blake3 = "1"
+curve25519-dalek = "4"
+ml-kem = "=0.3.0-rc.1"
+mihomo-api = { path = "../mihomo-api" }
+mihomo-buf = { path = "../mihomo-buf" }
+mihomo-config = { path = "../mihomo-config" }
+mihomo-core = { path = "../mihomo-core" }
+mihomo-dns = { path = "../mihomo-dns" }
+mihomo-inbound = { path = "../mihomo-inbound" }
+mihomo-runtime = { path = "../mihomo-runtime" }
+mihomo-rules = { path = "../mihomo-rules" }
+mihomo-transport = { path = "../mihomo-transport" }
+rand_core = { version = "0.6", features = ["getrandom"] }
+rustls = { version = "0.21", features = ["dangerous_configuration"] }
+rustls-pemfile = "1"
+serde_json = "1"
+serde_yaml = "0.9"
+signal-hook = "0.3"
+sha1 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "mihomo-app"
+path = "src/main.rs"
+
+[dev-dependencies]
+hmac = "0.12"
+rand_010 = { package = "rand", version = "0.10" }
+rcgen = "0.13"
+sha2 = "0.10"
+russh = "0.60.3"
+ssh-key = "0.6"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "io-util", "time"] }
