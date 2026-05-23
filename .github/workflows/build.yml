@@ -11,12 +11,12 @@ on:
       - "README.md"
       - ".github/ISSUE_TEMPLATE/**"
     branches:
-      - Alpha
+      - Meta
     tags:
       - "v*"
   pull_request:
     branches:
-      - Alpha
+      - Meta
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -35,6 +35,7 @@ jobs:
           - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v2, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: shell }
           - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v3, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v3", smoke: shell }
           - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, output: linux-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
+          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, output: openwrt-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
           - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v1, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
           - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v2, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: shell }
           - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v3, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v3", smoke: shell }
@@ -67,6 +68,12 @@ jobs:
       - name: Compile Rust tests
         if: ${{ matrix.jobs.verify == 'test' }}
         run: cargo test --manifest-path rust/Cargo.toml --workspace --no-run
+
+      - name: Install musl toolchain
+        if: ${{ matrix.jobs.target == 'aarch64-unknown-linux-musl' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
 
       - name: Build Rust binary
         env:
@@ -205,18 +212,17 @@ jobs:
           git fetch --tags
           echo "PREVERSION=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
 
-      - name: Force push Alpha branch to Meta
+      - name: Refresh Meta branch
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          git fetch origin Alpha:Alpha
-          git push origin Alpha:Meta --force
+          git fetch origin Meta:Meta
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tag the commit on Alpha
+      - name: Tag the commit on Meta
         run: |
-          git checkout Alpha
+          git checkout Meta
           git tag ${{ github.event.inputs.version }}
           git push origin ${{ github.event.inputs.version }}
         env:

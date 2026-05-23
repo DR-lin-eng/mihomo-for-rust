@@ -205,7 +205,7 @@ pub struct TuicServerConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct SnifferProtocolConfig {
-    #[serde(default, rename = "ports")]
+    #[serde(default, rename = "ports", deserialize_with = "deserialize_string_list")]
     pub ports: Vec<String>,
     #[serde(default, rename = "override-destination")]
     pub override_destination: Option<bool>,
@@ -644,7 +644,76 @@ where
 }
 
 pub fn parse_runtime_config_document(input: &str) -> Result<RuntimeConfigDocument, serde_yaml::Error> {
-    serde_yaml::from_str(input)
+    let mut value = serde_yaml::from_str::<Value>(input)?;
+    expand_yaml_merge_keys(&mut value);
+    serde_yaml::from_value(value)
+}
+
+fn expand_yaml_merge_keys(value: &mut Value) {
+    match value {
+        Value::Mapping(mapping) => expand_yaml_mapping_merge_keys(mapping),
+        Value::Sequence(sequence) => {
+            for item in sequence {
+                expand_yaml_merge_keys(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn expand_yaml_mapping_merge_keys(mapping: &mut serde_yaml::Mapping) {
+    for value in mapping.values_mut() {
+        expand_yaml_merge_keys(value);
+    }
+
+    let merge_key = Value::String("<<".to_owned());
+    let Some(mut merge_value) = mapping.remove(&merge_key) else {
+        return;
+    };
+    expand_yaml_merge_keys(&mut merge_value);
+
+    let mut merged_entries = Vec::new();
+    collect_merged_mapping_entries(&merge_value, &mut merged_entries);
+    for (key, value) in merged_entries {
+        mapping.entry(key).or_insert(value);
+    }
+}
+
+fn collect_merged_mapping_entries(
+    value: &Value,
+    entries: &mut Vec<(Value, Value)>,
+) {
+    match value {
+        Value::Mapping(mapping) => {
+            for (key, value) in mapping {
+                entries.push((key.clone(), value.clone()));
+            }
+        }
+        Value::Sequence(sequence) => {
+            for item in sequence {
+                collect_merged_mapping_entries(item, entries);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn deserialize_string_list<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let values = Vec::<Value>::deserialize(deserializer)?;
+    values
+        .into_iter()
+        .map(|value| match value {
+            Value::String(value) => Ok(value),
+            Value::Number(value) => Ok(value.to_string()),
+            Value::Bool(value) => Ok(value.to_string()),
+            other => Err(serde::de::Error::custom(format!(
+                "invalid string list item: {other:?}"
+            ))),
+        })
+        .collect()
 }
 
 impl Command {
@@ -1190,6 +1259,57 @@ proxy-groups:
             document.validate().unwrap_err(),
             ConfigValidationError::UnsupportedProxyGroupType("relay".into())
         );
+    }
+
+    #[test]
+    fn runtime_config_document_expands_yaml_merge_keys() {
+        let document = parse_runtime_config_document(
+            r#"
+p: &p
+  type: http
+  interval: 86400
+
+rule-anchor:
+  IPCIDR: &IPCIDR
+    type: http
+    behavior: ipcidr
+    format: mrs
+
+proxy-providers:
+  airport1:
+    <<: *p
+    url: https://example.com/sub
+    path: ./providers/airport1.yaml
+
+rule-providers:
+  cn_ip:
+    <<: *IPCIDR
+    path: ./rules/cn_ip.mrs
+    url: https://example.com/cn_ip.mrs
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(document.proxy_providers["airport1"].provider_type, "http");
+        assert_eq!(document.proxy_providers["airport1"].interval, 86400);
+        assert_eq!(document.rule_providers["cn_ip"].provider_type, "http");
+        assert_eq!(document.rule_providers["cn_ip"].behavior, "ipcidr");
+        assert_eq!(document.rule_providers["cn_ip"].format, "mrs");
+    }
+
+    #[test]
+    fn sniffer_ports_accept_numbers_and_strings() {
+        let document = parse_runtime_config_document(
+            r#"
+sniffer:
+  sniff:
+    HTTP:
+      ports: [80, "8080-8880"]
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(document.sniffer.sniff["HTTP"].ports, vec!["80", "8080-8880"]);
     }
 
     fn unique_temp_dir() -> PathBuf {

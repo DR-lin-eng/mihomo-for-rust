@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
+use fancy_regex::Regex;
 use mihomo_config::RuntimeConfigDocument;
 use mihomo_outbound::{
     parse_provider_payload_document, GroupDefinition, OutboundDefinition, OutboundKind,
     ProxyProviderOverride, ProxyProviderVehicleType,
 };
-use regex::Regex;
 
 use crate::{
     assemble_proxy_topology, build_runtime_groups, AssembledProxyTopology, RuntimeGroup,
@@ -328,7 +328,11 @@ fn collect_group_provider_members(
                 let mut seen = BTreeMap::<String, ()>::new();
                 for filter in &filters {
                     for member in &provider.members {
-                        if filter.is_match(&member.name) && !seen.contains_key(&member.name) {
+                        if filter
+                            .is_match(&member.name)
+                            .map_err(|err| RegistryError::Regex(err.to_string()))?
+                            && !seen.contains_key(&member.name)
+                        {
                             seen.insert(member.name.clone(), ());
                             new_members.push(member.clone());
                         }
@@ -344,7 +348,11 @@ fn collect_group_provider_members(
         let mut seen = BTreeMap::<String, ()>::new();
         for filter in &filters {
             for member in &proxies {
-                if filter.is_match(&member.name) && !seen.contains_key(&member.name) {
+                if filter
+                    .is_match(&member.name)
+                    .map_err(|err| RegistryError::Regex(err.to_string()))?
+                    && !seen.contains_key(&member.name)
+                {
                     seen.insert(member.name.clone(), ());
                     reordered.push(member.clone());
                 }
@@ -360,7 +368,11 @@ fn collect_group_provider_members(
     }
 
     if !exclude_filters.is_empty() {
-        proxies.retain(|member| !exclude_filters.iter().any(|regex| regex.is_match(&member.name)));
+        proxies.retain(|member| {
+            !exclude_filters
+                .iter()
+                .any(|regex| regex.is_match(&member.name).unwrap_or(false))
+        });
     }
     if !exclude_types.is_empty() {
         proxies.retain(|member| {
@@ -444,7 +456,11 @@ fn materialize_provider_members(
         let mut filtered = Vec::new();
         for filter in &filters {
             for proxy in &materialized {
-                if filter.is_match(proxy.name()) && !seen.contains_key(proxy.name()) {
+                if filter
+                    .is_match(proxy.name())
+                    .map_err(|err| RegistryError::Regex(err.to_string()))?
+                    && !seen.contains_key(proxy.name())
+                {
                     seen.insert(proxy.name().to_owned(), ());
                     filtered.push(proxy.clone());
                 }
@@ -455,7 +471,11 @@ fn materialize_provider_members(
     }
 
     for proxy in materialized {
-        if !exclude_filters.is_empty() && exclude_filters.iter().any(|regex| regex.is_match(proxy.name())) {
+        if !exclude_filters.is_empty()
+            && exclude_filters
+                .iter()
+                .any(|regex| regex.is_match(proxy.name()).unwrap_or(false))
+        {
             continue;
         }
         if !exclude_types.is_empty()
@@ -666,6 +686,41 @@ proxy-groups:
             RegistryError::Regex(_) => {}
             other => panic!("expected regex error, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn group_filter_supports_lookaround_patterns() {
+        let document = parse_runtime_config_document(
+            r#"
+proxy-providers:
+  provider1:
+    type: inline
+    payload:
+      - type: direct
+        name: 香港-Hy2
+      - type: direct
+        name: 香港-vless
+      - type: direct
+        name: 套餐说明
+proxy-groups:
+  - name: auto
+    type: select
+    use: [provider1]
+    filter: "^(?!.*(套餐)).*$"
+  - name: hk-hy2
+    type: select
+    use: [provider1]
+    filter: "^(?=.*(香港|HK)).*(Hy2).*$"
+"#,
+        )
+        .unwrap();
+
+        let registry = build_runtime_registry(&document).unwrap();
+        assert_eq!(
+            registry.groups["auto"].candidate_names,
+            vec!["香港-Hy2", "香港-vless"]
+        );
+        assert_eq!(registry.groups["hk-hy2"].candidate_names, vec!["香港-Hy2"]);
     }
 
     #[test]

@@ -739,6 +739,11 @@ fn parse_rule_with_target(raw: &str, need_target: bool) -> Result<RuleDefinition
     let Some(rule_type_raw) = segments.first().copied() else {
         return Err(RuleError::MissingType(raw.to_owned()));
     };
+
+    if rule_type_raw.eq_ignore_ascii_case("GEOIP") {
+        return parse_geoip_rule(raw, segments, need_target);
+    }
+
     let rule_type = parse_rule_type(rule_type_raw)?;
 
     let mut payload = String::new();
@@ -798,6 +803,45 @@ fn parse_rule_with_target(raw: &str, need_target: bool) -> Result<RuleDefinition
             })
         }
     }
+}
+
+fn parse_geoip_rule(
+    raw: &str,
+    mut segments: Vec<&str>,
+    need_target: bool,
+) -> Result<RuleDefinition, RuleError> {
+    if segments.len() < 2 {
+        return Err(RuleError::MissingPayload(raw.to_owned()));
+    }
+
+    let payload = segments.get(1).copied().unwrap_or_default();
+    if payload.is_empty() {
+        return Err(RuleError::MissingPayload(raw.to_owned()));
+    }
+
+    if !payload.eq_ignore_ascii_case("CN") {
+        return Err(RuleError::UnsupportedRuleType("GEOIP".into()));
+    }
+
+    let target = if need_target {
+        segments
+            .get(2)
+            .copied()
+            .unwrap_or_default()
+            .to_owned()
+    } else {
+        String::new()
+    };
+
+    if need_target && target.is_empty() {
+        return Err(RuleError::MissingTarget(raw.to_owned()));
+    }
+
+    Ok(RuleDefinition {
+        rule_type: RuleType::RuleSet,
+        payload: "CN_IP".to_owned(),
+        target,
+    })
 }
 
 fn parse_rule_type(raw: &str) -> Result<RuleType, RuleError> {
@@ -1919,9 +1963,21 @@ mod tests {
     }
 
     #[test]
-    fn parse_rule_rejects_unsupported_type() {
+    fn parse_geoip_cn_rule_maps_to_cn_ip_ruleset() {
         assert_eq!(
-            parse_rule("GEOIP,CN,DIRECT").unwrap_err(),
+            parse_rule("GEOIP,CN,DIRECT").unwrap(),
+            RuleDefinition {
+                rule_type: RuleType::RuleSet,
+                payload: "CN_IP".into(),
+                target: "DIRECT".into(),
+            }
+        );
+    }
+
+    #[test]
+    fn parse_geoip_rule_rejects_unsupported_region() {
+        assert_eq!(
+            parse_rule("GEOIP,US,DIRECT").unwrap_err(),
             RuleError::UnsupportedRuleType("GEOIP".into())
         );
     }

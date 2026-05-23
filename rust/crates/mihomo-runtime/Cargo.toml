@@ -7,6 +7,7 @@ repository.workspace = true
 
 [dependencies]
 base64 = "0.22"
+fancy-regex = "0.14"
 mihomo-buf = { path = "../mihomo-buf" }
 mihomo-config = { path = "../mihomo-config" }
 mihomo-core = { path = "../mihomo-core" }

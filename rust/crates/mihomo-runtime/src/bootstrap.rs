@@ -299,11 +299,28 @@ pub fn load_provider_content_sources_from_home(
     for provider in document.proxy_providers.values() {
         match provider.vehicle_type() {
             Some(mihomo_outbound::ProxyProviderVehicleType::File) => {
+                if provider.url.is_empty() && provider.path.is_empty() {
+                    continue;
+                }
+                if !provider.url.is_empty() {
+                    let tunnel = build_provider_fetch_tunnel(document, &sources);
+                    let _ = refresh_http_proxy_provider_source(
+                        &mut sources,
+                        home_dir,
+                        provider,
+                        &tunnel,
+                    );
+                    continue;
+                }
                 if provider.path.is_empty() {
                     continue;
                 }
                 let path = resolve_home_relative(home_dir, &provider.path);
-                let content = fs::read(&path)?;
+                let content = match fs::read(&path) {
+                    Ok(content) => content,
+                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+                    Err(err) => return Err(err),
+                };
                 sources.file_blobs.insert(provider.path.clone(), content.clone());
                 if let Ok(text) = String::from_utf8(content) {
                     sources.file_contents.insert(provider.path.clone(), text);
@@ -324,11 +341,28 @@ pub fn load_provider_content_sources_from_home(
     for provider in document.rule_providers.values() {
         match provider.vehicle_type() {
             Some(mihomo_config::RuleProviderVehicleType::File) => {
+                if provider.url.is_empty() && provider.path.is_empty() {
+                    continue;
+                }
+                if !provider.url.is_empty() {
+                    let tunnel = build_provider_fetch_tunnel(document, &sources);
+                    let _ = refresh_http_rule_provider_source(
+                        &mut sources,
+                        home_dir,
+                        provider,
+                        &tunnel,
+                    );
+                    continue;
+                }
                 if provider.path.is_empty() {
                     continue;
                 }
                 let path = resolve_home_relative(home_dir, &provider.path);
-                let content = fs::read(&path)?;
+                let content = match fs::read(&path) {
+                    Ok(content) => content,
+                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+                    Err(err) => return Err(err),
+                };
                 sources.file_blobs.insert(provider.path.clone(), content.clone());
                 if let Ok(text) = String::from_utf8(content) {
                     sources.file_contents.insert(provider.path.clone(), text);
@@ -422,14 +456,19 @@ fn refresh_http_rule_provider_source(
     provider: &mihomo_config::RuleProviderDefinition,
     tunnel: &RuntimeTunnel,
 ) -> Result<(), BootstrapError> {
-    let content = fetch_http_provider_bytes(
+    let content = match fetch_http_provider_bytes(
         &provider.url,
         &provider.header,
         provider.size_limit,
         &provider.proxy,
         tunnel,
     )
-        .or_else(|_| read_http_provider_cache(home_dir, &provider.path))?;
+    .or_else(|_| read_http_provider_cache(home_dir, &provider.path))
+    {
+        Ok(content) => content,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(err) => return Err(err.into()),
+    };
     store_http_provider_content(
         home_dir,
         sources,
@@ -446,14 +485,19 @@ fn refresh_http_proxy_provider_source(
     provider: &mihomo_outbound::ProxyProviderDefinition,
     tunnel: &RuntimeTunnel,
 ) -> Result<(), BootstrapError> {
-    let content = fetch_http_provider_bytes(
+    let content = match fetch_http_provider_bytes(
         &provider.url,
         &provider.header,
         provider.size_limit,
         &provider.proxy,
         tunnel,
     )
-        .or_else(|_| read_http_provider_cache(home_dir, &provider.path))?;
+    .or_else(|_| read_http_provider_cache(home_dir, &provider.path))
+    {
+        Ok(content) => content,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(err) => return Err(err.into()),
+    };
     store_http_provider_content(
         home_dir,
         sources,
@@ -755,6 +799,34 @@ proxy-providers:
         .unwrap();
         assert!(sources.file_contents.contains_key("cache-provider.yaml"));
         assert_eq!(registry.providers["provider1"].members[0].name, "cached-direct");
+    }
+
+    #[test]
+    fn bootstrap_tolerates_missing_http_provider_cache() {
+        let temp = unique_temp_dir();
+        let (document, sources, registry) = bootstrap_from_yaml(
+            r#"
+proxy-providers:
+  provider1:
+    type: http
+    url: https://example.com/provider.yaml
+    path: cache-provider.yaml
+rule-providers:
+  rule1:
+    type: http
+    behavior: domain
+    format: mrs
+    url: https://example.com/rule-provider.mrs
+    path: cache-rules.mrs
+"#,
+            &temp,
+        )
+        .unwrap();
+        assert!(document.proxy_providers.contains_key("provider1"));
+        assert!(document.rule_providers.contains_key("rule1"));
+        assert!(!sources.file_contents.contains_key("cache-provider.yaml"));
+        assert!(!sources.file_contents.contains_key("cache-rules.mrs"));
+        assert!(registry.providers["provider1"].members.is_empty());
     }
 
     #[test]
