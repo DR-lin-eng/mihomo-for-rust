@@ -1,4 +1,4 @@
-# 写一半发现已经有一样的项目了。这里附上链接来帮大家指引 https://github.com/madeye/meow-rs
+### 写一半发现已经有一样的项目了。这里附上链接来帮大家指引 https://github.com/madeye/meow-rs。 虽然不排除这边会继续。毕竟这是热爱。为了u60 pro专门重构的mihomo项目。
 
 
 <h1 align="center">
