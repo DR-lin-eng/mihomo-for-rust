@@ -1,3 +1,6 @@
+# 写一半发现已经有一样的项目了。这里附上链接来帮大家指引 https://github.com/madeye/meow-rs
+
+
 <h1 align="center">
   <img src="Meta.png" alt="Meta Kennel" width="200">
   <br>Meta Kernel<br>
