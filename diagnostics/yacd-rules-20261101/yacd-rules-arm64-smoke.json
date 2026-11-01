@@ -1,0 +1,181 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "File Rules has RFC3339 updatedAt",
+      "passed": true,
+      "detail": {
+        "name": "File Rules",
+        "type": "Rule",
+        "vehicleType": "File",
+        "behavior": "Classical",
+        "format": "YamlRule",
+        "ruleCount": 1,
+        "updatedAt": "2000-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "name": "File Rules list and detail dates agree",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "HTTP Rules has RFC3339 updatedAt",
+      "passed": true,
+      "detail": {
+        "name": "HTTP Rules",
+        "type": "Rule",
+        "vehicleType": "HTTP",
+        "behavior": "Classical",
+        "format": "YamlRule",
+        "ruleCount": 1,
+        "updatedAt": "2001-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "name": "HTTP Rules list and detail dates agree",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Inline Rules has RFC3339 updatedAt",
+      "passed": true,
+      "detail": {
+        "name": "Inline Rules",
+        "type": "Rule",
+        "vehicleType": "Inline",
+        "behavior": "Classical",
+        "format": "YamlRule",
+        "ruleCount": 1,
+        "updatedAt": "2026-11-01T05:58:47.736Z"
+      }
+    },
+    {
+      "name": "Inline Rules list and detail dates agree",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "file provider exposes original mtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "cached HTTP provider exposes original mtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "GET keeps inline update time stable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "GET keeps cached HTTP mtime stable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "GET keeps file mtime stable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "inline refresh succeeds",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "inline refresh advances timestamp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "file refresh succeeds",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "file refresh updates date and count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "HTTP refresh succeeds",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "HTTP refresh updates date and count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid remote payload is rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid refresh preserves previous date",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid refresh preserves previous count",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid refresh preserves cache mtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "offline refresh can use cached rules",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "offline cache fallback preserves date",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "offline cache fallback preserves mtime",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "cold rule timestamps parse",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rule hit and miss times remain parseable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual match has a real hit timestamp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "tested rule has a real miss timestamp",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rule disabling works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "disabled flag remains visible",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "home": "/tmp/yacd-rules-eqb9gjm4",
+  "sha256": "116fed08e88c8ac1206983df293bab550fcea810162d82b0aa759dc28d1879dc"
+}

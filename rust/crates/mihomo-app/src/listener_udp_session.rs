@@ -1,6 +1,7 @@
 use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use mihomo_core::BoxedTcpStream;
@@ -57,9 +58,95 @@ pub(crate) struct SystemUdpSession {
     pub(super) proxy_stream: Option<BoxedTcpStream>,
     pub(super) pending_response: Option<(Vec<u8>, SocketAddr)>,
     pub(super) ss2022_udp_state: Option<mihomo_transport::Shadowsocks2022UdpState>,
+    pub(super) sniff_deferred: bool,
+    pub(super) close_signal: Option<Arc<AtomicBool>>,
+    pub(super) auto_interface_target: Option<SocketAddr>,
+    pub(super) prepared_target: Option<SocketAddr>,
+    pub(crate) receive_generation: u64,
+    pub(crate) idle_timeout: Option<Duration>,
+    pub(super) receive_barrier: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
 impl SystemUdpSession {
+    pub(crate) fn is_local_dns(&self) -> bool {
+        matches!(self.prepared_route, Some(PreparedUdpRoute::Dns))
+    }
+
+    pub(crate) fn receive_ready(&self) -> bool {
+        !self.sniff_deferred && self.prepared_route.is_some()
+    }
+
+    pub(crate) fn receiver_close_signal(&self) -> Option<Arc<AtomicBool>> {
+        self.close_signal.clone()
+    }
+
+    pub(crate) fn invalidate_association(&mut self) {
+        if let Some(signal) = &self.close_signal { signal.store(true, Ordering::Release); }
+    }
+
+    /// The receive clone never holds the sending session's mutex during I/O.
+    pub(crate) fn split_for_receive(&mut self) -> io::Result<Self> {
+        let socket = self.socket.try_clone()?;
+        socket.set_read_timeout(Some(Duration::from_millis(100)))?;
+        // Several protocols (including VLESS/VMess) expose write-only clones.
+        // The original must stay on the reader side so it can consume the
+        // response header and retain decoder state across UDP frames.
+        let proxy_stream = if let Some(stream) = self.proxy_stream.take() {
+            match stream.try_clone_box() {
+                Ok(writer) => { self.proxy_stream = Some(writer); Some(stream) }
+                Err(error) => { self.proxy_stream = Some(stream); return Err(error); }
+            }
+        } else { None };
+        if let Some(stream) = &proxy_stream {
+            // Protocol framing is retained by the cancellation-aware reader
+            // used by the TUN receiver across these short socket timeouts.
+            if stream.set_read_timeout(Some(Duration::from_millis(100))).is_err() {
+                stream.set_timeouts(Some(Duration::from_millis(100)), Some(Duration::from_secs(1)))?;
+            }
+        }
+        Ok(Self {
+            socket, smart_tracker: self.smart_tracker.clone(), tunnel: self.tunnel.clone(),
+            dns_runtime: self.dns_runtime.clone(), prepared_plan: self.prepared_plan.clone(),
+            prepared_route: self.prepared_route.clone(), proxy_control: None, proxy_stream,
+            pending_response: None, ss2022_udp_state: None, sniff_deferred: false,
+            close_signal: self.close_signal.clone(), auto_interface_target: self.auto_interface_target,
+            prepared_target: self.prepared_target, receive_generation: self.receive_generation,
+            idle_timeout: self.idle_timeout,
+            receive_barrier: None,
+        })
+    }
+
+    pub(crate) fn wrap_receive_stream(&mut self, wrap: impl FnOnce(BoxedTcpStream) -> BoxedTcpStream) {
+        if let Some(stream) = self.proxy_stream.take() { self.proxy_stream = Some(wrap(stream)); }
+    }
+
+    pub(crate) fn receive_shutdown_handle(&self) -> io::Result<Option<BoxedTcpStream>> {
+        self.proxy_stream.as_ref().map(|stream| stream.try_clone_box()).transpose()
+    }
+
+    pub(crate) fn set_receive_barrier(&mut self, barrier: Arc<dyn Fn() + Send + Sync>) {
+        self.receive_barrier = Some(barrier);
+    }
+
+    pub(super) fn reset_route_transport(&mut self) -> io::Result<()> {
+        let bind_addr = SocketAddr::new(self.socket.local_addr()?.ip(), 0);
+        let read_timeout = self.socket.read_timeout()?;
+        let write_timeout = self.socket.write_timeout()?;
+        let socket = mihomo_core::bind_outbound_udp(bind_addr)?;
+        socket.set_read_timeout(read_timeout)?;
+        socket.set_write_timeout(write_timeout)?;
+        self.socket = socket;
+        self.proxy_control = None;
+        self.proxy_stream = None;
+        self.prepared_plan = None;
+        self.prepared_route = None;
+        self.prepared_target = None;
+        self.pending_response = None;
+        self.ss2022_udp_state = None;
+        self.auto_interface_target = None;
+        Ok(())
+    }
+
     pub(super) fn prepared_matches(
         &self,
         plan: &ExecutionPlan,
@@ -281,17 +368,30 @@ impl SystemUdpSession {
             proxy_stream: None,
             pending_response: None,
             ss2022_udp_state: None,
+            sniff_deferred: false,
+            close_signal: None,
+            auto_interface_target: None,
+            prepared_target: None,
+            receive_generation: 0,
+            idle_timeout: None,
+            receive_barrier: None,
         })
     }
 
     pub(crate) fn recv_once(&mut self) -> io::Result<Option<(Vec<u8>, SocketAddr)>> {
+        if self.sniff_deferred || self.is_closed() { return Ok(None); }
         let result=self.recv_once_inner();
+        if self.is_closed() { return Ok(None); }
         match &result {
             Ok(Some((payload,_))) => {if let Some(tracker)=&self.smart_tracker {tracker.record_download(payload.len());}},
             Err(error) if matches!(error.kind(),io::ErrorKind::ConnectionRefused|io::ErrorKind::ConnectionReset) => {if let Some(tracker)=&self.smart_tracker {tracker.record_failure();}},
             _=>{}
         }
         result
+    }
+
+    pub(super) fn is_closed(&self) -> bool {
+        self.close_signal.as_ref().is_some_and(|signal| signal.load(Ordering::Acquire))
     }
 
     fn recv_once_inner(&mut self) -> io::Result<Option<(Vec<u8>, SocketAddr)>> {
@@ -309,7 +409,7 @@ impl SystemUdpSession {
             }
         }
 
-        let mut buf = [0_u8; 64 * 1024];
+        let mut buf = vec![0_u8; 64 * 1024];
         match self.socket.recv_from(&mut buf) {
             Ok((read, remote)) => match &self.prepared_route {
                 Some(PreparedUdpRoute::Socks5 { .. }) => {

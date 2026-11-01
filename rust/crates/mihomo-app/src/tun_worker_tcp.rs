@@ -5,6 +5,16 @@ struct CurrentTcpFlow {
 }
 
 impl CurrentTcpFlow {
+    fn poll_timers(&self, writer: &Arc<Mutex<File>>) -> io::Result<()> {
+        let stack = self.handle.stack();
+        let mut stack = stack.lock()
+            .map_err(|_| io::Error::other("tun tcp stack mutex poisoned"))?;
+        if stack.poll_due() {
+            write_frames(writer, &stack.drain_outgoing())?;
+        }
+        Ok(())
+    }
+
     fn new(
         spec: &TunRuntimeSpec,
         parsed_tcp: &ParsedTunTcpPacket,

@@ -72,6 +72,14 @@ impl TunRuntimeSpec {
             .any(|entry| dns_hijack_matches(entry, destination))
     }
 
+    pub fn should_hijack_dns_for_network(&self, network: NetworkKind, destination: SocketAddr) -> bool {
+        self.config.dns_hijack.iter().any(|entry| {
+            let entry = entry.trim();
+            let entry_network = if entry.starts_with("tcp://") { NetworkKind::Tcp } else { NetworkKind::Udp };
+            network == entry_network && dns_hijack_matches(entry, destination)
+        })
+    }
+
     pub fn allows_interface(&self, name: &str) -> bool {
         allows_value(&self.config.include_interface, &self.config.exclude_interface, name)
     }

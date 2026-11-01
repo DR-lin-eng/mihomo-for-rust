@@ -7,9 +7,7 @@ use smoltcp::socket::tcp::{
 };
 use smoltcp::wire::{HardwareAddress, IpCidr, IpListenEndpoint};
 
-use crate::tun_tcp_packet::{
-    encode_tun_tcp_packet, ParsedTunTcpPacket, TunTcpFlowKey,
-};
+use crate::tun_tcp_packet::{encode_tun_tcp_packet, ParsedTunTcpPacket, TunTcpFlowKey};
 
 use super::device::TunTcpDevice;
 
@@ -48,15 +46,33 @@ impl TunTcpPassiveStackSignal {
             .map_err(|_| io::Error::other("tun tcp signal mutex poisoned"))
     }
 
-    pub(crate) fn wait_for_change(&self, generation: u64) -> io::Result<()> {
+    pub(crate) fn wait_for_change_until(
+        &self,
+        generation: u64,
+        deadline: Option<std::time::Instant>,
+    ) -> io::Result<()> {
         let (state, ready) = &*self.state;
         let mut current = state
             .lock()
             .map_err(|_| io::Error::other("tun tcp signal mutex poisoned"))?;
         while *current == generation {
-            current = ready
-                .wait(current)
-                .map_err(|_| io::Error::other("tun tcp signal mutex poisoned"))?;
+            if let Some(deadline) = deadline {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                if remaining.is_zero() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "TUN stream I/O timed out",
+                    ));
+                }
+                let result = ready
+                    .wait_timeout(current, remaining)
+                    .map_err(|_| io::Error::other("tun tcp signal mutex poisoned"))?;
+                current = result.0;
+            } else {
+                current = ready
+                    .wait(current)
+                    .map_err(|_| io::Error::other("tun tcp signal mutex poisoned"))?;
+            }
         }
         Ok(())
     }
@@ -133,6 +149,20 @@ impl TunTcpPassiveStack {
         );
     }
 
+    pub(crate) fn poll_due(&mut self) -> bool {
+        let now = smoltcp::time::Instant::now();
+        if !self
+            .iface
+            .poll_delay(now, &self.sockets)
+            .is_some_and(|delay| delay.total_millis() == 0)
+        {
+            return false;
+        }
+        self.poll();
+        self.signal.notify();
+        true
+    }
+
     pub(crate) fn drain_outgoing(&mut self) -> Vec<Vec<u8>> {
         let mut emitted = Vec::new();
         while let Some(packet) = self.device.dequeue_sent() {
@@ -166,10 +196,15 @@ impl TunTcpPassiveStack {
 
     pub(crate) fn send_application(&mut self, data: &[u8]) -> io::Result<usize> {
         let socket = self.sockets.get_mut::<SmolTcpSocket>(self.handle);
-        let written = socket
-            .send_slice(data)
-            .map_err(|err| io::Error::other(format!("tun tcp send failed: {err:?}")))?;
-        self.signal.notify();
+        let written = socket.send_slice(data).map_err(|err| {
+            io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                format!("tun tcp send failed: {err:?}"),
+            )
+        })?;
+        if written > 0 {
+            self.signal.notify();
+        }
         Ok(written)
     }
 
@@ -179,12 +214,19 @@ impl TunTcpPassiveStack {
         self.signal.notify();
     }
 
+    pub(crate) fn abort(&mut self) {
+        self.sockets.get_mut::<SmolTcpSocket>(self.handle).abort();
+        self.signal.notify();
+    }
+
     pub(crate) fn receive_closed(&self) -> bool {
         let socket = self.sockets.get::<SmolTcpSocket>(self.handle);
         !socket.may_recv() && !socket.can_recv()
     }
 
     pub(crate) fn is_finished(&self) -> bool {
-        self.receive_closed() || matches!(self.state(), SmolTcpState::Closed)
+        // A peer FIN only closes the read half. Keep the stack until its
+        // queued reply and FIN are acknowledged, including retransmissions.
+        matches!(self.state(), SmolTcpState::Closed)
     }
 }

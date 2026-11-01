@@ -76,7 +76,7 @@ where
     L: TcpStream + ?Sized,
     R: TcpStream + ?Sized,
 {
-    relay_bidirectional_with_counters(left, right, strategy, None, None)
+    relay_bidirectional_with_counters(left, right, strategy, None, None, None)
 }
 
 pub(crate) fn relay_bidirectional_with_counters<L, R>(
@@ -85,6 +85,7 @@ pub(crate) fn relay_bidirectional_with_counters<L, R>(
     _strategy: TcpRelayStrategy,
     left_to_right_counter: Option<&AtomicU64>,
     right_to_left_counter: Option<&AtomicU64>,
+    traffic: Option<&crate::traffic::TrafficMeter>,
 ) -> io::Result<TcpRelayStats>
 where
     L: TcpStream + ?Sized,
@@ -96,6 +97,7 @@ where
             right,
             left_to_right_counter,
             right_to_left_counter,
+            traffic,
         );
     };
     let Ok(mut right_writer) = right.try_clone_box() else {
@@ -104,17 +106,30 @@ where
             right,
             left_to_right_counter,
             right_to_left_counter,
+            traffic,
         );
     };
 
     let (left_to_right, right_to_left) = thread::scope(|scope| -> io::Result<(u64, u64)> {
         let right_to_left_worker = scope.spawn(|| -> io::Result<u64> {
-            let transferred = copy_one_way(right, &mut *left_writer, right_to_left_counter)?;
+            let transferred = copy_one_way(
+                right,
+                &mut *left_writer,
+                right_to_left_counter,
+                traffic,
+                false,
+            )?;
             let _ = left_writer.shutdown_write();
             Ok(transferred)
         });
 
-        let left_to_right = copy_one_way(left, &mut *right_writer, left_to_right_counter)?;
+        let left_to_right = copy_one_way(
+            left,
+            &mut *right_writer,
+            left_to_right_counter,
+            traffic,
+            true,
+        )?;
         let _ = right_writer.shutdown_write();
         let right_to_left = join_copy_worker(right_to_left_worker)?;
         Ok((left_to_right, right_to_left))
@@ -130,14 +145,15 @@ fn relay_bidirectional_fallback<L, R>(
     right: &mut R,
     left_to_right_counter: Option<&AtomicU64>,
     right_to_left_counter: Option<&AtomicU64>,
+    traffic: Option<&crate::traffic::TrafficMeter>,
 ) -> io::Result<TcpRelayStats>
 where
     L: TcpStream + ?Sized,
     R: TcpStream + ?Sized,
 {
-    let left_to_right = copy_one_way(left, right, left_to_right_counter)?;
+    let left_to_right = copy_one_way(left, right, left_to_right_counter, traffic, true)?;
     let _ = right.shutdown_write();
-    let right_to_left = copy_one_way(right, left, right_to_left_counter)?;
+    let right_to_left = copy_one_way(right, left, right_to_left_counter, traffic, false)?;
     let _ = left.shutdown_write();
     Ok(TcpRelayStats {
         left_to_right,
@@ -145,15 +161,10 @@ where
     })
 }
 
-fn join_copy_worker(
-    handle: thread::ScopedJoinHandle<'_, io::Result<u64>>,
-) -> io::Result<u64> {
+fn join_copy_worker(handle: thread::ScopedJoinHandle<'_, io::Result<u64>>) -> io::Result<u64> {
     match handle.join() {
         Ok(result) => result,
-        Err(panic) => Err(io::Error::new(
-            io::ErrorKind::Other,
-            panic_message(panic),
-        )),
+        Err(panic) => Err(io::Error::new(io::ErrorKind::Other, panic_message(panic))),
     }
 }
 
@@ -171,6 +182,8 @@ fn copy_one_way<R, W>(
     reader: &mut R,
     writer: &mut W,
     counter: Option<&AtomicU64>,
+    traffic: Option<&crate::traffic::TrafficMeter>,
+    upload: bool,
 ) -> io::Result<u64>
 where
     R: Read + ?Sized,
@@ -184,10 +197,26 @@ where
             writer.flush()?;
             return Ok(total);
         }
-        writer.write_all(&buf[..read])?;
-        total += read as u64;
-        if let Some(counter) = counter {
-            counter.fetch_add(read as u64, Ordering::Relaxed);
+        let mut offset = 0;
+        while offset < read {
+            let written = match writer.write(&buf[offset..read]) {
+                Ok(0) => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::WriteZero,
+                        "TCP relay write returned zero",
+                    ))
+                }
+                Ok(written) => written,
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) => return Err(error),
+            };
+            offset += written;
+            total += written as u64;
+            if let Some(traffic) = traffic {
+                traffic.record(upload, written as u64, counter);
+            } else if let Some(counter) = counter {
+                counter.fetch_add(written as u64, Ordering::Relaxed);
+            }
         }
     }
 }
@@ -231,14 +260,7 @@ pub fn forward_tcp_context_with_system_dialer(
     states: &std::collections::BTreeMap<String, CandidateState>,
     strategy: TcpRelayStrategy,
 ) -> Result<TcpRelayStats, TcpForwardError> {
-    forward_tcp_context_with_dialer(
-        registry,
-        target,
-        context,
-        states,
-        SystemTcpDialer,
-        strategy,
-    )
+    forward_tcp_context_with_dialer(registry, target, context, states, SystemTcpDialer, strategy)
 }
 
 #[cfg(test)]
@@ -249,7 +271,9 @@ mod tests {
 
     use mihomo_config::parse_runtime_config_document;
     use mihomo_core::{BoxedTcpStream, ConnectionContext, Metadata};
-    use mihomo_transport::{SocketOptions, TcpDialPurpose, TcpDialer, TransportError, TransportTarget};
+    use mihomo_transport::{
+        SocketOptions, TcpDialPurpose, TcpDialer, TransportError, TransportTarget,
+    };
 
     use crate::build_runtime_registry;
 
@@ -257,6 +281,113 @@ mod tests {
         forward_tcp_context_with_dialer, relay_bidirectional, TcpForwardError, TcpRelayStats,
         TcpRelayStrategy,
     };
+
+    struct ShortWriter {
+        remaining: usize,
+        zero: bool,
+    }
+    impl Write for ShortWriter {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if self.remaining == 0 {
+                return if self.zero {
+                    Ok(0)
+                } else {
+                    Err(io::ErrorKind::BrokenPipe.into())
+                };
+            }
+            let n = buf.len().min(self.remaining).min(3);
+            self.remaining -= n;
+            Ok(n)
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    #[test]
+    fn partial_writes_are_counted_live_even_if_the_next_write_fails() {
+        let traffic = crate::traffic::TrafficMeter::default();
+        let connection = std::sync::atomic::AtomicU64::new(0);
+        let error = super::copy_one_way(
+            &mut Cursor::new(b"abcdefghijklmnop"),
+            &mut ShortWriter {
+                remaining: 8,
+                zero: false,
+            },
+            Some(&connection),
+            Some(&traffic),
+            true,
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
+        assert_eq!(connection.load(std::sync::atomic::Ordering::Relaxed), 8);
+        assert_eq!(
+            (traffic.snapshot().up_total, traffic.snapshot().down_total),
+            (8, 0)
+        );
+    }
+    #[test]
+    fn short_writes_and_write_zero_preserve_direction_and_actual_byte_count() {
+        let traffic = crate::traffic::TrafficMeter::default();
+        assert_eq!(
+            super::copy_one_way(
+                &mut Cursor::new(b"abcdefgh"),
+                &mut ShortWriter {
+                    remaining: 99,
+                    zero: false
+                },
+                None,
+                Some(&traffic),
+                false
+            )
+            .unwrap(),
+            8
+        );
+        let error = super::copy_one_way(
+            &mut Cursor::new(b"abcdefgh"),
+            &mut ShortWriter {
+                remaining: 5,
+                zero: true,
+            },
+            None,
+            Some(&traffic),
+            false,
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::WriteZero);
+        assert_eq!(
+            (traffic.snapshot().up_total, traffic.snapshot().down_total),
+            (0, 13)
+        );
+    }
+    #[test]
+    fn data_forwarded_before_read_failure_stays_in_global_totals() {
+        struct BrokenReader {
+            read: bool,
+        }
+        impl Read for BrokenReader {
+            fn read(&mut self, b: &mut [u8]) -> io::Result<usize> {
+                if self.read {
+                    return Err(io::ErrorKind::ConnectionReset.into());
+                }
+                self.read = true;
+                b[..4].copy_from_slice(b"data");
+                Ok(4)
+            }
+        }
+        let traffic = crate::traffic::TrafficMeter::default();
+        let mut output = Vec::new();
+        let error = super::copy_one_way(
+            &mut BrokenReader { read: false },
+            &mut output,
+            None,
+            Some(&traffic),
+            true,
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);
+        assert_eq!(output, b"data");
+        assert_eq!(traffic.snapshot().up_total, 4);
+    }
 
     #[derive(Default)]
     struct MemoryDuplexState {
@@ -321,7 +452,8 @@ mod tests {
         let mut left = MemoryDuplex::new(b"hello");
         let mut right = MemoryDuplex::new(b"world");
 
-        let stats = relay_bidirectional(&mut left, &mut right, TcpRelayStrategy::BufferedCopy).unwrap();
+        let stats =
+            relay_bidirectional(&mut left, &mut right, TcpRelayStrategy::BufferedCopy).unwrap();
         assert_eq!(
             stats,
             TcpRelayStats {
@@ -507,7 +639,9 @@ proxies:
         assert_eq!(inbound.written(), b"server-data".to_vec());
 
         let upstream_writes = upstream.written();
-        assert!(upstream_writes.windows("CONNECT ".len()).any(|window| window == b"CONNECT "));
+        assert!(upstream_writes
+            .windows("CONNECT ".len())
+            .any(|window| window == b"CONNECT "));
         assert!(upstream_writes.ends_with(b"client-data"));
     }
 

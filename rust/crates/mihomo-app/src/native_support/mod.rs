@@ -133,7 +133,7 @@ fn build_top_level_tun_support_report(state: &BootstrapState) -> TunSupportRepor
                 if tun.config.auto_route && tun.config.auto_redirect {
                     "partially-supported-linux-auto-route-auto-redirect"
                 } else {
-                    "gap"
+                    "supported-passive-tcp-and-packet-udp"
                 }
             }
             "gvisor" => "gap",
@@ -245,7 +245,7 @@ fn build_top_level_tun_support_report(state: &BootstrapState) -> TunSupportRepor
     }
     if !tun.config.include_package.is_empty() || !tun.config.exclude_package.is_empty() {
         lines.push(format!(
-            "- package-filters include={} exclude={} status=gap",
+            "- package-filters include={} exclude={} status=inactive-on-linux",
             tun.config.include_package.len(),
             tun.config.exclude_package.len()
         ));

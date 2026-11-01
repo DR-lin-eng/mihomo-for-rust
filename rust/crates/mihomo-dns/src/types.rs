@@ -38,6 +38,7 @@ pub struct DnsRuntime {
     pub(crate) fallback_ip_matchers: Arc<Vec<FallbackIpMatcher>>,
     pub(crate) cache: Arc<HashMap<String, CachedAnswer>>,
     pub(crate) cache_order: Arc<VecDeque<String>>,
+    pub(crate) domain_mappings: crate::mapping::DomainMappings,
     pub(crate) fake_ip_state_path: Option<PathBuf>,
 }
 

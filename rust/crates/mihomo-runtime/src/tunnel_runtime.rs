@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream as NetTcpStream, ToSocketAddrs};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -30,6 +30,7 @@ use crate::healthcheck::{record_health_state, ProxyHealthSnapshot, ProxyHealthSt
 
 const RULE_FALLBACK_TARGET: &str = "COMPATIBLE";
 const DNS_RULES_PROXY: &str = "RULES";
+const UDP_CONNECTION_IDLE_TIMEOUT_MS: u64 = 30_000;
 
 pub struct RuntimeTunnel {
     mode: Mutex<String>,
@@ -38,14 +39,16 @@ pub struct RuntimeTunnel {
     pub(crate) smart_advanced: Arc<crate::smart::AdvancedRuntime>,
     ebpf: RwLock<Option<Arc<mihomo_ebpf::EbpfRuntime>>>,
     rules: RwLock<Arc<RuleSet>>,
+    pub(crate) sniffer: RwLock<Arc<crate::sniffer::Sniffer>>,
     dns_runtime: RwLock<Option<Arc<Mutex<DnsRuntime>>>>,
     pub(crate) candidate_states: Mutex<BTreeMap<String, CandidateState>>,
     udp_relay: Mutex<QueuedUdpRelay>,
     last_error: Mutex<Option<String>>,
     tcp_strategy: TcpRelayStrategy,
-    up_total: AtomicU64,
-    down_total: AtomicU64,
+    traffic: crate::traffic::TrafficMeter,
     active_connections: Mutex<BTreeMap<u64, Arc<TrackedConnection>>>,
+    active_udp_connections: Mutex<BTreeMap<String, Arc<TrackedConnection>>>,
+    next_udp_connection_id: AtomicU64,
     proxy_health: Mutex<BTreeMap<String, ProxyHealthState>>,
 }
 
@@ -62,8 +65,10 @@ impl std::fmt::Debug for RuntimeTunnel {
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct TrafficSnapshot {
+    /// Bytes per second over the most recently completed shared one-second window.
     pub up: u64,
     pub down: u64,
+    /// Cumulative payload bytes, including traffic on connections still open.
     pub up_total: u64,
     pub down_total: u64,
 }
@@ -392,6 +397,24 @@ struct TrackedConnection {
     rule: String,
     rule_payload: String,
     handles: Mutex<Vec<BoxedTcpStream>>,
+    last_activity_elapsed_ms: AtomicU64,
+    close_signal: Option<Arc<AtomicBool>>,
+    idle_timeout_ms: u64,
+}
+
+impl TrackedConnection {
+    fn cancel_udp(&self) {
+        if let Some(signal) = &self.close_signal {
+            signal.store(true, Ordering::Release);
+        }
+    }
+
+    fn keep_udp_alive(&self, now: u64) -> bool {
+        let alive = now.saturating_sub(self.last_activity_elapsed_ms.load(Ordering::Relaxed))
+            <= self.idle_timeout_ms;
+        if !alive { self.cancel_udp(); }
+        alive
+    }
 }
 
 impl std::fmt::Debug for TrackedConnection {
@@ -437,20 +460,22 @@ impl std::error::Error for RuntimeControlError {}
 impl RuntimeTunnel {
     pub fn new(mode: impl Into<String>, registry: RuntimeRegistry) -> Self {
         Self {
-            mode: Mutex::new(mode.into()),
+            mode: Mutex::new(mode.into().trim().to_ascii_lowercase()),
             registry: Arc::new(Mutex::new(registry)),
             smart_context: Mutex::new(None),
             smart_advanced: Arc::new(crate::smart::AdvancedRuntime::default()),
             ebpf: RwLock::new(None),
             rules: RwLock::new(Arc::new(RuleSet::default())),
+            sniffer: RwLock::new(Arc::new(crate::sniffer::Sniffer::default())),
             dns_runtime: RwLock::new(None),
             candidate_states: Mutex::new(BTreeMap::new()),
             udp_relay: Mutex::new(QueuedUdpRelay::default()),
             last_error: Mutex::new(None),
             tcp_strategy: TcpRelayStrategy::for_current_platform(),
-            up_total: AtomicU64::new(0),
-            down_total: AtomicU64::new(0),
+            traffic: crate::traffic::TrafficMeter::default(),
             active_connections: Mutex::new(BTreeMap::new()),
+            active_udp_connections: Mutex::new(BTreeMap::new()),
+            next_udp_connection_id: AtomicU64::new(1),
             proxy_health: Mutex::new(BTreeMap::new()),
         }
     }
@@ -475,6 +500,16 @@ impl RuntimeTunnel {
         self
     }
 
+    pub fn with_sniffer(mut self, config:mihomo_config::TopLevelSnifferConfig)->Self {
+        *self.sniffer.get_mut().unwrap()=Arc::new(crate::sniffer::Sniffer::new(config));self
+    }
+
+    fn prepare_tcp_metadata(&self,context:&mut ConnectionContext)->Result<(),ExecutionError>{
+        self.preprocess_metadata_for_routing(context.metadata_mut())?;
+        let sniffer=self.sniffer.read().unwrap().clone();sniffer.sniff_tcp(context);
+        self.enrich_smart_metadata(context.metadata_mut());Ok(())
+    }
+
     pub fn with_dns_runtime(mut self, dns_runtime: DnsRuntime) -> Self {
         *self.dns_runtime.get_mut().unwrap() = Some(Arc::new(Mutex::new(dns_runtime)));
         self
@@ -489,10 +524,11 @@ impl RuntimeTunnel {
     }
 
     pub fn set_mode(&self, mode: &str) -> Result<(), RuntimeControlError> {
-        if !matches!(mode, "direct" | "global" | "rule") {
+        let normalized = mode.trim().to_ascii_lowercase();
+        if !matches!(normalized.as_str(), "direct" | "global" | "rule") {
             return Err(RuntimeControlError::InvalidMode(mode.to_owned()));
         }
-        *self.mode.lock().unwrap() = mode.to_owned();
+        *self.mode.lock().unwrap() = normalized;
         Ok(())
     }
 
@@ -613,18 +649,23 @@ impl RuntimeTunnel {
     }
 
     pub fn traffic_snapshot(&self) -> TrafficSnapshot {
-        let up_total = self.up_total.load(Ordering::Relaxed);
-        let down_total = self.down_total.load(Ordering::Relaxed);
-        TrafficSnapshot {
-            up: up_total,
-            down: down_total,
-            up_total,
-            down_total,
-        }
+        self.traffic.snapshot()
     }
 
     pub fn connections_snapshot(&self) -> Vec<ActiveConnectionSnapshot> {
-        self.active_connections
+        self.connections_with_traffic_snapshot().1
+    }
+
+    /// Read totals and connection counters at the same point in the byte stream.
+    pub fn connections_with_traffic_snapshot(
+        &self,
+    ) -> (TrafficSnapshot, Vec<ActiveConnectionSnapshot>) {
+        self.traffic
+            .with_snapshot(|traffic| (traffic, self.collect_connections_snapshot()))
+    }
+
+    fn collect_connections_snapshot(&self) -> Vec<ActiveConnectionSnapshot> {
+        let mut snapshots = self.active_connections
             .lock()
             .unwrap()
             .values()
@@ -639,7 +680,22 @@ impl RuntimeTunnel {
                 rule: tracked.rule.clone(),
                 rule_payload: tracked.rule_payload.clone(),
             })
-            .collect()
+            .collect::<Vec<_>>();
+        let now = self.traffic.elapsed_ms();
+        let mut udp = self.active_udp_connections.lock().unwrap();
+        udp.retain(|_, connection| connection.keep_udp_alive(now));
+        snapshots.extend(udp.values().map(|tracked| ActiveConnectionSnapshot {
+            id: tracked.id,
+            metadata: tracked.metadata.clone(),
+            upload: tracked.upload.load(Ordering::Relaxed),
+            download: tracked.download.load(Ordering::Relaxed),
+            start_unix_ms: tracked.start_unix_ms,
+            chains: tracked.chains.clone(),
+            provider_chains: tracked.provider_chains.clone(),
+            rule: tracked.rule.clone(),
+            rule_payload: tracked.rule_payload.clone(),
+        }));
+        snapshots
     }
 
     pub fn selected_target_for_metadata(
@@ -672,6 +728,9 @@ impl RuntimeTunnel {
         &self,
         metadata: &Metadata,
     ) -> Result<(UdpOutboundRoute, ExecutionPlan), ExecutionError> {
+        if metadata.dns_hijacked && self.dns_runtime().is_some() {
+            return Ok((UdpOutboundRoute::Dns, tun_dns_hijack_plan()));
+        }
         let mut metadata = metadata.clone();
         self.preprocess_metadata_for_routing(&mut metadata)?;
         let mode = self.mode.lock().unwrap().clone();
@@ -1323,14 +1382,23 @@ impl RuntimeTunnel {
     }
 
     pub fn close_connection(&self, id: u64) -> bool {
-        let Some(connection) = self.active_connections.lock().unwrap().get(&id).cloned() else {
-            return false;
-        };
-        let mut handles = connection.handles.lock().unwrap();
-        for handle in handles.iter_mut() {
-            let _ = handle.shutdown_all();
+        if let Some(connection) = self.active_connections.lock().unwrap().get(&id).cloned() {
+            let mut handles = connection.handles.lock().unwrap();
+            for handle in handles.iter_mut() {
+                let _ = handle.shutdown_all();
+            }
+            true
+        } else {
+            let mut udp = self.active_udp_connections.lock().unwrap();
+            let key = udp.iter().find(|(_, connection)| connection.id == id)
+                .map(|(key, _)| key.clone());
+            if let Some(connection) = key.and_then(|key| udp.remove(&key)) {
+                connection.cancel_udp();
+                true
+            } else {
+                false
+            }
         }
-        true
     }
 
     pub fn close_all_connections(&self) -> usize {
@@ -1347,7 +1415,11 @@ impl RuntimeTunnel {
                 let _ = handle.shutdown_all();
             }
         }
-        connections.len()
+        let mut udp = self.active_udp_connections.lock().unwrap();
+        let udp_count = udp.len();
+        for connection in udp.values() { connection.cancel_udp(); }
+        udp.clear();
+        connections.len() + udp_count
     }
 
     pub fn has_proxy(&self, name: &str) -> bool {
@@ -1418,10 +1490,44 @@ impl RuntimeTunnel {
         packet: &PacketEnvelope,
         session: &mut impl UdpSession,
     ) -> io::Result<SocketAddr> {
-        let target = self.udp_relay.lock().unwrap().send_packet(session, packet)?;
-        self.record_up(packet.payload().len() as u64);
+        let origin = packet.metadata().clone();
+        let original = origin.destination_socket_addr();
+        let mut packet = packet.clone();
+        self.preprocess_metadata_for_routing(packet.metadata_mut()).map_err(io::Error::other)?;
+        let sniffer = self.sniffer.read().unwrap().clone();
+        let packets = sniffer.sniff_udp(packet);
+        session.defer_receive(packets.is_empty());
+        if packets.is_empty() {
+            return original.ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "QUIC destination unavailable"));
+        }
+        let mut target = None;
+        for packet in packets {
+            let mut metadata = packet.metadata().clone();
+            if metadata.host.is_some() && metadata.dst_ip.is_none() {
+                session.resolve_udp(&mut metadata)?;
+            }
+            session.prepare_send(&mut metadata)?;
+            let destination = self.udp_relay.lock().unwrap().target_for_resolved(&origin, &metadata.pure())?;
+            // DNS resolution/transport setup can itself send DNS datagrams.
+            // No relay mutex may be held across these callbacks or I/O.
+            let payload = packet.payload();
+            let payload_len = payload.len();
+            let sent = session.send_to(payload, destination)?.min(payload_len) as u64;
+            let idle_timeout_ms = session.idle_timeout().map(|timeout| timeout.as_millis().min(u64::MAX as u128) as u64)
+                .unwrap_or(UDP_CONNECTION_IDLE_TIMEOUT_MS);
+            let tracked = self.register_udp_connection(&origin, &metadata, session.connection_chains(), idle_timeout_ms);
+            if let Some(signal) = &tracked.close_signal {
+                session.set_close_signal(Arc::clone(signal));
+            }
+            tracked.last_activity_elapsed_ms.store(self.traffic.elapsed_ms(), Ordering::Relaxed);
+            self.traffic.record(true, sent, Some(&tracked.upload));
+            target = Some(destination);
+        }
+        let target = target.unwrap();
         Ok(target)
     }
+
+    pub fn clear_sniffer_state(&self){self.sniffer.read().unwrap().clear_udp();}
 
     pub fn write_back_udp(
         &self,
@@ -1431,7 +1537,15 @@ impl RuntimeTunnel {
     ) -> io::Result<usize> {
         let len = payload.len() as u64;
         let written = self.udp_relay.lock().unwrap().write_back(packet, payload, remote)?;
-        self.record_down(len.min(written as u64));
+        let downloaded = len.min(written as u64);
+        let tracked = self.active_udp_connections.lock().unwrap()
+            .get(&Self::udp_connection_key(packet.metadata())).cloned();
+        if let Some(tracked) = &tracked {
+            tracked.last_activity_elapsed_ms.store(self.traffic.elapsed_ms(), Ordering::Relaxed);
+        }
+        // Some transports return their framed wire length. Statistics expose
+        // application payload bytes in both directions, without proxy headers.
+        self.traffic.record(false, downloaded, tracked.as_ref().map(|tracked| &tracked.download));
         Ok(written)
     }
 
@@ -1456,6 +1570,9 @@ impl RuntimeTunnel {
     where
         D: TcpDialer,
     {
+        if metadata.dns_hijacked && self.dns_runtime().is_some() {
+            return self.connect_dns_tcp().map(|stream| (stream, tun_dns_hijack_plan()));
+        }
         let mut metadata = metadata.clone();
         self.preprocess_metadata_for_routing(&mut metadata)?;
         if let Some(result) = self.try_connect_direct_tcp(&metadata, &mut dialer)? {
@@ -1491,6 +1608,7 @@ impl RuntimeTunnel {
                     return Ok((stream, plan));
                 }
                 Err(error) => {
+                    let error=error.with_dial_context(&plan,&metadata);
                     if !smart_route { return Err(error); }
                     self.record_smart_dial_failure(&metadata, &plan, started.elapsed().as_millis().min(u64::MAX as u128) as u64);
                     attempts += 1;
@@ -1532,12 +1650,13 @@ impl RuntimeTunnel {
             Some(port) => port,
             None => return Ok(None),
         };
-        let host = metadata
+        let dial_metadata = metadata.pure();
+        let host = dial_metadata
             .host
             .as_ref()
             .filter(|value| !value.is_empty())
             .cloned()
-            .or_else(|| metadata.dst_ip.map(|ip| ip.to_string()));
+            .or_else(|| dial_metadata.dst_ip.map(|ip| ip.to_string()));
         let target = match host {
             Some(host) => TransportTarget::new(host, port),
             None => return Ok(None),
@@ -1589,11 +1708,14 @@ impl RuntimeTunnel {
             self.tcp_strategy,
             Some(&tracked.upload),
             Some(&tracked.download),
+            Some(&self.traffic),
         );
         self.unregister_connection(context.id());
-        let stats = result?;
-        self.record_up(stats.left_to_right);
-        self.record_down(stats.right_to_left);
+        let stats = result.map_err(|error| {
+            let proxy=plan.map(|plan|plan.leaf_name.as_str()).unwrap_or("unknown");
+            let chain=plan.map(|plan|plan.selected_path.join(" -> ")).unwrap_or_default();
+            io::Error::new(error.kind(),format!("{error} (proxy={proxy} chain={chain} target={})",context.metadata().remote_address().unwrap_or_default()))
+        })?;
         Ok(stats)
     }
 
@@ -1605,6 +1727,7 @@ impl RuntimeTunnel {
     where
         D: TcpDialer,
     {
+        self.prepare_tcp_metadata(context)?;
         let (mut upstream, plan) = self.connect_tcp_with_dialer(context.metadata(), dialer)?;
         let stats = self.relay_tcp_stream(context, &mut *upstream, Some(&plan))?;
         Ok(stats)
@@ -1614,6 +1737,7 @@ impl RuntimeTunnel {
         &self,
         context: &mut ConnectionContext,
     ) -> Result<TcpRelayStats, TcpForwardError> {
+        self.prepare_tcp_metadata(context)?;
         let (mut upstream, plan) = self.connect_tcp_with_system_dialer(context.metadata())?;
         let stats = self.relay_tcp_stream(context, &mut *upstream, Some(&plan))?;
         Ok(stats)
@@ -1649,10 +1773,14 @@ impl RuntimeTunnel {
             return Ok(());
         };
         let runtime = runtime.lock().unwrap();
-        if let Some(host) = runtime.reverse_lookup(dst_ip).map(ToOwned::to_owned) {
+        if let Some(host) = runtime.domain_for_ip(dst_ip) {
             metadata.host = Some(host);
-            metadata.dst_ip = None;
-            metadata.dns_mode = DnsMode::FakeIp;
+            if runtime.is_fake_ip_addr(dst_ip) {
+                metadata.dst_ip = None;
+                metadata.dns_mode = DnsMode::FakeIp;
+            } else {
+                metadata.dns_mode = DnsMode::Mapping;
+            }
             return Ok(());
         }
         if runtime.is_fake_ip_addr(dst_ip) {
@@ -1662,14 +1790,6 @@ impl RuntimeTunnel {
             }));
         }
         Ok(())
-    }
-
-    fn record_up(&self, bytes: u64) {
-        self.up_total.fetch_add(bytes, Ordering::Relaxed);
-    }
-
-    fn record_down(&self, bytes: u64) {
-        self.down_total.fetch_add(bytes, Ordering::Relaxed);
     }
 
     fn connect_dns_tcp(&self) -> Result<BoxedTcpStream, ExecutionError> {
@@ -1736,15 +1856,13 @@ impl RuntimeTunnel {
         handles: Vec<BoxedTcpStream>,
     ) -> Arc<TrackedConnection> {
         let current_mode = self.current_mode();
-        let chains = plan
-            .map(|plan| plan.selected_path.iter().rev().cloned().collect())
-            .unwrap_or_default();
-        let provider_chains = plan
-            .map(|plan| connection_provider_chains(&self.registry.lock().unwrap(), plan))
+        let (chains, provider_chains) = plan
+            .map(|plan| self.connection_chains_for_plan(plan))
             .unwrap_or_default();
         let matched_rule = if plan.is_some()
             && current_mode == "rule"
             && metadata.special_proxy.trim().is_empty()
+            && !metadata.dns_hijacked
         {
             self.rules
                 .read()
@@ -1769,11 +1887,72 @@ impl RuntimeTunnel {
                 .map(|rule| rule.payload)
                 .unwrap_or_default(),
             handles: Mutex::new(handles),
+            last_activity_elapsed_ms: AtomicU64::new(self.traffic.elapsed_ms()),
+            close_signal: None,
+            idle_timeout_ms: 0,
         });
         self.active_connections
             .lock()
             .unwrap()
             .insert(id, Arc::clone(&tracked));
+        tracked
+    }
+
+    pub fn connection_chains_for_plan(&self, plan: &ExecutionPlan) -> (Vec<String>, Vec<String>) {
+        (
+            plan.selected_path.iter().rev().cloned().collect(),
+            connection_provider_chains(&self.registry.lock().unwrap(), plan),
+        )
+    }
+
+    fn udp_connection_key(metadata: &Metadata) -> String {
+        format!("{:?}|{:?}|{}|{:?}|{}|{}", metadata.source_socket_addr(),
+            metadata.destination_socket_addr(), metadata.display_host(), metadata.kind,
+            metadata.dst_port.unwrap_or_default(), metadata.inbound_name)
+    }
+
+    fn register_udp_connection(
+        &self,
+        origin: &Metadata,
+        metadata: &Metadata,
+        (chains, provider_chains): (Vec<String>, Vec<String>),
+        idle_timeout_ms: u64,
+    ) -> Arc<TrackedConnection> {
+        let key = Self::udp_connection_key(origin);
+        let now = self.traffic.elapsed_ms();
+        let mut active = self.active_udp_connections.lock().unwrap();
+        if let Some(connection) = active.get(&key) {
+            if now.saturating_sub(connection.last_activity_elapsed_ms.load(Ordering::Relaxed))
+                <= connection.idle_timeout_ms
+                && connection.chains == chains
+                && connection.metadata.rule_host() == metadata.rule_host()
+            {
+                connection.last_activity_elapsed_ms.store(now, Ordering::Relaxed);
+                return Arc::clone(connection);
+            }
+        }
+        active.retain(|_, connection| connection.keep_udp_alive(now));
+        if let Some(previous) = active.get(&key) { previous.cancel_udp(); }
+        let id = (1_u64 << 63) | self.next_udp_connection_id.fetch_add(1, Ordering::Relaxed);
+        let matched_rule = if self.current_mode() == "rule" && metadata.special_proxy.trim().is_empty() && !metadata.dns_hijacked {
+            self.rules.read().unwrap().matched_rule_definition(metadata)
+        } else { None };
+        let tracked = Arc::new(TrackedConnection {
+            id,
+            metadata: metadata.clone(),
+            start_unix_ms: now_unix_ms(),
+            upload: AtomicU64::new(0),
+            download: AtomicU64::new(0),
+            chains,
+            provider_chains,
+            rule: matched_rule.as_ref().map(|rule| rule.rule_type.as_str().to_owned()).unwrap_or_default(),
+            rule_payload: matched_rule.map(|rule| rule.payload).unwrap_or_default(),
+            handles: Mutex::new(Vec::new()),
+            last_activity_elapsed_ms: AtomicU64::new(now),
+            close_signal: Some(Arc::new(AtomicBool::new(false))),
+            idle_timeout_ms,
+        });
+        active.insert(key, Arc::clone(&tracked));
         tracked
     }
 
@@ -1886,6 +2065,22 @@ impl TcpDialer for DnsAwareSystemTcpDialer {
     }
 }
 
+fn tun_dns_hijack_plan() -> ExecutionPlan {
+    ExecutionPlan {
+        requested: "DNS".to_owned(),
+        selected_path: vec!["DNS".to_owned()],
+        leaf_name: "DNS".to_owned(),
+        dial_chain: vec!["DNS".to_owned()],
+        hops: vec![crate::ExecutionHop {
+            name: "DNS".to_owned(), kind: Some(mihomo_outbound::OutboundKind::Dns),
+            source: crate::ProxySource::Builtin,
+            spec: ExecutionHopSpec::Dns(crate::execution::DnsHopSpec {
+                socket: crate::execution::SocketOptions::default(),
+            }),
+        }],
+    }
+}
+
 fn connection_provider_chains(registry: &RuntimeRegistry, plan: &ExecutionPlan) -> Vec<String> {
     plan.selected_path
         .iter()
@@ -1992,7 +2187,7 @@ mod tests {
     use mihomo_buf::ByteWindow;
     use mihomo_config::parse_runtime_config_document;
     use mihomo_core::{
-        BoxedTcpStream, DnsMode, Metadata, PacketEnvelope, Tunnel, UdpPacket, UdpSession,
+        BoxedTcpStream, DnsMode, Metadata, NetworkKind, PacketEnvelope, SessionKind, Tunnel, UdpPacket, UdpSession,
         WriteBack,
     };
     use mihomo_rules::compile_rule_set;
@@ -2152,6 +2347,20 @@ mod tests {
             let len = payload.len();
             self.writes.push((payload.as_slice().to_vec(), target));
             Ok(len)
+        }
+    }
+
+    struct ShortWriteUdpSession {
+        accepted: usize,
+    }
+
+    impl UdpSession for ShortWriteUdpSession {
+        fn resolve_udp(&mut self, _metadata: &mut Metadata) -> io::Result<()> {
+            Ok(())
+        }
+
+        fn send_to(&mut self, _payload: ByteWindow, _target: SocketAddr) -> io::Result<usize> {
+            Ok(self.accepted)
         }
     }
 
@@ -6020,6 +6229,63 @@ proxies:
         let traffic = tunnel.traffic_snapshot();
         assert_eq!(traffic.up_total, 7);
         assert_eq!(traffic.down_total, 6);
+    }
+
+    #[test]
+    fn connections_snapshot_tracks_udp_bytes_and_matches_global_totals() {
+        let document=parse_runtime_config_document("mode: direct").unwrap();
+        let registry=build_runtime_registry(&document).unwrap();
+        let tunnel=RuntimeTunnel::new(document.mode.clone(),registry);
+        let sink=Arc::new(RecordingSink::default());
+        let packet=Arc::new(TestPacket{payload:ByteWindow::freeze(b"udp-request".to_vec()),local_addr:"127.0.0.1:5302".parse().unwrap(),sink:Arc::clone(&sink)});
+        let metadata=Metadata{network:NetworkKind::Udp,kind:SessionKind::TProxy,src_ip:Some("192.0.2.20".parse().unwrap()),src_port:Some(5302),dst_ip:Some("198.51.100.20".parse().unwrap()),dst_port:Some(443),..Metadata::default()};
+        let envelope=PacketEnvelope::new(packet,metadata);
+        let mut session=FakeUdpSession::default();
+        tunnel.send_udp_packet(&envelope,&mut session).unwrap();
+        tunnel.write_back_udp(&envelope,ByteWindow::freeze(b"udp-response".to_vec()),"198.51.100.20:443".parse().unwrap()).unwrap();
+        let traffic=tunnel.traffic_snapshot();let rows=tunnel.connections_snapshot();
+        assert_eq!((traffic.up_total,traffic.down_total),(11,12));assert_eq!(rows.len(),1);
+        assert_eq!((rows[0].upload,rows[0].download),(11,12));assert_eq!(rows[0].metadata.network,NetworkKind::Udp);
+        assert_eq!(rows[0].metadata.destination_socket_addr(),Some("198.51.100.20:443".parse().unwrap()));
+        let close_signal = tunnel.active_udp_connections.lock().unwrap().values().next()
+            .unwrap().close_signal.as_ref().unwrap().clone();
+        assert!(tunnel.close_connection(rows[0].id));
+        assert!(close_signal.load(std::sync::atomic::Ordering::Acquire));
+        assert!(tunnel.connections_snapshot().is_empty());
+        assert_eq!(tunnel.traffic_snapshot().up_total, 11);
+        assert_eq!(tunnel.traffic_snapshot().down_total, 12);
+    }
+
+    #[test]
+    fn udp_short_write_uses_accepted_bytes_for_global_and_connection_totals() {
+        let document = parse_runtime_config_document("mode: direct").unwrap();
+        let registry = build_runtime_registry(&document).unwrap();
+        let tunnel = RuntimeTunnel::new(document.mode.clone(), registry);
+        let packet = Arc::new(TestPacket {
+            payload: ByteWindow::freeze(b"udp-payload".to_vec()),
+            local_addr: "127.0.0.1:5303".parse().unwrap(),
+            sink: Arc::new(RecordingSink::default()),
+        });
+        let envelope = PacketEnvelope::new(
+            packet,
+            Metadata {
+                network: NetworkKind::Udp,
+                kind: SessionKind::TProxy,
+                src_ip: Some("192.0.2.21".parse().unwrap()),
+                src_port: Some(5303),
+                dst_ip: Some("198.51.100.21".parse().unwrap()),
+                dst_port: Some(443),
+                ..Metadata::default()
+            },
+        );
+        let mut session = ShortWriteUdpSession { accepted: 4 };
+        tunnel.send_udp_packet(&envelope, &mut session).unwrap();
+
+        let traffic = tunnel.traffic_snapshot();
+        let rows = tunnel.connections_snapshot();
+        assert_eq!(traffic.up_total, 4);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].upload, 4);
     }
 
     #[test]

@@ -1,0 +1,3717 @@
+{
+  "before-mixed-socks5.json": {
+    "passed": true,
+    "checks": 10,
+    "sha256": "34ebff007f5863c4fa3dbaf4ca92e3e1f90cad7e6d88a2a84512721805cf4338",
+    "raw": "raw/before-mixed-socks5.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 1",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 2",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 3",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 4",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "before-mixed-ss-hosts.json": {
+    "passed": true,
+    "checks": 10,
+    "sha256": "34ebff007f5863c4fa3dbaf4ca92e3e1f90cad7e6d88a2a84512721805cf4338",
+    "raw": "raw/before-mixed-ss-hosts.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 1",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 2",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 3",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 4",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "before-tun-socks5.json": {
+    "passed": false,
+    "checks": 6,
+    "sha256": "34ebff007f5863c4fa3dbaf4ca92e3e1f90cad7e6d88a2a84512721805cf4338",
+    "raw": "raw/before-tun-socks5.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "before-tun-ss-hosts.json": {
+    "passed": false,
+    "checks": 6,
+    "sha256": "34ebff007f5863c4fa3dbaf4ca92e3e1f90cad7e6d88a2a84512721805cf4338",
+    "raw": "raw/before-tun-ss-hosts.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": false,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "error": "TimeoutError('The read operation timed out')"
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "after-tun-socks5.json": {
+    "passed": true,
+    "checks": 10,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/after-tun-socks5.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 1",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 2",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 3",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 4",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "after-tun-ss.json": {
+    "passed": true,
+    "checks": 10,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/after-tun-ss.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 1",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 2",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 3",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 4",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "after-tun-socks5-drop.json": {
+    "passed": true,
+    "checks": 11,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/after-tun-socks5-drop.json.gz",
+    "check_results": [
+      {
+        "name": "single TLS handshake",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single small HTTPS response",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB slow-reader download",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single 4 MiB upload",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "single HTTPS keepalive after bulk transfer",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 1",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 2",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 3",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "concurrent HTTPS transfer 4",
+        "passed": true,
+        "detail": {
+          "TLS handshake": "TLSv1.3",
+          "small HTTPS response": 16,
+          "4 MiB slow-reader download": 4194304,
+          "4 MiB upload": 4194304,
+          "HTTPS keepalive after bulk transfer": true
+        }
+      },
+      {
+        "name": "controller survives HTTPS transfers",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TLS survives an actually dropped TUN reply",
+        "passed": true,
+        "detail": {
+          "dropped": 1,
+          "single": {
+            "TLS handshake": "TLSv1.3",
+            "small HTTPS response": 16,
+            "4 MiB slow-reader download": 4194304,
+            "4 MiB upload": 4194304,
+            "HTTPS keepalive after bulk transfer": true
+          }
+        }
+      }
+    ]
+  },
+  "final-openclash-tun.json": {
+    "passed": true,
+    "checks": 21,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/final-openclash-tun.json.gz",
+    "check_results": [
+      {
+        "name": "utun exists and is up",
+        "passed": true,
+        "detail": "21: utun: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500\n    link/none \n"
+      },
+      {
+        "name": "Go-compatible default interface address",
+        "passed": true,
+        "detail": "21: utun: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500\n    inet 198.18.0.1/30 scope global utun\n       valid_lft forever preferred_lft forever\n"
+      },
+      {
+        "name": "OpenClash exact main-table readiness condition",
+        "passed": true,
+        "detail": "default via 172.17.0.1 dev eth0 \n172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.11 \n198.18.0.0/30 dev utun proto kernel scope link src 198.18.0.1 \n"
+      },
+      {
+        "name": "connected subnet is /30",
+        "passed": true,
+        "detail": "default via 172.17.0.1 dev eth0 \n172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.11 \n198.18.0.0/30 dev utun proto kernel scope link src 198.18.0.1 \n"
+      },
+      {
+        "name": "frontend still owns policy routing",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN startup log identifies address",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "closed probes do not become error spam",
+        "passed": true,
+        "detail": "[TUN] interface utun started ipv4=[\"198.18.0.1/30\"] ipv6=[] auto-route=false\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=7 groups=1 providers=0 controllers=127.0.0.1:54405 bound_listeners=2\n"
+      },
+      {
+        "name": "malformed requests remain visible",
+        "passed": true,
+        "detail": "[TUN] interface utun started ipv4=[\"198.18.0.1/30\"] ipv6=[] auto-route=false\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=7 groups=1 providers=0 controllers=127.0.0.1:54405 bound_listeners=2\nlistener dispatch error protocol=mixed listener=Some(127.0.0.1:34071) peer=Some(127.0.0.1:44940): invalid http proxy request: missing request target\n"
+      },
+      {
+        "name": "real truncated upstream responses remain errors",
+        "passed": true,
+        "detail": "HTTP/1.1 502 Bad Gateway\r\n\r\n"
+      },
+      {
+        "name": "authenticated mixed HTTP CONNECT still works",
+        "passed": true,
+        "detail": "HTTP/1.1 200 Connection Established\r\nProxy-Agent: mihomo-rust\r\n\r\n"
+      },
+      {
+        "name": "ordinary proxy forwarding after probes",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "marked TCP goes through real TUN and proxy",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "marked UDP goes through real TUN and SOCKS relay",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TCP proxy sees original TUN destination",
+        "passed": true,
+        "detail": [
+          [
+            1,
+            "198.51.100.99",
+            443
+          ],
+          [
+            1,
+            "198.51.100.10",
+            443
+          ],
+          [
+            1,
+            "198.51.100.20",
+            443
+          ],
+          [
+            3,
+            "0.0.0.0",
+            45366
+          ],
+          [
+            "udp",
+            "198.51.100.21",
+            9999
+          ],
+          [
+            1,
+            "tun.example",
+            443
+          ]
+        ]
+      },
+      {
+        "name": "UDP proxy sees original TUN destination",
+        "passed": true,
+        "detail": [
+          [
+            1,
+            "198.51.100.99",
+            443
+          ],
+          [
+            1,
+            "198.51.100.10",
+            443
+          ],
+          [
+            1,
+            "198.51.100.20",
+            443
+          ],
+          [
+            3,
+            "0.0.0.0",
+            45366
+          ],
+          [
+            "udp",
+            "198.51.100.21",
+            9999
+          ],
+          [
+            1,
+            "tun.example",
+            443
+          ]
+        ]
+      },
+      {
+        "name": "TUN disappears on normal core shutdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "frontend rules preserved on shutdown",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN fragmented TLS SNI selects domain rule",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN proxy sees sniffed hostname",
+        "passed": true,
+        "detail": [
+          [
+            1,
+            "198.51.100.99",
+            443
+          ],
+          [
+            1,
+            "198.51.100.10",
+            443
+          ],
+          [
+            1,
+            "198.51.100.20",
+            443
+          ],
+          [
+            3,
+            "0.0.0.0",
+            45366
+          ],
+          [
+            "udp",
+            "198.51.100.21",
+            9999
+          ],
+          [
+            1,
+            "tun.example",
+            443
+          ]
+        ]
+      },
+      {
+        "name": "custom fake-IP seed derives correct /30",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "custom range also passes OpenClash readiness",
+        "passed": true,
+        "detail": null
+      }
+    ]
+  },
+  "final-domain-routing.json": {
+    "passed": true,
+    "checks": 93,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/final-domain-routing.json.gz",
+    "check_results": [
+      {
+        "name": "DNS answer mapping.test",
+        "passed": true,
+        "detail": {
+          "bytes": 46,
+          "rcode": 0,
+          "hex": "199381800001000100000000076d617070696e6704746573740000010001c00c000100010000003c0004cb00710a"
+        }
+      },
+      {
+        "name": "actual route mapping.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.10:443",
+          "sha256": "bfb53c7384f1e89abf418b7d570fd6a9c3f81b92cb50fbe9d6ac3326936b2867",
+          "client_port": 51846,
+          "request_sha256": "bfb53c7384f1e89abf418b7d570fd6a9c3f81b92cb50fbe9d6ac3326936b2867"
+        }
+      },
+      {
+        "name": "payload unchanged mapping.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.10:443",
+          "sha256": "bfb53c7384f1e89abf418b7d570fd6a9c3f81b92cb50fbe9d6ac3326936b2867",
+          "client_port": 51846,
+          "request_sha256": "bfb53c7384f1e89abf418b7d570fd6a9c3f81b92cb50fbe9d6ac3326936b2867"
+        }
+      },
+      {
+        "name": "API matched rule mapping.test",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:01.715Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "mapping.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "51846",
+            "destinationIP": "203.0.113.10",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "mapping.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored mapping.test",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:01.715Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "mapping.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "51846",
+            "destinationIP": "203.0.113.10",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "mapping.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained mapping.test",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:01.715Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "mapping.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "51846",
+            "destinationIP": "203.0.113.10",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "mapping.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "DNS answer dns-tcp.test",
+        "passed": true,
+        "detail": {
+          "bytes": 46,
+          "rcode": 0,
+          "hex": "19938180000100010000000007646e732d74637004746573740000010001c00c000100010000003c0004cb00710b"
+        }
+      },
+      {
+        "name": "actual route dns-tcp.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.11:443",
+          "sha256": "fc3ebc50509289078277bbab074267850373b93fb3d9e83eb88618c4bb4c8838",
+          "client_port": 42910,
+          "request_sha256": "fc3ebc50509289078277bbab074267850373b93fb3d9e83eb88618c4bb4c8838"
+        }
+      },
+      {
+        "name": "payload unchanged dns-tcp.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.11:443",
+          "sha256": "fc3ebc50509289078277bbab074267850373b93fb3d9e83eb88618c4bb4c8838",
+          "client_port": 42910,
+          "request_sha256": "fc3ebc50509289078277bbab074267850373b93fb3d9e83eb88618c4bb4c8838"
+        }
+      },
+      {
+        "name": "API matched rule dns-tcp.test",
+        "passed": true,
+        "detail": {
+          "id": "2",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.118Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "dns-tcp.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42910",
+            "destinationIP": "203.0.113.11",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "dns-tcp.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored dns-tcp.test",
+        "passed": true,
+        "detail": {
+          "id": "2",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.118Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "dns-tcp.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42910",
+            "destinationIP": "203.0.113.11",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "dns-tcp.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained dns-tcp.test",
+        "passed": true,
+        "detail": {
+          "id": "2",
+          "upload": 703,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.118Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "dns-tcp.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42910",
+            "destinationIP": "203.0.113.11",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "dns-tcp.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "DNS answer alias.test",
+        "passed": true,
+        "detail": {
+          "bytes": 76,
+          "rcode": 0,
+          "hex": "19938180000100020000000005616c69617304746573740000010001c00c000500010000003c000b04656467650474657374000465646765047465737400000100010000003c0004cb00710c"
+        }
+      },
+      {
+        "name": "actual route alias.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.12:443",
+          "sha256": "a12c655a5d751fcd33f0a0d3f502c1b678af096111f948326a75726a6dd79203",
+          "client_port": 42742,
+          "request_sha256": "a12c655a5d751fcd33f0a0d3f502c1b678af096111f948326a75726a6dd79203"
+        }
+      },
+      {
+        "name": "payload unchanged alias.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.12:443",
+          "sha256": "a12c655a5d751fcd33f0a0d3f502c1b678af096111f948326a75726a6dd79203",
+          "client_port": 42742,
+          "request_sha256": "a12c655a5d751fcd33f0a0d3f502c1b678af096111f948326a75726a6dd79203"
+        }
+      },
+      {
+        "name": "API matched rule alias.test",
+        "passed": true,
+        "detail": {
+          "id": "3",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.319Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "alias.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42742",
+            "destinationIP": "203.0.113.12",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "alias.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored alias.test",
+        "passed": true,
+        "detail": {
+          "id": "3",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.319Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "alias.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42742",
+            "destinationIP": "203.0.113.12",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "alias.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained alias.test",
+        "passed": true,
+        "detail": {
+          "id": "3",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.319Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "alias.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42742",
+            "destinationIP": "203.0.113.12",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "alias.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "DNS answer hints.test",
+        "passed": true,
+        "detail": {
+          "bytes": 51,
+          "rcode": 0,
+          "hex": "1993818000010001000000000568696e747304746573740000410001c00c004100010000003c000b00010000040004cb00710d"
+        }
+      },
+      {
+        "name": "actual route hints.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.13:443",
+          "sha256": "703d3e65d96343c6e65147c26b900e8bbc790ece12302a85f9bad3084123be86",
+          "client_port": 43264,
+          "request_sha256": "703d3e65d96343c6e65147c26b900e8bbc790ece12302a85f9bad3084123be86"
+        }
+      },
+      {
+        "name": "payload unchanged hints.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.13:443",
+          "sha256": "703d3e65d96343c6e65147c26b900e8bbc790ece12302a85f9bad3084123be86",
+          "client_port": 43264,
+          "request_sha256": "703d3e65d96343c6e65147c26b900e8bbc790ece12302a85f9bad3084123be86"
+        }
+      },
+      {
+        "name": "API matched rule hints.test",
+        "passed": true,
+        "detail": {
+          "id": "4",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.521Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hints.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "43264",
+            "destinationIP": "203.0.113.13",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hints.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored hints.test",
+        "passed": true,
+        "detail": {
+          "id": "4",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.521Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hints.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "43264",
+            "destinationIP": "203.0.113.13",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hints.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained hints.test",
+        "passed": true,
+        "detail": {
+          "id": "4",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.521Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hints.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "43264",
+            "destinationIP": "203.0.113.13",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hints.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "DNS answer hosts.test",
+        "passed": true,
+        "detail": {
+          "bytes": 44,
+          "rcode": 0,
+          "hex": "19938180000100010000000005686f73747304746573740000010001c00c000100010000003c0004cb00710e"
+        }
+      },
+      {
+        "name": "actual route hosts.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.14:443",
+          "sha256": "a6397aa18503f42f382e49148029fcc58416970c9ef8271d893607508bc6a5cc",
+          "client_port": 34398,
+          "request_sha256": "a6397aa18503f42f382e49148029fcc58416970c9ef8271d893607508bc6a5cc"
+        }
+      },
+      {
+        "name": "payload unchanged hosts.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.14:443",
+          "sha256": "a6397aa18503f42f382e49148029fcc58416970c9ef8271d893607508bc6a5cc",
+          "client_port": 34398,
+          "request_sha256": "a6397aa18503f42f382e49148029fcc58416970c9ef8271d893607508bc6a5cc"
+        }
+      },
+      {
+        "name": "API matched rule hosts.test",
+        "passed": true,
+        "detail": {
+          "id": "5",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.723Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hosts.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "34398",
+            "destinationIP": "203.0.113.14",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hosts.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored hosts.test",
+        "passed": true,
+        "detail": {
+          "id": "5",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.723Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hosts.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "34398",
+            "destinationIP": "203.0.113.14",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hosts.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained hosts.test",
+        "passed": true,
+        "detail": {
+          "id": "5",
+          "upload": 701,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.723Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "hosts.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "34398",
+            "destinationIP": "203.0.113.14",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "hosts.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "DNS answer provider.test",
+        "passed": true,
+        "detail": {
+          "bytes": 47,
+          "rcode": 0,
+          "hex": "1993818000010001000000000870726f766964657204746573740000010001c00c000100010000003c0004cb007111"
+        }
+      },
+      {
+        "name": "actual route provider.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.17:443",
+          "sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f",
+          "client_port": 46466,
+          "request_sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f"
+        }
+      },
+      {
+        "name": "payload unchanged provider.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.17:443",
+          "sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f",
+          "client_port": 46466,
+          "request_sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f"
+        }
+      },
+      {
+        "name": "API matched rule provider.test",
+        "passed": true,
+        "detail": {
+          "id": "6",
+          "upload": 704,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.925Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "RuleSet",
+          "rulePayload": "media",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "46466",
+            "destinationIP": "203.0.113.17",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "provider.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "API domain restored provider.test",
+        "passed": true,
+        "detail": {
+          "id": "6",
+          "upload": 704,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.925Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "RuleSet",
+          "rulePayload": "media",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "46466",
+            "destinationIP": "203.0.113.17",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "provider.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "real destination IP retained provider.test",
+        "passed": true,
+        "detail": {
+          "id": "6",
+          "upload": 704,
+          "download": 2085,
+          "start": "2026-11-01T09:56:02.925Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "RuleSet",
+          "rulePayload": "media",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "46466",
+            "destinationIP": "203.0.113.17",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "provider.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route unmatched.test 443",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.15:443",
+          "sha256": "f3079fb715de5f37b69089aefacd493254f4d0868e957974ab2b823697c6f7ec",
+          "client_port": 37146,
+          "request_sha256": "f3079fb715de5f37b69089aefacd493254f4d0868e957974ab2b823697c6f7ec"
+        }
+      },
+      {
+        "name": "payload unchanged unmatched.test",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.15:443",
+          "sha256": "f3079fb715de5f37b69089aefacd493254f4d0868e957974ab2b823697c6f7ec",
+          "client_port": 37146,
+          "request_sha256": "f3079fb715de5f37b69089aefacd493254f4d0868e957974ab2b823697c6f7ec"
+        }
+      },
+      {
+        "name": "API matched rule unmatched.test",
+        "passed": true,
+        "detail": {
+          "id": "7",
+          "upload": 705,
+          "download": 2087,
+          "start": "2026-11-01T09:56:03.125Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "37146",
+            "destinationIP": "203.0.113.15",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "unmatched.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route ttl.test 443",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.16:443",
+          "sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9",
+          "client_port": 55216,
+          "request_sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9"
+        }
+      },
+      {
+        "name": "payload unchanged ttl.test",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.16:443",
+          "sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9",
+          "client_port": 55216,
+          "request_sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9"
+        }
+      },
+      {
+        "name": "API matched rule ttl.test",
+        "passed": true,
+        "detail": {
+          "id": "8",
+          "upload": 699,
+          "download": 2087,
+          "start": "2026-11-01T09:56:04.534Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "55216",
+            "destinationIP": "203.0.113.16",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "expired DNS name not reused",
+        "passed": true,
+        "detail": {
+          "id": "8",
+          "upload": 699,
+          "download": 2087,
+          "start": "2026-11-01T09:56:04.534Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "55216",
+            "destinationIP": "203.0.113.16",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route ttl.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.16:443",
+          "sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9",
+          "client_port": 55220,
+          "request_sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9"
+        }
+      },
+      {
+        "name": "payload unchanged ttl.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.16:443",
+          "sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9",
+          "client_port": 55220,
+          "request_sha256": "2ef322d676567685662050fcece7975f8a147bcf791211b15837945ddf0ab5d9"
+        }
+      },
+      {
+        "name": "API matched rule ttl.test",
+        "passed": true,
+        "detail": {
+          "id": "9",
+          "upload": 699,
+          "download": 2085,
+          "start": "2026-11-01T09:56:04.734Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "ttl.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "55220",
+            "destinationIP": "203.0.113.16",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "ttl.test",
+            "dnsMode": "mapping",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "TPROXY UDP uses redir-host mapping",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.18",
+          "sha256": "8c47cf52e8eb9fda07447b6a8dad94731b8529c2acd6ed77e8d117593ae338d1"
+        }
+      },
+      {
+        "name": "actual route sni.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "sni.test:443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 53538,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "payload unchanged sni.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "sni.test:443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 53538,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "API matched rule sni.test",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 699,
+          "download": 2081,
+          "start": "2026-11-01T09:56:05.326Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "sni.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "53538",
+            "destinationIP": "",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "sni.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "sni.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "TLS SNI visible in API",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 699,
+          "download": 2081,
+          "start": "2026-11-01T09:56:05.326Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "sni.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "53538",
+            "destinationIP": "",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "sni.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "sni.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route override.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "override.test:443",
+          "sha256": "426f0f7452e02d1320a14254fbe701a692925dbaf80c0edcbe82bfb96f877322",
+          "client_port": 51854,
+          "request_sha256": "426f0f7452e02d1320a14254fbe701a692925dbaf80c0edcbe82bfb96f877322"
+        }
+      },
+      {
+        "name": "payload unchanged override.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "override.test:443",
+          "sha256": "426f0f7452e02d1320a14254fbe701a692925dbaf80c0edcbe82bfb96f877322",
+          "client_port": 51854,
+          "request_sha256": "426f0f7452e02d1320a14254fbe701a692925dbaf80c0edcbe82bfb96f877322"
+        }
+      },
+      {
+        "name": "API matched rule override.test",
+        "passed": true,
+        "detail": {
+          "id": "2",
+          "upload": 704,
+          "download": 2086,
+          "start": "2026-11-01T09:56:05.526Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "override.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "51854",
+            "destinationIP": "",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "override.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "override.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "force-dns-mapping replaces stale DNS hostname",
+        "passed": true,
+        "detail": {
+          "id": "2",
+          "upload": 704,
+          "download": 2086,
+          "start": "2026-11-01T09:56:05.526Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "override.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "51854",
+            "destinationIP": "",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "override.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "override.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route sni.test 8443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "sni.test:8443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 41066,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "payload unchanged sni.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "sni.test:8443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 41066,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "API matched rule sni.test",
+        "passed": true,
+        "detail": {
+          "id": "3",
+          "upload": 699,
+          "download": 2082,
+          "start": "2026-11-01T09:56:05.737Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "sni.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "41066",
+            "destinationIP": "",
+            "destinationPort": "8443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "sni.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "sni.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route web.example.test 80",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "web.example.test:80",
+          "sha256": "ca7fd40fb5a4536993d4f09ac136225ed23c81350b6943d855d9d957f57c10db",
+          "client_port": 57740,
+          "request_sha256": "ca7fd40fb5a4536993d4f09ac136225ed23c81350b6943d855d9d957f57c10db"
+        }
+      },
+      {
+        "name": "payload unchanged web.example.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "web.example.test:80",
+          "sha256": "ca7fd40fb5a4536993d4f09ac136225ed23c81350b6943d855d9d957f57c10db",
+          "client_port": 57740,
+          "request_sha256": "ca7fd40fb5a4536993d4f09ac136225ed23c81350b6943d855d9d957f57c10db"
+        }
+      },
+      {
+        "name": "API matched rule web.example.test",
+        "passed": true,
+        "detail": {
+          "id": "4",
+          "upload": 27092,
+          "download": 193,
+          "start": "2026-11-01T09:56:05.942Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "DomainSuffix",
+          "rulePayload": "example.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "57740",
+            "destinationIP": "",
+            "destinationPort": "80",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "web.example.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "web.example.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route provider.test 8080",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "provider.test:8080",
+          "sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f",
+          "client_port": 42320,
+          "request_sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f"
+        }
+      },
+      {
+        "name": "payload unchanged provider.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "provider.test:8080",
+          "sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f",
+          "client_port": 42320,
+          "request_sha256": "75766d486bfd50255806e96f5c580a358eddfc2c88df225e8037eb2a0333d61f"
+        }
+      },
+      {
+        "name": "API matched rule provider.test",
+        "passed": true,
+        "detail": {
+          "id": "5",
+          "upload": 85,
+          "download": 192,
+          "start": "2026-11-01T09:56:06.153Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "RuleSet",
+          "rulePayload": "media",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "42320",
+            "destinationIP": "",
+            "destinationPort": "8080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "provider.test",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "provider.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route push.apple.com 443",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.205:443",
+          "sha256": "1e262b926566bf0b8595d8598c121ab6712c3c14c63912e24a8ba26aa0d20b76",
+          "client_port": 41280,
+          "request_sha256": "1e262b926566bf0b8595d8598c121ab6712c3c14c63912e24a8ba26aa0d20b76"
+        }
+      },
+      {
+        "name": "payload unchanged push.apple.com",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.205:443",
+          "sha256": "1e262b926566bf0b8595d8598c121ab6712c3c14c63912e24a8ba26aa0d20b76",
+          "client_port": 41280,
+          "request_sha256": "1e262b926566bf0b8595d8598c121ab6712c3c14c63912e24a8ba26aa0d20b76"
+        }
+      },
+      {
+        "name": "API matched rule push.apple.com",
+        "passed": true,
+        "detail": {
+          "id": "6",
+          "upload": 705,
+          "download": 2088,
+          "start": "2026-11-01T09:56:06.356Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "41280",
+            "destinationIP": "203.0.113.205",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "skip-domain respected",
+        "passed": true,
+        "detail": {
+          "id": "6",
+          "upload": 705,
+          "download": 2088,
+          "start": "2026-11-01T09:56:06.356Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "41280",
+            "destinationIP": "203.0.113.205",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "actual route sni.test 9443",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.206:9443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 52142,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "payload unchanged sni.test",
+        "passed": true,
+        "detail": {
+          "node": "fallback",
+          "target": "203.0.113.206:9443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 52142,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "API matched rule sni.test",
+        "passed": true,
+        "detail": {
+          "id": "7",
+          "upload": 699,
+          "download": 2089,
+          "start": "2026-11-01T09:56:06.556Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "52142",
+            "destinationIP": "203.0.113.206",
+            "destinationPort": "9443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "sniff port filter respected",
+        "passed": true,
+        "detail": {
+          "id": "7",
+          "upload": 699,
+          "download": 2089,
+          "start": "2026-11-01T09:56:06.556Z",
+          "chains": [
+            "fallback"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "52142",
+            "destinationIP": "203.0.113.206",
+            "destinationPort": "9443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "QUIC actual route www.google.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "cc5b244bca85dba311ed79873fe4f8cad9acff1fe640f54e488ec84a0a949136"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams www.google.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "cc5b244bca85dba311ed79873fe4f8cad9acff1fe640f54e488ec84a0a949136"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route cloudflare-dns.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "9c93255afac028740ba61d7db45022224f68939cb85a10ab0001f341dc8c4f93"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams cloudflare-dns.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "9c93255afac028740ba61d7db45022224f68939cb85a10ab0001f341dc8c4f93"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route quic.nginx.org",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "01f412bbfb6208a69c664bde6cff95b78103f00aeaa1843305b5fe87f22673e5"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams quic.nginx.org",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "01f412bbfb6208a69c664bde6cff95b78103f00aeaa1843305b5fe87f22673e5"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "e5f42a913c631e09d0a81415f131b9ba14781c929aa8c50da5f9e14611fe4bb5"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route chat.openai.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "d3dff1c959e6f213624b2adb3cd40e3d6ee4a7744126109b5415617202032be1"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams chat.openai.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "d3dff1c959e6f213624b2adb3cd40e3d6ee4a7744126109b5415617202032be1"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "4c67dd1fbd5cff6b0efa976f6b11bed0ad85787ae3c6fbcb747ee7155a182a36"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route fonts.gstatic.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "3a587bc3792d1476a22e30f526959e7c9f7766739b04ff115139276133e87e8b"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams fonts.gstatic.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "3a587bc3792d1476a22e30f526959e7c9f7766739b04ff115139276133e87e8b"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "1d00ccc8f7d0822705761a4bd6b0da250a784c2b5f38f57cb403571f0e52adac"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "1afad662b6709ac3f1680e450609f20b4f86f44a3cf805ab44f4a7af162a6728"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route ogads-pa.clients6.google.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "93607f349e4cf37fc5a3199b224c31a683bf05db82d3560af30a41ece0f0e11a"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams ogads-pa.clients6.google.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "93607f349e4cf37fc5a3199b224c31a683bf05db82d3560af30a41ece0f0e11a"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "d6dd5e8266321a990ca92320a048267e7b434b94dc769658c9d1a6a1bba4d557"
+          }
+        ]
+      },
+      {
+        "name": "QUIC actual route www.google.com",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "host": "203.0.113.202",
+          "sha256": "f55506b3078cdebb721f6a011fc924b9c492dbfbdb51bdf6dd036339b92f3eb8"
+        }
+      },
+      {
+        "name": "QUIC exact datagrams www.google.com",
+        "passed": true,
+        "detail": [
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "f55506b3078cdebb721f6a011fc924b9c492dbfbdb51bdf6dd036339b92f3eb8"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "e2594e81f2fe39e0c717bbfe89926d6ce86ae218cbc8f8d838cb8f05c42724b3"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "87816e03819260965d12a0e687982ced97024d0910b17e48efb613041faffc5d"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "f72760cd29558c8ba1784fc2d144acbda8abfdb947187b56d9c65124e71b1a7a"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "4ea71b5c74faffd1d037f26d1057135806db4bf0c427b88afba23be456c1693c"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "f5c7ea0b9d5ebd5b59319773c0f126fa856c7a9d8d1b3efeb3b6c360306f13c6"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "07782ec50bd4c75a8afd47fbb7a11015ff07d890e2256317af03aec411c74cf7"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "1c5fa16829f214af4093839a851a1bc3a9dab1241a8eb2c97631877036bb108a"
+          },
+          {
+            "node": "domain",
+            "kind": "udp",
+            "host": "203.0.113.202",
+            "port": 443,
+            "sha256": "9c9e0aa08b4778ffc58d74859ad97eb7bc5162a259802b7d2e7093dcf632a951"
+          }
+        ]
+      },
+      {
+        "name": "wire HTTPS query still forwarded",
+        "passed": true,
+        "detail": [
+          [
+            "mapping.test",
+            1
+          ],
+          [
+            "dns-tcp.test",
+            1
+          ],
+          [
+            "alias.test",
+            1
+          ],
+          [
+            "hints.test",
+            65
+          ],
+          [
+            "provider.test",
+            1
+          ],
+          [
+            "unmatched.test",
+            1
+          ],
+          [
+            "ttl.test",
+            1
+          ],
+          [
+            "ttl.test",
+            1
+          ],
+          [
+            "udp-mapping.test",
+            1
+          ],
+          [
+            "mapping.test",
+            1
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "cloudflare-dns.com",
+            1
+          ],
+          [
+            "cloudflare-dns.com",
+            28
+          ],
+          [
+            "quic.nginx.org",
+            1
+          ],
+          [
+            "quic.nginx.org",
+            28
+          ],
+          [
+            "chat.openai.com",
+            1
+          ],
+          [
+            "chat.openai.com",
+            28
+          ],
+          [
+            "fonts.gstatic.com",
+            1
+          ],
+          [
+            "fonts.gstatic.com",
+            28
+          ],
+          [
+            "ogads-pa.clients6.google.com",
+            1
+          ],
+          [
+            "ogads-pa.clients6.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ],
+          [
+            "www.google.com",
+            1
+          ],
+          [
+            "www.google.com",
+            28
+          ]
+        ]
+      },
+      {
+        "name": "upstream EOF returns failure",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "redir EOF identifies actual proxy and target",
+        "passed": true,
+        "detail": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=8 groups=1 providers=0 controllers=127.0.0.1:55029 bound_listeners=5\nlistener dispatch error protocol=redir listener=Some(10.93.0.1:51845) peer=Some(10.93.0.2:55002): failed to fill whole buffer (proxy=domain chain=domain target=eof.test:443)\n"
+      },
+      {
+        "name": "actual route sni.test 443",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.215:443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 58818,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "payload unchanged sni.test",
+        "passed": true,
+        "detail": {
+          "node": "domain",
+          "target": "203.0.113.215:443",
+          "sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24",
+          "client_port": 58818,
+          "request_sha256": "675892bd6f8ed1a21225f2ab6893a11a7c7d64d3825a55954b09d1d563c5be24"
+        }
+      },
+      {
+        "name": "API matched rule sni.test",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 699,
+          "download": 2086,
+          "start": "2026-11-01T09:56:08.031Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "sni.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "58818",
+            "destinationIP": "203.0.113.215",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "sni.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      },
+      {
+        "name": "override false retains original IP but matches SNI",
+        "passed": true,
+        "detail": {
+          "id": "1",
+          "upload": 699,
+          "download": 2086,
+          "start": "2026-11-01T09:56:08.031Z",
+          "chains": [
+            "domain"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Domain",
+          "rulePayload": "sni.test",
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "10.93.0.2",
+            "sourcePort": "58818",
+            "destinationIP": "203.0.113.215",
+            "destinationPort": "443",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "sni.test",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      }
+    ]
+  },
+  "final-ebpf.json": {
+    "passed": true,
+    "checks": 39,
+    "sha256": "d5ec21f7903f75a62c18cd93cff618afd2b61947d2868ff850521a39c0958416",
+    "raw": "raw/final-ebpf.json.gz",
+    "check_results": [
+      {
+        "name": "auto-redir real programs loaded",
+        "passed": true,
+        "detail": {
+          "supported": true,
+          "running": true,
+          "interfaces": [
+            {
+              "name": "ebpf-lan",
+              "mode": "auto-redir",
+              "ingress": true,
+              "egress": true,
+              "program_ids": [
+                5221,
+                5222
+              ],
+              "counters": {
+                "processed": 0,
+                "redirected": 0,
+                "bypassed": 0,
+                "dropped": 0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "eBPF status requires bearer",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "API exposes configured ebpf",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TC ingress and egress attached",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "IPv4 LAN TCP transparent proxy",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "IPv4 original destination preserved",
+        "passed": true,
+        "detail": [
+          [
+            "203.0.113.10",
+            443
+          ],
+          [
+            "2001:db8:abcd::10",
+            443
+          ],
+          [
+            "203.0.113.11",
+            8443
+          ],
+          [
+            "203.0.113.14",
+            443
+          ],
+          [
+            "203.0.113.12",
+            443
+          ],
+          [
+            "203.0.113.20",
+            443
+          ],
+          [
+            "0.0.0.0",
+            50693
+          ],
+          [
+            "203.0.113.20",
+            5354
+          ],
+          [
+            "2001:db8:abcd::20",
+            443
+          ],
+          [
+            "203.0.113.13",
+            443
+          ]
+        ]
+      },
+      {
+        "name": "IPv6 LAN TCP transparent proxy",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "IPv6 original destination preserved",
+        "passed": true,
+        "detail": [
+          [
+            "203.0.113.10",
+            443
+          ],
+          [
+            "2001:db8:abcd::10",
+            443
+          ],
+          [
+            "203.0.113.11",
+            8443
+          ],
+          [
+            "203.0.113.14",
+            443
+          ],
+          [
+            "203.0.113.12",
+            443
+          ],
+          [
+            "203.0.113.20",
+            443
+          ],
+          [
+            "0.0.0.0",
+            50693
+          ],
+          [
+            "203.0.113.20",
+            5354
+          ],
+          [
+            "2001:db8:abcd::20",
+            443
+          ],
+          [
+            "203.0.113.13",
+            443
+          ]
+        ]
+      },
+      {
+        "name": "kernel packet counters advance",
+        "passed": true,
+        "detail": {
+          "processed": 25,
+          "redirected": 20,
+          "bypassed": 5,
+          "dropped": 0
+        }
+      },
+      {
+        "name": "config reload with BPF attached",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "reload detaches old programs",
+        "passed": true,
+        "detail": [
+          5224,
+          5223
+        ]
+      },
+      {
+        "name": "traffic still works after reload",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "failed eBPF reconfiguration returns error",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "failed eBPF reconfiguration restores previous capture",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "normal exit detaches filters",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "normal exit frees programs",
+        "passed": true,
+        "detail": []
+      },
+      {
+        "name": "owned empty clsact removed",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "foreign TC filter preserved",
+        "passed": true,
+        "detail": [
+          {
+            "protocol": "all",
+            "pref": 10,
+            "kind": "matchall",
+            "chain": 0
+          },
+          {
+            "protocol": "all",
+            "pref": 10,
+            "kind": "matchall",
+            "chain": 0,
+            "options": {
+              "handle": 1,
+              "not_in_hw": true,
+              "actions": [
+                {
+                  "order": 1,
+                  "kind": "gact",
+                  "control_action": {
+                    "type": "continue"
+                  },
+                  "prob": {
+                    "random_type": "none",
+                    "control_action": {
+                      "type": "pass"
+                    },
+                    "val": 0
+                  },
+                  "index": 1,
+                  "ref": 1,
+                  "bind": 1
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "foreign clsact preserved",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "preexisting empty clsact preserved",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN redirect program attached",
+        "passed": true,
+        "detail": {
+          "supported": true,
+          "running": true,
+          "interfaces": [
+            {
+              "name": "ebpf-wan",
+              "mode": "redirect-to-tun",
+              "ingress": false,
+              "egress": true,
+              "program_ids": [
+                5252
+              ],
+              "counters": {
+                "processed": 0,
+                "redirected": 0,
+                "bypassed": 0,
+                "dropped": 0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "TC egress redirects IPv4 TCP into core TUN",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TC egress redirects IPv4 UDP into core TUN",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TC egress redirects IPv6 TCP into core TUN",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN kernel counters advance",
+        "passed": true,
+        "detail": {
+          "processed": 11,
+          "redirected": 11,
+          "bypassed": 0,
+          "dropped": 0
+        }
+      },
+      {
+        "name": "TUN mode exit removes BPF filters",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "TUN mode exit frees BPF programs",
+        "passed": true,
+        "detail": []
+      },
+      {
+        "name": "live eBPF ownership is exclusive",
+        "passed": true,
+        "detail": "app start error: eBPF auto-redir on ebpf-lan: interface 27 is already owned by another running Mihomo eBPF instance; Linux with CONFIG_BPF_SYSCALL/NET_CLS_BPF and CAP_BPF (or CAP_SYS_ADMIN) plus CAP_NET_ADMIN is required\n"
+      },
+      {
+        "name": "rejected second core leaves first attached",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "crash recovery removes stale programs",
+        "passed": true,
+        "detail": [
+          5269,
+          5270
+        ]
+      },
+      {
+        "name": "TCP works after crash recovery",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "core TCP sockets bypass eBPF capture",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "core UDP sockets bypass eBPF capture",
+        "passed": true,
+        "detail": null
+      },
+      {
+        "name": "core DNS UDP sockets bypass capture",
+        "passed": true,
+        "detail": {
+          "AD": false,
+          "Answer": [
+            {
+              "TTL": 123,
+              "data": "fixture",
+              "name": "bypass.test.",
+              "type": 16
+            }
+          ],
+          "CD": false,
+          "Question": [
+            {
+              "name": "bypass.test.",
+              "qclass": 1,
+              "qtype": 16
+            }
+          ],
+          "RA": true,
+          "RD": true,
+          "Status": 0,
+          "TC": false
+        }
+      },
+      {
+        "name": "bypass mark observed by kernel",
+        "passed": true,
+        "detail": {
+          "supported": true,
+          "running": true,
+          "interfaces": [
+            {
+              "name": "ebpf-direct",
+              "mode": "redirect-to-tun",
+              "ingress": false,
+              "egress": true,
+              "program_ids": [
+                5278
+              ],
+              "counters": {
+                "processed": 14,
+                "redirected": 6,
+                "bypassed": 8,
+                "dropped": 0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "missing capture interface fails startup",
+        "passed": true,
+        "detail": "app start error: No such device (os error 19)\n"
+      },
+      {
+        "name": "failed startup leaves no BPF programs",
+        "passed": true,
+        "detail": []
+      },
+      {
+        "name": "insufficient capabilities fail explicitly",
+        "passed": true,
+        "detail": "app start error: eBPF auto-redir on ebpf-lan: map error: failed to create map `config` with code -1; Linux with CONFIG_BPF_SYSCALL/NET_CLS_BPF and CAP_BPF (or CAP_SYS_ADMIN) plus CAP_NET_ADMIN is required\n"
+      },
+      {
+        "name": "capability failure leaves no BPF programs",
+        "passed": true,
+        "detail": []
+      }
+    ],
+    "sha256_source": "verified unchanged final core after fixture"
+  }
+}

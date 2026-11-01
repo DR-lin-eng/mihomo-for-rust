@@ -42,26 +42,16 @@ struct TunUdpDispatchTask {
 
 impl TunUdpDispatchTask {
     fn run(self) {
-        let session_result = relay_tun_udp_packet(
+        let writer = Arc::clone(&self.writer);
+        let session_result = self.session_pool.send_live(
             &self.spec,
             self.tunnel,
             self.parsed,
             self.dns_runtime,
-            Some(self.session_pool.as_ref()),
+            Arc::new(move |frame| write_frame(&writer, frame)),
         );
         match session_result {
-            Ok(Some(frame)) => {
-                if let Err(err) = write_frame(&self.writer, &frame) {
-                    push_log(
-                        LogLevel::Warn,
-                        format!(
-                            "tun worker write-back error inbound={}: {err}",
-                            self.spec.name
-                        ),
-                    );
-                }
-            }
-            Ok(None) => {}
+            Ok(()) => {}
             Err(err) => {
                 push_log(
                     LogLevel::Warn,

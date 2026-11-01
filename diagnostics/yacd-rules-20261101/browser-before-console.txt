@@ -1,0 +1,37 @@
+### Result
+Total messages: 7 (Errors: 3, Warnings: 0)
+Returning 3 messages for level "error"
+
+[ERROR] RangeError: Invalid time value
+    at xe (http://127.0.0.1:19094/ui/yacd/assets/index-84fa0cb3.js:1:10129)
+    at gt (http://127.0.0.1:19094/ui/yacd/assets/Rules-9adc4d02.js:1:15604)
+    at xd (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:39:19520)
+    at O0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:43960)
+    at E0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39724)
+    at x2 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39652)
+    at el (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39506)
+    at af (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:35874)
+    at S0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:34825)
+    at k (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:26:1535) @ http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:40
+[ERROR] RangeError: Invalid time value
+    at xe (http://127.0.0.1:19094/ui/yacd/assets/index-84fa0cb3.js:1:10129)
+    at gt (http://127.0.0.1:19094/ui/yacd/assets/Rules-9adc4d02.js:1:15604)
+    at xd (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:39:19520)
+    at O0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:43960)
+    at E0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39724)
+    at x2 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39652)
+    at el (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39506)
+    at af (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:35874)
+    at S0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:34825)
+    at k (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:26:1535) @ http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:40
+[ERROR] RangeError: Invalid time value
+    at xe (http://127.0.0.1:19094/ui/yacd/assets/index-84fa0cb3.js:1:10129)
+    at gt (http://127.0.0.1:19094/ui/yacd/assets/Rules-9adc4d02.js:1:15604)
+    at xd (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:39:19520)
+    at O0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:43960)
+    at E0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39724)
+    at x2 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39652)
+    at el (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:39506)
+    at af (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:35874)
+    at S0 (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:41:34825)
+    at k (http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:26:1535) @ http://127.0.0.1:19094/ui/yacd/assets/index-fbdea2fd.js:40

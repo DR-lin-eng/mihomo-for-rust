@@ -471,6 +471,17 @@ impl std::fmt::Display for ExecutionError {
 
 impl std::error::Error for ExecutionError {}
 
+impl ExecutionError {
+    pub(crate) fn with_dial_context(self,plan:&ExecutionPlan,metadata:&Metadata)->Self {
+        let context=format!("proxy={} chain={} target={}",plan.leaf_name,plan.selected_path.join(" -> "),metadata.remote_address().unwrap_or_default());
+        match self {
+            Self::Transport(TransportError::Io{kind,message})=>Self::Transport(TransportError::Io{kind,message:format!("{message} ({context})")}),
+            Self::Transport(TransportError::InvalidProxyResponse(message))=>Self::Transport(TransportError::InvalidProxyResponse(format!("{message} ({context})"))),
+            error=>error,
+        }
+    }
+}
+
 impl From<ResolveError> for ExecutionError {
     fn from(value: ResolveError) -> Self {
         Self::Resolve(value)

@@ -18,6 +18,23 @@ pub(super) fn prepare_udp_send(
         .tunnel
         .resolve_udp_outbound_with_plan(metadata)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+    if session.receive_barrier.is_some()
+        && session.prepared_plan.as_ref().is_some_and(|previous| previous != &plan)
+    {
+        if let Some(barrier) = session.receive_barrier.take() { barrier(); }
+        // An old proxy's datagrams use a different decoder and may still be
+        // in flight. Give the new outbound its own socket before negotiation.
+        session.reset_route_transport()?;
+    }
+    // A UDP-over-stream association is a flow, not a connection per packet.
+    // Reuse it while the resolved destination and selected outbound agree.
+    if session.proxy_stream.is_some()
+        && session.prepared_plan.as_ref() == Some(&plan)
+        && metadata.destination_socket_addr().is_some()
+        && session.prepared_target == metadata.destination_socket_addr()
+    {
+        return Ok(());
+    }
     match route {
         UdpOutboundRoute::Direct => {
             if session.prepared_matches(&plan, &PreparedUdpRoute::Direct) {
@@ -174,10 +191,14 @@ fn set_prepared_route(
     control: Option<mihomo_core::BoxedTcpStream>,
     stream: Option<mihomo_core::BoxedTcpStream>,
 ) -> io::Result<()> {
+    // Stop the old reader before the socket is used with a new route/decoder.
+    // Otherwise it can consume the new association's first response.
+    if let Some(barrier) = session.receive_barrier.take() { barrier(); }
     session.prepared_plan = Some(plan);
     session.prepared_route = Some(route);
     session.proxy_control = control;
     session.proxy_stream = stream;
     session.pending_response = None;
+    session.receive_generation = session.receive_generation.wrapping_add(1);
     Ok(())
 }

@@ -9,21 +9,45 @@ use mihomo_core::{DnsMode, Metadata, PacketEnvelope, UdpSession};
 pub struct NatMappings {
     origin_to_target: HashMap<String, IpAddr>,
     target_to_origin: HashMap<IpAddr, IpAddr>,
+    order: VecDeque<String>,
 }
 
 impl NatMappings {
+    fn key(metadata: &Metadata) -> String {
+        format!(
+            "{:?}|{:?}|{}",
+            metadata.source_socket_addr(),
+            metadata.dst_port,
+            metadata.display_host()
+        )
+    }
     pub fn add_mapping(&mut self, origin: &Metadata, resolved: &Metadata) {
-        let origin_key = origin.display_host();
+        let origin_key = Self::key(origin);
         if let Some(target_addr) = resolved.dst_ip {
-            self.origin_to_target.entry(origin_key).or_insert(target_addr);
+            if !self.origin_to_target.contains_key(&origin_key) {
+                while self.origin_to_target.len() >= 4096 {
+                    if let Some(old) = self.order.pop_front() {
+                        self.origin_to_target.remove(&old);
+                    } else {
+                        break;
+                    }
+                }
+                self.order.push_back(origin_key.clone());
+            }
+            self.origin_to_target.insert(origin_key, target_addr);
             if let Some(origin_addr) = origin.dst_ip {
-                self.target_to_origin.entry(target_addr).or_insert(origin_addr);
+                if self.target_to_origin.len() >= 4096 {
+                    self.target_to_origin.clear();
+                }
+                self.target_to_origin
+                    .entry(target_addr)
+                    .or_insert(origin_addr);
             }
         }
     }
 
     pub fn target_for(&self, metadata: &Metadata) -> Option<SocketAddr> {
-        let target_addr = self.origin_to_target.get(&metadata.display_host())?;
+        let target_addr = self.origin_to_target.get(&Self::key(metadata))?;
         let port = metadata.dst_port?;
         Some(SocketAddr::new(*target_addr, port))
     }
@@ -40,6 +64,17 @@ pub struct QueuedUdpRelay {
 }
 
 impl QueuedUdpRelay {
+    pub(crate) fn target_for_resolved(
+        &mut self,
+        origin: &Metadata,
+        resolved: &Metadata,
+    ) -> io::Result<SocketAddr> {
+        let target = resolved
+            .destination_socket_addr()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "destination unresolved"))?;
+        self.mappings.add_mapping(origin, resolved);
+        Ok(target)
+    }
     pub fn enqueue(&mut self, packet: PacketEnvelope) {
         self.queue.push_back(packet);
     }
@@ -56,7 +91,10 @@ impl QueuedUdpRelay {
         &self.mappings
     }
 
-    pub fn process_next(&mut self, session: &mut impl UdpSession) -> io::Result<Option<SocketAddr>> {
+    pub fn process_next(
+        &mut self,
+        session: &mut impl UdpSession,
+    ) -> io::Result<Option<SocketAddr>> {
         let Some(packet) = self.queue.pop_front() else {
             return Ok(None);
         };
@@ -105,7 +143,19 @@ impl QueuedUdpRelay {
         payload: ByteWindow,
         remote: SocketAddr,
     ) -> io::Result<usize> {
-        packet.write_back(payload, Some(self.restore_source(remote)))
+        let restored = if self
+            .mappings
+            .target_for(packet.metadata())
+            .is_some_and(|target| target.ip() == remote.ip())
+        {
+            SocketAddr::new(
+                packet.metadata().dst_ip.unwrap_or(remote.ip()),
+                remote.port(),
+            )
+        } else {
+            remote
+        };
+        packet.write_back(payload, Some(restored))
     }
 }
 
@@ -170,7 +220,10 @@ mod tests {
                 metadata.dst_ip = Some(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)));
                 return Ok(());
             }
-            Err(io::Error::new(io::ErrorKind::NotFound, "missing resolver result"))
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "missing resolver result",
+            ))
         }
 
         fn send_to(&mut self, payload: ByteWindow, target: SocketAddr) -> io::Result<usize> {

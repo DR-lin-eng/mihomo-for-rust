@@ -20,6 +20,7 @@ pub use crate::hy2_realm::{
 pub use crate::hy2_stream::Hy2UdpOptions;
 pub use crate::openvpn_stream::{OpenVpnOptions, OpenVpnTestServer};
 pub use crate::public_api::*;
+pub use crate::quic_sniff::{sniff_quic_initial,QuicInitialCrypto};
 pub use crate::sudoku_httpmask::{
     HttpMaskAcceptResult as SudokuHttpMaskAcceptResult,
     HttpMaskServerAcceptor as SudokuHttpMaskServerAcceptor,
@@ -30,7 +31,7 @@ pub use crate::transport_types::{
     TcpTransportExecutor, TlsOptions, TransportAction, TransportError, TransportFamily,
     TransportHop, TransportPlan, TransportPlanRunner, TransportTarget, TransportTraceStep,
     TrojanShadowsocksOptions, TunnelDnsOptions, WireGuardPeerTransportOptions,
-    connect_tcp_addr_with_options, clear_default_interface_name, clear_default_routing_mark, set_default_interface_name,
+    connect_tcp_addr_with_options, apply_auto_interface_to_udp, clear_default_interface_name, clear_default_routing_mark, set_default_interface_name,
     set_default_routing_mark, PACKETADDR_MAGIC_HOST, PACKETADDR_MAGIC_PORT, SUPPORTED_TRANSPORTS,
 };
 pub use crate::tuic_stream::TuicUdpOptions;

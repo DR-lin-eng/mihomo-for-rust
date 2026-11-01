@@ -452,7 +452,7 @@ proxies:
             None,
         );
         assert!(selected.contains(r#""now":"leaf-b""#), "{selected}");
-        assert!(selected.contains(r#""fixed":"leaf-b""#), "{selected}");
+        assert_eq!(app.runtime_tunnel.group_selected("selector").as_deref(), Some("leaf-b"));
         let traffic_after_first = send_http_request(
             controller_addr,
             "GET",
@@ -636,7 +636,7 @@ proxies:
             None,
         );
         assert!(selected.contains(r#""now":"provider-b""#), "{selected}");
-        assert!(selected.contains(r#""fixed":"provider-b""#), "{selected}");
+        assert_eq!(app.runtime_tunnel.group_selected("selector").as_deref(), Some("provider-b"));
 
         let second = run_tunnel_roundtrip(tunnel_addr, b"ping");
         assert_eq!(second, b"pong-b");
@@ -904,7 +904,7 @@ listeners:
         let body = parse_http_json(&snapshot);
         assert_eq!(body["connections"][0]["chains"][0], "leaf-b", "{snapshot}");
         assert_eq!(body["connections"][0]["chains"][1], "auto", "{snapshot}");
-        assert_eq!(body["connections"][0]["rule"], "MATCH", "{snapshot}");
+        assert_eq!(body["connections"][0]["rule"], "Match", "{snapshot}");
         assert_eq!(body["connections"][0]["rulePayload"], "", "{snapshot}");
         assert_eq!(body["connections"][0]["metadata"]["type"], "socks5", "{snapshot}");
         assert_eq!(body["connections"][0]["metadata"]["destinationIP"], "127.0.0.1", "{snapshot}");

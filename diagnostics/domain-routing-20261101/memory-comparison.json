@@ -1,0 +1,45 @@
+{
+  "baseline_sha256": "445d3212f16f5dad94171055952878e5b9c430fc11557e4223a3ebd247c241f2",
+  "current_sha256": "e8f850e5f0f21cc6fd07d4eeed79d02bd2fde84c3ddbaff34eeaa0602e4378be",
+  "method": "Same Docker container with CPUs=2, same static AArch64 target and 557-tree model, 3 runs per scenario; 32 API requests per run; numbers in KiB",
+  "scenarios": [
+    {
+      "scenario": "idle",
+      "runs": 3,
+      "idle_rss_kib": {
+        "before": 8212,
+        "after": 8592,
+        "delta": 380
+      },
+      "api_rss_kib": {
+        "before": 8388,
+        "after": 8764,
+        "delta": 376
+      },
+      "anonymous_kib": {
+        "before": 1132,
+        "after": 1136,
+        "delta": 4
+      }
+    },
+    {
+      "scenario": "smart-18-groups",
+      "runs": 3,
+      "idle_rss_kib": {
+        "before": 12736,
+        "after": 12988,
+        "delta": 252
+      },
+      "api_rss_kib": {
+        "before": 12912,
+        "after": 13160,
+        "delta": 248
+      },
+      "anonymous_kib": {
+        "before": 5448,
+        "after": 5452,
+        "delta": 4
+      }
+    }
+  ]
+}

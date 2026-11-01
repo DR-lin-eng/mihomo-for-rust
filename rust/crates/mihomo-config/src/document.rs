@@ -9,6 +9,10 @@ fn default_mode() -> String {
     "rule".to_owned()
 }
 
+fn deserialize_mode<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    Ok(String::deserialize(deserializer)?.trim().to_ascii_lowercase())
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RuleProviderBehavior {
     Domain,
@@ -207,7 +211,7 @@ pub struct RuntimeConfigDocument {
     pub inbound_tfo: bool,
     #[serde(default, rename = "inbound-mptcp")]
     pub inbound_mptcp: bool,
-    #[serde(default = "default_mode", rename = "mode")]
+    #[serde(default = "default_mode", rename = "mode", deserialize_with = "deserialize_mode")]
     pub mode: String,
     #[serde(default, rename = "unified-delay")]
     pub unified_delay: bool,

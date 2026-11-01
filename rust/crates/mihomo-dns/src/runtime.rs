@@ -153,6 +153,7 @@ impl DnsRuntime {
             fallback_ip_matchers: Arc::new(fallback_ip_matchers),
             cache: Arc::new(std::collections::HashMap::new()),
             cache_order: Arc::new(std::collections::VecDeque::new()),
+            domain_mappings: crate::mapping::DomainMappings::default(),
             fake_ip_state_path,
         };
         runtime.restore_fake_ip_state();
@@ -381,6 +382,8 @@ impl DnsRuntime {
             Err(_) if fallback => upstream.exchange(&self.config.fallback, packet)?,
             Err(err) => return Err(err),
         };
+        crate::packet::validate_dns_reply(packet, &response)?;
+        let _ = self.observe_dns_response(packet, &response);
         Ok(response)
     }
 
@@ -401,11 +404,13 @@ impl DnsRuntime {
             .into_iter()
             .filter(|ip| matches_query_type(*ip, query.query_type))
             .collect::<Vec<_>>();
-        Ok(Some(crate::packet::build_dns_response(
+        let response = crate::packet::build_dns_response(
             &query,
             response_ttl_secs(self, !ips.is_empty()),
             &ips,
-        )))
+        );
+        let _ = self.observe_dns_response(packet, &response);
+        Ok(Some(response))
     }
 
     pub fn merge_cache_from(&mut self, other: &Self) {
@@ -463,15 +468,18 @@ impl DnsRuntime {
                         upstream.exchange(&self.config.fallback, packet)
                     }
                 })?;
+                let _ = self.observe_dns_response(packet, &response);
                 return Ok(Some(response));
             }
         };
 
-        Ok(Some(crate::packet::build_dns_response(
+        let response = crate::packet::build_dns_response(
             &query,
             response_ttl_secs(self, !ips.is_empty()),
             &ips,
-        )))
+        );
+        let _ = self.observe_dns_response(packet, &response);
+        Ok(Some(response))
     }
 
     fn lookup_query_answer_for_query_type(
@@ -555,14 +563,15 @@ impl DnsRuntime {
     }
 
     pub fn is_fake_ip_addr(&self, ip: IpAddr) -> bool {
-        self.fake_ip_pool.contains(ip)
+        self.config.enhanced_mode == EnhancedMode::FakeIp && (self.fake_ip_pool.contains(ip)
             || self
                 .fake_ip_pool6
                 .as_ref()
-                .is_some_and(|pool| pool.contains(ip))
+                .is_some_and(|pool| pool.contains(ip)))
     }
 
     pub fn clone_fake_ip_state_from(&mut self, other: &Self) {
+        self.domain_mappings = other.domain_mappings.clone();
         self.fake_ip_pool.clone_state_from(&other.fake_ip_pool);
         match (&mut self.fake_ip_pool6, &other.fake_ip_pool6) {
             (Some(current), Some(previous)) => current.clone_state_from(previous),
@@ -663,6 +672,7 @@ impl DnsRuntime {
     }
 
     pub fn clear_cache(&mut self) {
+        self.domain_mappings.clear();
         self.cache = Arc::new(std::collections::HashMap::new());
         self.cache_order = Arc::new(std::collections::VecDeque::new());
     }
@@ -681,9 +691,9 @@ impl DnsRuntime {
         mut upstream: Option<&mut impl DnsUpstream>,
     ) -> Result<(), DnsError> {
         if metadata.host.is_none() && metadata.dst_ip.is_some() {
-            if let Some(host) = metadata.dst_ip.and_then(|ip| self.reverse_lookup(ip)) {
-                metadata.host = Some(host.to_owned());
-                metadata.dns_mode = DnsMode::FakeIp;
+            if let Some(host) = metadata.dst_ip.and_then(|ip| self.domain_for_ip(ip)) {
+                metadata.host = Some(host);
+                metadata.dns_mode = if metadata.dst_ip.is_some_and(|ip|self.is_fake_ip_addr(ip)){DnsMode::FakeIp}else{DnsMode::Mapping};
             }
             return Ok(());
         }

@@ -67,5 +67,8 @@ webpki-roots = "0.25"
 rand_010 = { package = "rand", version = "0.10" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "io-util", "time"] }
 
+[target.'cfg(any(target_os = "linux", target_os = "android"))'.dependencies]
+libc = "0.2"
+
 [lib]
 path = "src/lib.rs"

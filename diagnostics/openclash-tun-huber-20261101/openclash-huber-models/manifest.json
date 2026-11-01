@@ -1,0 +1,47 @@
+{
+  "reference": "LightGBM 4.6.0",
+  "seed": 20261101,
+  "trees": 40,
+  "features": [
+    "success",
+    "failure",
+    "connect_time",
+    "latency",
+    "upload_mb",
+    "history_upload_mb",
+    "maxuploadrate_kb",
+    "history_maxuploadrate_kb",
+    "download_mb",
+    "history_download_mb",
+    "maxdownloadrate_kb",
+    "history_maxdownloadrate_kb",
+    "duration_minutes",
+    "history_duration_minutes",
+    "last_used_seconds",
+    "is_udp",
+    "is_tcp",
+    "loss_rate",
+    "cumul_loss_rate",
+    "asn_feature",
+    "country_feature",
+    "address_feature",
+    "port_feature",
+    "traffic_ratio",
+    "traffic_density",
+    "connection_type_feature",
+    "asn_hash",
+    "host_hash",
+    "ip_hash",
+    "geoip_hash"
+  ],
+  "models": {
+    "huber.bin": {
+      "sha256": "5cd3390931285506f284ac7acbffea27f75970d79a33db0a4eeccda9cb015b7b",
+      "bytes": 66886
+    },
+    "huber-scaled.bin": {
+      "sha256": "e5e2b93d3fb47ea332dce67fded6e457a472df8357f1177e99eaee39035974e8",
+      "bytes": 67035
+    }
+  }
+}

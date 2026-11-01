@@ -63,7 +63,11 @@ impl LightGbmModel {
             return Err("Smart requires a single output model".into());
         }
         let objective = header.get("objective").copied().unwrap_or("regression");
-        if !objective.starts_with("regression") {
+        // Huber changes the training loss, not the prediction link: native
+        // LightGBM returns the same tree sum as ordinary regression.
+        if !objective.starts_with("regression")
+            && objective.split_whitespace().next() != Some("huber")
+        {
             return Err(format!("unsupported Smart objective: {objective}"));
         }
         let names = header

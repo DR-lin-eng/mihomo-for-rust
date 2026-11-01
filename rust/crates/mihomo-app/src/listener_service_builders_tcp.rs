@@ -22,6 +22,7 @@ pub(super) fn build_tcp_listener_configs(
             name: "__top_level_socks__".into(),
             address: address.clone(),
             handler: ManagedTcpListenerHandler::Socks(TlsInboundConfig {
+                udp: true,
                 base: base_from_address("__top_level_socks__", &address),
                 users: auth_users.clone(),
                 ..TlsInboundConfig::default()
@@ -34,6 +35,7 @@ pub(super) fn build_tcp_listener_configs(
             name: "__top_level_mixed__".into(),
             address: address.clone(),
             handler: ManagedTcpListenerHandler::Mixed(TlsInboundConfig {
+                udp: true,
                 base: base_from_address("__top_level_mixed__", &address),
                 users: auth_users,
                 ..TlsInboundConfig::default()

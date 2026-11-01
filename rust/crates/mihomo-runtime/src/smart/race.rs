@@ -365,7 +365,7 @@ impl RuntimeTunnel {
                     }
                     Err(error) => {
                         self.record_smart_dial_failure(metadata, &plan, elapsed);
-                        last = error;
+                        last = error.with_dial_context(&plan,metadata);
                     }
                 }
             }

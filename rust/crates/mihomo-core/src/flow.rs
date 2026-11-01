@@ -3,7 +3,7 @@ use std::io;
 use std::io::{Read, Write};
 use std::net::{IpAddr, Shutdown, SocketAddr};
 use std::str::FromStr;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use mihomo_buf::ByteWindow;
@@ -74,6 +74,8 @@ pub struct Metadata {
     pub inbound_user: String,
     pub host: Option<String>,
     pub dns_mode: DnsMode,
+    /// Internal TUN DNS dispatch; independent of user-selected proxy names.
+    pub dns_hijacked: bool,
     pub uid: Option<u32>,
     pub process: String,
     pub process_path: String,
@@ -104,6 +106,7 @@ impl Default for Metadata {
             inbound_user: String::new(),
             host: None,
             dns_mode: DnsMode::Normal,
+            dns_hijacked: false,
             uid: None,
             process: String::new(),
             process_path: String::new(),
@@ -221,6 +224,12 @@ impl std::fmt::Display for ParseMetadataError {
 impl std::error::Error for ParseMetadataError {}
 
 pub trait TcpStream: Read + Write + Send + Any {
+    fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "read timeout unavailable"))
+    }
+    fn set_read_timeout(&self, _timeout: Option<std::time::Duration>) -> io::Result<()> {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "read timeout unavailable"))
+    }
     /// Optional physical TCP counters; multiplexed/QUIC streams may have none.
     fn tcp_stats(&self)->Option<crate::TcpStats>{None}
     fn set_timeouts(&self,_read:Option<std::time::Duration>,_write:Option<std::time::Duration>)->io::Result<()>{Ok(())}
@@ -257,6 +266,8 @@ pub trait TcpStream: Read + Write + Send + Any {
 }
 
 impl TcpStream for std::net::TcpStream {
+    fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{std::net::TcpStream::read_timeout(self)}
+    fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{std::net::TcpStream::set_read_timeout(self,timeout)}
     fn tcp_stats(&self)->Option<crate::TcpStats>{crate::tcp_stats::read(self)}
     fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.set_read_timeout(read)?;self.set_write_timeout(write)}
 
@@ -274,6 +285,8 @@ impl TcpStream for std::net::TcpStream {
 }
 
 impl TcpStream for Box<dyn TcpStream> {
+    fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{(**self).read_timeout()}
+    fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{(**self).set_read_timeout(timeout)}
     fn tcp_stats(&self)->Option<crate::TcpStats>{(**self).tcp_stats()}
     fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{(**self).set_timeouts(read,write)}
 
@@ -307,7 +320,7 @@ pub type BoxedTcpStream = Box<dyn TcpStream>;
 pub struct ConnectionContext {
     id: u64,
     metadata: Metadata,
-    stream: BoxedTcpStream,
+    stream: Option<BoxedTcpStream>,
 }
 
 impl ConnectionContext {
@@ -315,7 +328,7 @@ impl ConnectionContext {
         Self {
             id: NEXT_CONTEXT_ID.fetch_add(1, Ordering::Relaxed),
             metadata,
-            stream: Box::new(stream),
+            stream: Some(Box::new(stream)),
         }
     }
 
@@ -332,7 +345,11 @@ impl ConnectionContext {
     }
 
     pub fn stream_mut(&mut self) -> &mut dyn TcpStream {
-        &mut *self.stream
+        self.stream.as_deref_mut().expect("connection stream")
+    }
+
+    pub fn wrap_stream(&mut self, wrap:impl FnOnce(BoxedTcpStream)->BoxedTcpStream) {
+        self.stream=Some(wrap(self.stream.take().expect("connection stream")));
     }
 }
 
@@ -391,6 +408,14 @@ impl PacketEnvelope {
 }
 
 pub trait UdpSession: Send {
+    fn idle_timeout(&self) -> Option<std::time::Duration> { None }
+    fn defer_receive(&mut self,_deferred:bool) {}
+    /// The prepared outbound chain and provider chain, with the leaf first.
+    fn connection_chains(&self) -> (Vec<String>, Vec<String>) {
+        (Vec::new(), Vec::new())
+    }
+    /// Cancel outstanding replies when the controller closes this UDP flow.
+    fn set_close_signal(&mut self, _signal: Arc<AtomicBool>) {}
     fn resolve_udp(&mut self, metadata: &mut Metadata) -> io::Result<()>;
     fn prepare_send(&mut self, _metadata: &mut Metadata) -> io::Result<()> {
         Ok(())

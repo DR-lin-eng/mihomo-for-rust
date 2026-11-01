@@ -1,0 +1,171 @@
+{
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-domain-routing",
+  "sha256": "e8f850e5f0f21cc6fd07d4eeed79d02bd2fde84c3ddbaff34eeaa0602e4378be",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "geosite_sha256": "2791dc94d5f2fceb1bf9b0d11e72e6309f33f2f99983fa032d7997f710ee552a",
+  "geosite_bytes": 4320390,
+  "records": [
+    {
+      "scenario": "idle",
+      "repeat": 0,
+      "startup_seconds": 0.0284,
+      "idle": {
+        "VmSize": 37004,
+        "VmHWM": 8592,
+        "VmRSS": 8592,
+        "Threads": 5,
+        "Pss": 8588,
+        "Private_Dirty": 1100,
+        "Anonymous": 1104
+      },
+      "after_api_poll": {
+        "VmSize": 37040,
+        "VmHWM": 8928,
+        "VmRSS": 8764,
+        "Threads": 5,
+        "Pss": 8760,
+        "Private_Dirty": 1128,
+        "Anonymous": 1136
+      },
+      "peak_rss_kib": 8984,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 0,
+      "startup_seconds": 0.0641,
+      "idle": {
+        "VmSize": 47628,
+        "VmHWM": 19128,
+        "VmRSS": 12988,
+        "Threads": 8,
+        "Pss": 12984,
+        "Private_Dirty": 5416,
+        "Anonymous": 5420
+      },
+      "after_api_poll": {
+        "VmSize": 47632,
+        "VmHWM": 19128,
+        "VmRSS": 13160,
+        "Threads": 8,
+        "Pss": 13156,
+        "Private_Dirty": 5444,
+        "Anonymous": 5452
+      },
+      "peak_rss_kib": 19128,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 1,
+      "startup_seconds": 0.038,
+      "idle": {
+        "VmSize": 37004,
+        "VmHWM": 8592,
+        "VmRSS": 8592,
+        "Threads": 5,
+        "Pss": 8588,
+        "Private_Dirty": 1100,
+        "Anonymous": 1104
+      },
+      "after_api_poll": {
+        "VmSize": 37040,
+        "VmHWM": 8916,
+        "VmRSS": 8764,
+        "Threads": 5,
+        "Pss": 8760,
+        "Private_Dirty": 1128,
+        "Anonymous": 1136
+      },
+      "peak_rss_kib": 8916,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 1,
+      "startup_seconds": 0.0569,
+      "idle": {
+        "VmSize": 47628,
+        "VmHWM": 19124,
+        "VmRSS": 12988,
+        "Threads": 8,
+        "Pss": 12984,
+        "Private_Dirty": 5416,
+        "Anonymous": 5420
+      },
+      "after_api_poll": {
+        "VmSize": 47632,
+        "VmHWM": 19124,
+        "VmRSS": 13160,
+        "Threads": 8,
+        "Pss": 13156,
+        "Private_Dirty": 5444,
+        "Anonymous": 5452
+      },
+      "peak_rss_kib": 19176,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 2,
+      "startup_seconds": 0.0386,
+      "idle": {
+        "VmSize": 37004,
+        "VmHWM": 8588,
+        "VmRSS": 8588,
+        "Threads": 5,
+        "Pss": 8584,
+        "Private_Dirty": 1096,
+        "Anonymous": 1100
+      },
+      "after_api_poll": {
+        "VmSize": 37040,
+        "VmHWM": 8984,
+        "VmRSS": 8760,
+        "Threads": 5,
+        "Pss": 8756,
+        "Private_Dirty": 1124,
+        "Anonymous": 1132
+      },
+      "peak_rss_kib": 8984,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 2,
+      "startup_seconds": 0.0642,
+      "idle": {
+        "VmSize": 47628,
+        "VmHWM": 19116,
+        "VmRSS": 12988,
+        "Threads": 8,
+        "Pss": 12984,
+        "Private_Dirty": 5416,
+        "Anonymous": 5420
+      },
+      "after_api_poll": {
+        "VmSize": 47632,
+        "VmHWM": 19116,
+        "VmRSS": 13160,
+        "Threads": 8,
+        "Pss": 13156,
+        "Private_Dirty": 5444,
+        "Anonymous": 5452
+      },
+      "peak_rss_kib": 19116,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    }
+  ]
+}

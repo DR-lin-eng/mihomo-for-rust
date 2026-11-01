@@ -21,6 +21,10 @@ vendor
 # macOS file
 .DS_Store
 
+# Local browser and scratch state
+.playwright-cli/
+From
+
 # Python bytecode
 **/__pycache__/
 *.py[cod]
@@ -34,6 +38,9 @@ rust/.cargo-home*/
 diagnostics/**/*.log
 diagnostics/**/pe-imports.txt
 diagnostics/**/*.dat
+diagnostics/**/raw/
+diagnostics/**/*.bin
+diagnostics/**/traffic-connections-*.json
 
 # Local dependency caches
 /.gomodcache/

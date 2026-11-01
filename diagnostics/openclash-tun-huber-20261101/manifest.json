@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-01",
+  "base_commit": "01268d2cd168c6f217b113f0015da742394cfbc7",
+  "build": {
+    "target": "aarch64-unknown-linux-musl",
+    "rustc": "1.88.0",
+    "static": true,
+    "stripped": true,
+    "command": "CC_aarch64_unknown_linux_musl=musl-gcc CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc RUSTFLAGS=\"-C target-feature=+crt-static\" cargo build --release --locked --target aarch64-unknown-linux-musl -p mihomo-app --bin mihomo"
+  },
+  "artifacts": {
+    "bin/mihomo-rust-openwrt-arm64-openclash-fix": {
+      "bytes": 28019496,
+      "sha256": "445d3212f16f5dad94171055952878e5b9c430fc11557e4223a3ebd247c241f2"
+    },
+    "bin/mihomo-rust-openwrt-arm64-openclash-fix.gz": {
+      "bytes": 12560947,
+      "sha256": "cd245636fa1775a1abd2ce644e0701d8463069015d11ed5a8f237f9b3202e451"
+    }
+  },
+  "checks": {
+    "runtime": {
+      "passed": 382,
+      "ignored": 1
+    },
+    "tun": {
+      "passed": 9,
+      "ignored": 0
+    },
+    "api": {
+      "passed": 65,
+      "ignored": 0
+    },
+    "app_tun": {
+      "passed": 38,
+      "ignored": 0
+    },
+    "app_dns": {
+      "passed": 11,
+      "ignored": 0
+    },
+    "app_reload": {
+      "passed": 2,
+      "ignored": 0
+    },
+    "cli_tun": {
+      "passed": 31,
+      "ignored": 0
+    },
+    "tun_integration": {
+      "passed": 19
+    },
+    "ui_api": {
+      "passed": 55
+    },
+    "huber_smart": {
+      "passed": 39
+    },
+    "smart_advanced": {
+      "passed": 62
+    },
+    "ebpf": {
+      "passed": 39
+    },
+    "huber_numeric": {
+      "cases": 320,
+      "max_absolute_error": 0
+    },
+    "regression_numeric": {
+      "cases": 160,
+      "max_absolute_error": 0
+    }
+  },
+  "source_sha256": {
+    "rust/crates/mihomo-app/src/listener_service_runtime_accept.rs": "6b181cb67d025fc4e6884c572f2bda868a77421b41a8dbc155aaad599b96f5d0",
+    "rust/crates/mihomo-app/src/main_tests/support_and_surfaces_native_support.rs": "76a29ef572c76c529824ea17ab8f9023a34c2f275307985eedd736e207b36a90",
+    "rust/crates/mihomo-runtime/src/listener_runtime.rs": "5a8522a059e8b7ed901c01813dd48f611b617410ec8cd18108a2fd39a54f8fae",
+    "rust/crates/mihomo-runtime/src/smart/model.rs": "ab819761049768bfd79cadc1571aadb20390e7949e054f1e419e8f2cf84151f5",
+    "rust/crates/mihomo-runtime/src/smart/tests.rs": "cf5a7c054e80f378f4eaf627800747198adee49be154071f43876e917800b503",
+    "rust/crates/mihomo-runtime/src/tun_surface.rs": "53b20ed0b52a2e579e70b80b999121fddd1156d4c90af0da0192fe9fa3871935",
+    "rust/crates/mihomo-tun/src/linux.rs": "c15e52820f31a56a28e62a1aa6e4d1e61ad098a34c9bb12a45546f38e9a18c27",
+    "rust/crates/mihomo-tun/src/tests.rs": "a5237ac38ac9c73e65edea3feae3a2eb9578e642438dc622407d5e215f1d85eb",
+    "scripts/smart-model-verify.py": "cce1e26f0f2e9b012b4c6a03e8b615339252e3fdb64284b3a5c9cd4d143bc40e",
+    "scripts/openclash-tun-smoke.py": "cb95c4d3bf9071e880649c4fd4c6156f3239e5c2022acb6dad66a38116d237ba",
+    "scripts/smart-huber-model-fixtures.py": "1cc2d1c0542784aa38b9a29d8d72be2d036b57084eb021cc86ee8a3359efebe1",
+    "config/config.go": "304a757dc304c8081d07bfb984aa34c7e0b5c6039f4b44344e4c08da6c0d146a",
+    "rust/Cargo.toml": "6c68034f51fb373d3cf074d76d829c6570f89935e349b1d54728316d18d321a4",
+    "rust/Cargo.lock": "3117eb391de30da8eb8406ac5d475a6eb48662625f2a24b29f5770ba85155356"
+  },
+  "reference": {
+    "openclash_commit": "e553e82e01c697aefbe1555261a503f425e00ccd",
+    "lightgbm": "4.6.0"
+  }
+}

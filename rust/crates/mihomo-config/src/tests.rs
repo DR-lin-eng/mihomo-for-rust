@@ -14,6 +14,13 @@ use crate::{
 };
 
 #[test]
+fn mode_accepts_go_compatible_case_variants() {
+    for (input, expected) in [("Rule", "rule"), ("GLOBAL", "global"), ("Direct", "direct")] {
+        assert_eq!(parse_runtime_config_document(&format!("mode: {input}\n")).unwrap().mode, expected);
+    }
+}
+
+#[test]
 fn parses_main_run_flags() {
     let args = [
         "mihomo",

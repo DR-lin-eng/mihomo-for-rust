@@ -16,6 +16,9 @@ use smoltcp::wire::{
 };
 
 use crate::listener_service::SystemUdpSession;
+#[path = "tun_udp_receiver.rs"]
+mod receiver;
+use receiver::{LiveUdpReceiver, TunUdpEgress};
 
 const DEFAULT_TUN_UDP_SESSION_POOL_CAPACITY: usize = 256;
 const DEFAULT_TUN_UDP_IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
@@ -46,8 +49,13 @@ struct TunUdpSessionPoolState {
 
 #[derive(Clone)]
 struct TunUdpSessionEntry {
-    session: Arc<Mutex<SystemUdpSession>>,
+    session: Arc<Mutex<PooledUdpSession>>,
     last_used_at: Instant,
+}
+
+struct PooledUdpSession {
+    session: SystemUdpSession,
+    receiver: Option<LiveUdpReceiver>,
 }
 
 impl Default for TunUdpSessionPool {
@@ -144,14 +152,23 @@ impl TunUdpSessionPool {
         dns_runtime: Option<mihomo_dns::DnsRuntime>,
         f: impl FnOnce(&mut SystemUdpSession) -> io::Result<R>,
     ) -> io::Result<R> {
+        self.with_pooled_session(source, destination, tunnel, dns_runtime, |pooled| f(&mut pooled.session))
+    }
+
+    fn with_pooled_session<R>(
+        &self, source: SocketAddr, destination: SocketAddr,
+        tunnel: Arc<RuntimeTunnel>, dns_runtime: Option<mihomo_dns::DnsRuntime>,
+        f: impl FnOnce(&mut PooledUdpSession) -> io::Result<R>,
+    ) -> io::Result<R> {
         let key = self.session_key(source, destination);
+        let mut retired = Vec::new();
         let session = {
             let mut state = self
                 .state
                 .lock()
                 .map_err(|_| io::Error::other("tun udp session cache mutex poisoned"))?;
             let now = Instant::now();
-            state.evict_expired(now);
+            retired.extend(state.evict_expired(now));
             if let Some(existing) = state.sessions.get_mut(&key) {
                 let session = Arc::clone(&existing.session);
                 existing.last_used_at = now;
@@ -161,10 +178,12 @@ impl TunUdpSessionPool {
             } else {
                 if state.sessions.len() >= state.max_entries {
                     if let Some(evicted) = state.order.pop_front() {
-                        state.sessions.remove(&evicted);
+                        retired.extend(state.sessions.remove(&evicted));
                     }
                 }
-                let created = Arc::new(Mutex::new(SystemUdpSession::new(tunnel, dns_runtime)?));
+                let created = Arc::new(Mutex::new(PooledUdpSession {
+                    session: SystemUdpSession::new(tunnel, dns_runtime)?, receiver: None,
+                }));
                 state.order.push_back(key.clone());
                 state.sessions.insert(
                     key.clone(),
@@ -176,6 +195,8 @@ impl TunUdpSessionPool {
                 created
             }
         };
+        // Dropping an entry joins its receiver; never do that under the map lock.
+        drop(retired);
         let mut session = session
             .lock()
             .map_err(|_| io::Error::other("tun udp session mutex poisoned"))?;
@@ -189,6 +210,60 @@ impl TunUdpSessionPool {
             }
         }
         result
+    }
+
+    pub(crate) fn shutdown(&self) {
+        let sessions = {
+            let mut state = self.state.lock().unwrap();
+            state.order.clear();
+            std::mem::take(&mut state.sessions)
+        };
+        for entry in sessions.values() {
+            if let Some(receiver) = &entry.session.lock().unwrap().receiver { receiver.cancel(); }
+        }
+        // Receiver shutdown must not wait while holding the session map lock.
+        drop(sessions);
+    }
+
+    pub(crate) fn send_live(
+        &self, spec: &TunRuntimeSpec, tunnel: Arc<RuntimeTunnel>, parsed: ParsedTunUdpPacket,
+        dns_runtime: Option<mihomo_dns::DnsRuntime>, emit: TunUdpEgress,
+    ) -> io::Result<()> {
+        let packet = Arc::new(LiveTunUdpPacket {
+            payload: ByteWindow::freeze(parsed.payload), source: parsed.source,
+            destination: parsed.destination, hop_limit: parsed.hop_limit, emit,
+        });
+        // This path sends directly; do not also enqueue a duplicate envelope
+        // retaining the original payload for the lifetime of the core.
+        let prepared = mihomo_runtime::prepare_tun_udp_packet(
+            spec, packet, Some(parsed.source), parsed.destination,
+        );
+        let timeout = if spec.config.udp_timeout > 0 {
+            Duration::from_secs(spec.config.udp_timeout as u64)
+        } else { DEFAULT_TUN_UDP_IDLE_TIMEOUT };
+        self.with_pooled_session(parsed.source, parsed.destination, tunnel.clone(), dns_runtime, |pooled| {
+            pooled.session.idle_timeout = Some(timeout);
+            if pooled.receiver.as_ref().is_some_and(LiveUdpReceiver::stopped) {
+                pooled.receiver.take();
+                pooled.session.invalidate_association();
+            }
+            let target = tunnel.send_udp_packet(&prepared.envelope, &mut pooled.session)?;
+            if pooled.session.is_local_dns() {
+                if let Some((response, remote)) = pooled.session.recv_once()? {
+                    tunnel.write_back_udp(&prepared.envelope, ByteWindow::freeze(response), remote)?;
+                }
+                return Ok(());
+            }
+            if pooled.receiver.as_ref().is_some_and(|receiver| !receiver.matches(&pooled.session)) {
+                pooled.receiver.take();
+            }
+            if let Some(receiver) = &pooled.receiver {
+                receiver.add_mapping(target, prepared.envelope.clone());
+            } else if let Some(receiver) = LiveUdpReceiver::start(&mut pooled.session, target, prepared.envelope.clone(), tunnel.clone(), timeout)? {
+                pooled.receiver = Some(receiver);
+            }
+            Ok(())
+        })
     }
 
     fn session_key(&self, source: SocketAddr, destination: SocketAddr) -> TunUdpSessionKey {
@@ -212,7 +287,7 @@ impl TunUdpSessionPool {
 
 
 impl TunUdpSessionPoolState {
-    fn evict_expired(&mut self, now: Instant) {
+    fn evict_expired(&mut self, now: Instant) -> Vec<TunUdpSessionEntry> {
         let idle_timeout = self.idle_timeout;
         let mut expired = Vec::new();
         for key in self.order.iter() {
@@ -220,17 +295,19 @@ impl TunUdpSessionPoolState {
                 expired.push(key.clone());
                 continue;
             };
-            if now.duration_since(entry.last_used_at) >= idle_timeout {
+            let active = match entry.session.try_lock() {
+                Ok(pooled) => pooled.receiver.as_ref().is_some_and(|receiver| receiver.last_activity().elapsed() < idle_timeout),
+                Err(_) => true, // a sender is currently using this association
+            };
+            if !active && now.duration_since(entry.last_used_at) >= idle_timeout {
                 expired.push(key.clone());
             }
         }
         if expired.is_empty() {
-            return;
+            return Vec::new();
         }
         self.order.retain(|key| !expired.iter().any(|expired_key| expired_key == key));
-        for key in expired {
-            self.sessions.remove(&key);
-        }
+        expired.into_iter().filter_map(|key| self.sessions.remove(&key)).collect()
     }
 }
 
@@ -465,6 +542,27 @@ struct TunUdpPacket {
     sink: Arc<Mutex<Option<(Vec<u8>, Option<SocketAddr>)>>>,
 }
 
+struct LiveTunUdpPacket {
+    payload: ByteWindow,
+    source: SocketAddr,
+    destination: SocketAddr,
+    hop_limit: u8,
+    emit: TunUdpEgress,
+}
+
+impl WriteBack for LiveTunUdpPacket {
+    fn write_back(&self, payload: ByteWindow, source: Option<SocketAddr>) -> io::Result<usize> {
+        let frame = encode_tun_udp_packet(source.unwrap_or(self.destination), self.source, self.hop_limit, payload.as_slice())?;
+        (self.emit)(&frame)?;
+        Ok(payload.len())
+    }
+}
+
+impl UdpPacket for LiveTunUdpPacket {
+    fn payload(&self) -> ByteWindow { self.payload.clone() }
+    fn local_addr(&self) -> SocketAddr { self.source }
+}
+
 impl TunUdpPacket {
     fn take_frame(
         &self,
@@ -502,14 +600,16 @@ impl UdpPacket for TunUdpPacket {
 
 #[cfg(test)]
 mod tests {
-    use std::net::{SocketAddr, UdpSocket};
+    use std::io::{Read, Write};
+    use std::net::{SocketAddr, TcpListener, UdpSocket};
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
 
     use mihomo_config::parse_runtime_config_document;
+    use mihomo_dns::DnsRuntime;
     use mihomo_inbound::TunStack;
-    use mihomo_runtime::build_runtime_registry;
+    use mihomo_runtime::{build_runtime_registry, RuntimeTunnel};
 
     use super::{
         encode_tun_udp_packet, parse_tun_udp_packet, relay_tun_udp_packet, TunUdpSessionPool,
@@ -583,6 +683,239 @@ rules:
     }
 
     #[test]
+    fn fake_ip_udp_restores_fake_source_for_multiple_game_datagrams() {
+        let echo = UdpSocket::bind("127.0.0.1:0").unwrap();
+        echo.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        let target = echo.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            for expected in [b"game-1".as_slice(), b"game-2".as_slice(), b"game-3".as_slice()] {
+                let mut packet = [0_u8; 1500];
+                let (read, peer) = echo.recv_from(&mut packet).unwrap();
+                assert_eq!(&packet[..read], expected);
+                let reply = [b"reply-".as_slice(), expected].concat();
+                echo.send_to(&reply, peer).unwrap();
+            }
+        });
+        let document = parse_runtime_config_document(
+            r#"
+mode: rule
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver: [rcode://success]
+tun:
+  enable: true
+  stack: system
+  device: fakeip-test
+proxies:
+  - type: direct
+    name: direct
+rules:
+  - MATCH,direct
+"#,
+        )
+        .unwrap();
+        let mut fake_dns = DnsRuntime::from_document(&document).unwrap();
+        let fake_ip = fake_dns.resolve_host("game.example").unwrap().unwrap();
+        assert!(fake_dns.is_fake_ip_addr(fake_ip));
+        let dial_document = parse_runtime_config_document(
+            "dns:\n  enable: true\n  enhanced-mode: fake-ip\n  fake-ip-range: 198.18.0.1/16\n  use-hosts: true\nhosts:\n  game.example: 127.0.0.1\n",
+        )
+        .unwrap();
+        let mut dial_dns = DnsRuntime::from_document(&dial_document).unwrap();
+        dial_dns.clone_fake_ip_state_from(&fake_dns);
+        let registry = build_runtime_registry(&document).unwrap();
+        let tunnel = Arc::new(
+            mihomo_runtime::RuntimeTunnel::new(document.mode.clone(), registry)
+                .with_dns_runtime(dial_dns),
+        );
+        let spec = mihomo_runtime::build_tun_runtime_specs(&document).remove(0);
+        let pool = TunUdpSessionPool::default();
+        for (index, payload) in [b"game-1".as_slice(), b"game-2".as_slice(), b"game-3".as_slice()].into_iter().enumerate() {
+            let request = super::ParsedTunUdpPacket {
+                source: "192.0.2.44:49152".parse().unwrap(),
+                destination: SocketAddr::new(fake_ip, target.port()),
+                payload: payload.to_vec(),
+                hop_limit: 64,
+            };
+            let response = relay_tun_udp_packet(
+                &spec,
+                Arc::clone(&tunnel),
+                request.clone(),
+                None,
+                Some(&pool),
+            )
+            .unwrap()
+            .unwrap_or_else(|| panic!("missing fake-ip udp response {index}"));
+            let parsed = parse_tun_udp_packet(&response).unwrap();
+            assert_eq!(parsed.source, SocketAddr::new(fake_ip, target.port()));
+            assert_eq!(parsed.destination, request.source);
+            assert_eq!(parsed.payload, [b"reply-".as_slice(), payload].concat());
+        }
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn fake_ip_udp_uses_socks5_udp_proxy_for_game_datagrams() {
+        let proxy_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy_addr = proxy_listener.local_addr().unwrap();
+        let target = "198.51.100.44:27015".parse::<SocketAddr>().unwrap();
+        let proxy_worker = thread::spawn(move || {
+            let (mut control, _) = proxy_listener.accept().unwrap();
+            let mut greeting = [0_u8; 3];
+            control.read_exact(&mut greeting).unwrap();
+            assert_eq!(greeting, [0x05, 0x01, 0x00]);
+            control.write_all(&[0x05, 0x00]).unwrap();
+            let mut request = [0_u8; 10];
+            control.read_exact(&mut request).unwrap();
+            assert_eq!(&request[..4], &[0x05, 0x03, 0x00, 0x01]);
+            let relay = UdpSocket::bind("127.0.0.1:0").unwrap();
+            relay.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+            let relay_addr = relay.local_addr().unwrap();
+            let mut reply = vec![0x05, 0x00, 0x00, 0x01];
+            reply.extend_from_slice(&"127.0.0.1".parse::<std::net::Ipv4Addr>().unwrap().octets());
+            reply.extend_from_slice(&relay_addr.port().to_be_bytes());
+            control.write_all(&reply).unwrap();
+            control.flush().unwrap();
+            for expected in [b"game-proxy-1".as_slice(), b"game-proxy-2".as_slice(), b"game-proxy-3".as_slice()] {
+                let mut frame = [0_u8; 2048];
+                let (read, peer) = relay.recv_from(&mut frame).unwrap();
+                assert!(read >= 10);
+                assert_eq!(&frame[..4], &[0, 0, 0, 1]);
+                let destination = SocketAddr::new(
+                    std::net::IpAddr::V4(std::net::Ipv4Addr::new(frame[4], frame[5], frame[6], frame[7])),
+                    u16::from_be_bytes([frame[8], frame[9]]),
+                );
+                assert_eq!(destination, target);
+                assert_eq!(&frame[10..read], expected);
+                let mut response = frame[..10].to_vec();
+                response.extend_from_slice(b"proxy-");
+                response.extend_from_slice(expected);
+                relay.send_to(&response, peer).unwrap();
+            }
+        });
+        let document = parse_runtime_config_document(&format!(
+            r#"
+mode: rule
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver: [rcode://success]
+proxies:
+  - type: socks5
+    name: game-socks
+    server: 127.0.0.1
+    port: {}
+    udp: true
+rules:
+  - DOMAIN,game.example,game-socks
+  - MATCH,DIRECT
+tun:
+  enable: true
+  stack: system
+  device: fakeip-socks-test
+"#,
+            proxy_addr.port()
+        ))
+        .unwrap();
+        let mut fake_dns = DnsRuntime::from_document(&document).unwrap();
+        let fake_ip = fake_dns.resolve_host("game.example").unwrap().unwrap();
+        let dial_document = parse_runtime_config_document(
+            "dns:\n  enable: true\n  enhanced-mode: fake-ip\n  fake-ip-range: 198.18.0.1/16\n  use-hosts: true\nhosts:\n  game.example: 198.51.100.44\n",
+        )
+        .unwrap();
+        let mut dial_dns = DnsRuntime::from_document(&dial_document).unwrap();
+        dial_dns.clone_fake_ip_state_from(&fake_dns);
+        let tunnel = Arc::new(
+            mihomo_runtime::RuntimeTunnel::new(
+                document.mode.clone(),
+                build_runtime_registry(&document).unwrap(),
+            )
+            .with_rule_set(mihomo_rules::compile_rule_set(&document.rules).unwrap())
+            .with_dns_runtime(dial_dns),
+        );
+        let spec = mihomo_runtime::build_tun_runtime_specs(&document).remove(0);
+        let pool = TunUdpSessionPool::default();
+        for payload in [b"game-proxy-1".as_slice(), b"game-proxy-2".as_slice(), b"game-proxy-3".as_slice()] {
+            let request = super::ParsedTunUdpPacket {
+                source: "192.0.2.44:49152".parse().unwrap(),
+                destination: SocketAddr::new(fake_ip, target.port()),
+                payload: payload.to_vec(),
+                hop_limit: 64,
+            };
+            let response = relay_tun_udp_packet(
+                &spec,
+                Arc::clone(&tunnel),
+                request.clone(),
+                None,
+                Some(&pool),
+            )
+            .unwrap()
+            .unwrap();
+            let parsed = parse_tun_udp_packet(&response).unwrap();
+            assert_eq!(parsed.source, SocketAddr::new(fake_ip, target.port()));
+            assert_eq!(parsed.destination, request.source);
+            assert_eq!(parsed.payload, [b"proxy-".as_slice(), payload].concat());
+        }
+        proxy_worker.join().unwrap();
+    }
+
+    #[test]
+    fn live_udp_receives_burst_and_delayed_push_without_another_send_and_releases_socket() {
+        let server = UdpSocket::bind("127.0.0.1:0").unwrap();
+        server.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        let target = server.local_addr().unwrap();
+        let (peer_tx, peer_rx) = std::sync::mpsc::channel();
+        let worker = thread::spawn(move || {
+            let mut peer = None;
+            for expected in [b"one".as_slice(), b"two".as_slice(), b"three".as_slice()] {
+                let mut payload = [0_u8; 32];
+                let (count, source) = server.recv_from(&mut payload).unwrap();
+                assert_eq!(&payload[..count], expected);
+                if let Some(previous) = peer { assert_eq!(source, previous); }
+                peer = Some(source);
+            }
+            let peer = peer.unwrap();
+            peer_tx.send(peer).unwrap();
+            for reply in [b"one".as_slice(), b"two".as_slice(), b"three".as_slice()] {
+                server.send_to(reply, peer).unwrap();
+            }
+            thread::sleep(Duration::from_millis(250));
+            server.send_to(b"push", peer).unwrap();
+        });
+        let document = parse_runtime_config_document("mode: direct\ntun:\n  enable: true\n  udp-timeout: 5\n").unwrap();
+        let tunnel = Arc::new(RuntimeTunnel::new(document.mode.clone(), build_runtime_registry(&document).unwrap()));
+        let spec = mihomo_runtime::build_tun_runtime_specs(&document).remove(0);
+        let pool = TunUdpSessionPool::from_tun_spec(&spec);
+        let (tx, rx) = std::sync::mpsc::channel();
+        let emit: super::TunUdpEgress = Arc::new(move |frame| {
+            tx.send(frame.to_vec()).map_err(|error| std::io::Error::other(error.to_string()))
+        });
+        let started = std::time::Instant::now();
+        for payload in [b"one".as_slice(), b"two".as_slice(), b"three".as_slice()] {
+            pool.send_live(&spec, tunnel.clone(), super::ParsedTunUdpPacket {
+                source: "192.0.2.44:49152".parse().unwrap(), destination: target,
+                payload: payload.to_vec(), hop_limit: 64,
+            }, None, emit.clone()).unwrap();
+        }
+        assert!(started.elapsed() < Duration::from_millis(500));
+        for expected in [b"one".as_slice(), b"two".as_slice(), b"three".as_slice(), b"push".as_slice()] {
+            let frame = rx.recv_timeout(Duration::from_secs(2)).unwrap();
+            let packet = parse_tun_udp_packet(&frame).unwrap();
+            assert_eq!(packet.source, target);
+            assert_eq!(packet.destination, "192.0.2.44:49152".parse().unwrap());
+            assert_eq!(packet.payload, expected);
+        }
+        worker.join().unwrap();
+        let peer = peer_rx.recv().unwrap();
+        pool.shutdown();
+        assert!(UdpSocket::bind(peer).is_ok(), "cached UDP socket must close with its receiver");
+        assert_eq!(tunnel.pending_udp_packets(), 0, "live packets must not also accumulate in the queue");
+    }
+
+    #[test]
     fn relay_tun_udp_packet_reuses_session_pool_for_same_flow() {
         let echo = UdpSocket::bind("127.0.0.1:0").unwrap();
         echo.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
@@ -649,6 +982,17 @@ rules:
 
     #[test]
     fn tun_udp_session_pool_evicts_oldest_entry_when_capacity_is_exceeded() {
+        let echo = UdpSocket::bind("127.0.0.1:0").unwrap();
+        echo.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        let target = echo.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            for expected in [b"first".as_slice(), b"second".as_slice()] {
+                let mut payload = [0_u8; 128];
+                let (count, peer) = echo.recv_from(&mut payload).unwrap();
+                assert_eq!(&payload[..count], expected);
+                echo.send_to(expected, peer).unwrap();
+            }
+        });
         let document = parse_runtime_config_document(
             r#"
 tun:
@@ -667,13 +1011,13 @@ rules:
         let pool = TunUdpSessionPool::new_with_capacity(1);
         let first = super::ParsedTunUdpPacket {
             source: "10.0.0.2:50000".parse().unwrap(),
-            destination: "1.1.1.1:53".parse().unwrap(),
+            destination: target,
             payload: b"first".to_vec(),
             hop_limit: 64,
         };
         let second = super::ParsedTunUdpPacket {
             source: "10.0.0.3:50001".parse().unwrap(),
-            destination: "1.1.1.1:53".parse().unwrap(),
+            destination: target,
             payload: b"second".to_vec(),
             hop_limit: 64,
         };
@@ -689,6 +1033,7 @@ rules:
         let _ = relay_tun_udp_packet(&spec, tunnel, second, None, Some(&pool)).unwrap();
 
         assert_eq!(pool.len(), 1);
+        worker.join().unwrap();
     }
 
     #[test]

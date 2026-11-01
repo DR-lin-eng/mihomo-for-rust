@@ -140,6 +140,7 @@ impl TransportTarget {
     }
 
     pub fn from_metadata(metadata: &Metadata) -> Result<Self, TransportError> {
+        let metadata=metadata.pure();
         let port = metadata
             .dst_port
             .ok_or(TransportError::MissingDestinationPort)?;
@@ -851,7 +852,7 @@ fn configure_tcp_socket(
     options: &SocketOptions,
     addr: SocketAddr,
 ) -> io::Result<()> {
-    let interface_name = effective_interface_name(options);
+    let interface_name = effective_interface_name_for_addr(options, addr.ip());
     let routing_mark = effective_routing_mark(options);
 
     #[cfg(any(target_os = "linux", target_os = "android"))]
@@ -877,6 +878,72 @@ fn effective_interface_name(options: &SocketOptions) -> String {
         .lock()
         .map(|value| value.clone())
         .unwrap_or_default()
+}
+
+fn effective_interface_name_for_addr(options: &SocketOptions, destination: std::net::IpAddr) -> String {
+    let fallback = effective_interface_name(options);
+    if !options.interface_name.trim().is_empty() || fallback.is_empty() {
+        return fallback;
+    }
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    if let Some(interface) = connected_interface_for_addr(destination) {
+        return interface;
+    }
+    fallback
+}
+
+/// Keep directly connected LAN/loopback destinations on their own interface
+/// instead of binding every auto-detected connection to the default WAN.
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn connected_interface_for_addr(destination: std::net::IpAddr) -> Option<String> {
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+    use std::ffi::CStr;
+    let mut first = std::ptr::null_mut();
+    if unsafe { libc::getifaddrs(&mut first) } != 0 { return None; }
+    let mut current = first;
+    let mut best: Option<(u32, String)> = None;
+    while !current.is_null() {
+        let entry = unsafe { &*current };
+        if !entry.ifa_addr.is_null() && !entry.ifa_netmask.is_null()
+            && !entry.ifa_name.is_null() && entry.ifa_flags & libc::IFF_UP as u32 != 0
+        {
+            let prefix = match destination {
+                IpAddr::V4(target) if unsafe { (*entry.ifa_addr).sa_family as i32 } == libc::AF_INET => {
+                    let address = unsafe { &*(entry.ifa_addr as *const libc::sockaddr_in) };
+                    let mask = unsafe { &*(entry.ifa_netmask as *const libc::sockaddr_in) };
+                    let address = u32::from(Ipv4Addr::from(address.sin_addr.s_addr.to_ne_bytes()));
+                    let mask = u32::from(Ipv4Addr::from(mask.sin_addr.s_addr.to_ne_bytes()));
+                    ((u32::from(target) & mask) == (address & mask)).then_some(mask.count_ones())
+                }
+                IpAddr::V6(target) if unsafe { (*entry.ifa_addr).sa_family as i32 } == libc::AF_INET6 => {
+                    let address = unsafe { &*(entry.ifa_addr as *const libc::sockaddr_in6) };
+                    let mask = unsafe { &*(entry.ifa_netmask as *const libc::sockaddr_in6) };
+                    let address = u128::from(Ipv6Addr::from(address.sin6_addr.s6_addr));
+                    let mask = u128::from(Ipv6Addr::from(mask.sin6_addr.s6_addr));
+                    ((u128::from(target) & mask) == (address & mask)).then_some(mask.count_ones())
+                }
+                _ => None,
+            };
+            if let Some(prefix) = prefix.filter(|prefix| *prefix > 0) {
+                if best.as_ref().is_none_or(|(previous, _)| prefix > *previous) {
+                    best = Some((prefix, unsafe { CStr::from_ptr(entry.ifa_name) }.to_string_lossy().into_owned()));
+                }
+            }
+        }
+        current = entry.ifa_next;
+    }
+    unsafe { libc::freeifaddrs(first) };
+    best.map(|(_, interface)| interface)
+}
+
+pub fn apply_auto_interface_to_udp(socket: &std::net::UdpSocket, destination: SocketAddr) -> io::Result<()> {
+    let interface = effective_interface_name_for_addr(&SocketOptions::default(), destination.ip());
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    if !interface.is_empty() {
+        socket2::SockRef::from(socket).bind_device(Some(interface.as_bytes()))?;
+    }
+    let _ = (socket, interface);
+    Ok(())
 }
 
 fn effective_routing_mark(options: &SocketOptions) -> i32 {

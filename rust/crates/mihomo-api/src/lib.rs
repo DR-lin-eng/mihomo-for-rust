@@ -3,6 +3,7 @@ mod server;
 mod snapshot_builder;
 mod snapshot_types;
 mod storage;
+mod time_format;
 
 pub use manifest::{manifest, MODULE};
 pub use server::{

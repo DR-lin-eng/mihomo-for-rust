@@ -87,7 +87,7 @@ impl BootstrapState {
             &sources.http_blobs,
         )?;
         let mut tunnel = RuntimeTunnel::new(self.document.mode.clone(), self.registry.clone())
-            .with_rule_set(rules);
+            .with_rule_set(rules).with_sniffer(self.document.sniffer.clone());
         let dns_runtime = self.build_dns_runtime_from_sources(&sources)
             .map_err(|err| RuleError::InvalidRuleProviderContent(err.to_string()))?;
         tunnel = tunnel.with_dns_runtime(dns_runtime);
@@ -110,7 +110,7 @@ impl BootstrapState {
         )?;
         Ok(
             RuntimeTunnel::new(self.document.mode.clone(), self.registry.clone())
-                .with_rule_set(rules),
+                .with_rule_set(rules).with_sniffer(self.document.sniffer.clone()),
         )
     }
 
@@ -228,7 +228,7 @@ impl BootstrapState {
             &sources.http_blobs,
         )?;
         let dns_runtime = self.build_dns_runtime_from_sources(&sources).ok();
-        let mut tunnel = RuntimeTunnel::new(self.document.mode, self.registry).with_rule_set(rules);
+        let mut tunnel = RuntimeTunnel::new(self.document.mode, self.registry).with_rule_set(rules).with_sniffer(self.document.sniffer.clone());
         if let Some(dns_runtime) = dns_runtime {
             tunnel = tunnel.with_dns_runtime(dns_runtime);
         }
@@ -310,8 +310,8 @@ impl BootstrapState {
                 provider_name.to_owned(),
             ));
         };
-        match provider.vehicle_type() {
-            Some(mihomo_config::RuleProviderVehicleType::Inline) => Ok(()),
+        let updated_at=match provider.vehicle_type() {
+            Some(mihomo_config::RuleProviderVehicleType::Inline) => Some(provider_now_ms()),
             Some(mihomo_config::RuleProviderVehicleType::File) => {
                 if provider.path.is_empty() {
                     return Ok(());
@@ -321,18 +321,23 @@ impl BootstrapState {
                 self.provider_sources
                     .file_blobs
                     .insert(provider.path.clone(), content);
-                Ok(())
+                Some(provider_file_ms(&path))
             }
             Some(mihomo_config::RuleProviderVehicleType::Http) => {
-                refresh_http_rule_provider_source(
+                let fresh=refresh_http_rule_provider_source(
                     &mut self.provider_sources,
                     &self.resolved_boot.home_dir,
                     provider,
                     tunnel,
-                )
+                )?;
+                fresh.then(provider_now_ms)
             }
-            None => Ok(()),
+            None => None,
+        };
+        if let Some(updated_at)=updated_at {
+            self.provider_sources.rule_provider_updated_at.insert(provider_name.into(),updated_at);
         }
+        Ok(())
     }
 
     pub fn refresh_proxy_provider_sources(
@@ -631,7 +636,7 @@ fn load_rule_provider_content_sources_from_home_into(
     home_dir: &Path,
     sources: &mut ProviderContentSources,
 ) -> Result<(), std::io::Error> {
-    for provider in document.rule_providers.values() {
+    for (name,provider) in &document.rule_providers {
         match provider.vehicle_type() {
             Some(mihomo_config::RuleProviderVehicleType::File) => {
                 if provider.url.is_empty() && provider.path.is_empty() {
@@ -639,10 +644,13 @@ fn load_rule_provider_content_sources_from_home_into(
                 }
                 if !provider.url.is_empty() {
                     if load_cached_http_rule_provider_source(sources, home_dir, provider)? {
+                        sources.rule_provider_updated_at.entry(name.clone()).or_insert_with(||provider_file_ms(&resolve_home_relative(home_dir,&provider.path)));
                         continue;
                     }
                     let tunnel = build_provider_fetch_tunnel(document, &sources, home_dir);
-                    let _ = refresh_http_rule_provider_source(sources, home_dir, provider, &tunnel);
+                    if matches!(refresh_http_rule_provider_source(sources, home_dir, provider, &tunnel),Ok(true)) {
+                        sources.rule_provider_updated_at.insert(name.clone(),provider_now_ms());
+                    }
                     continue;
                 }
                 if provider.path.is_empty() {
@@ -657,16 +665,23 @@ fn load_rule_provider_content_sources_from_home_into(
                 sources
                     .file_blobs
                     .insert(provider.path.clone(), content.clone());
+                sources.rule_provider_updated_at.insert(name.clone(),provider_file_ms(&path));
                 if let Ok(text) = String::from_utf8(content) {
                     sources.file_contents.insert(provider.path.clone(), text);
                 }
             }
             Some(mihomo_config::RuleProviderVehicleType::Http) => {
                 if load_cached_http_rule_provider_source(sources, home_dir, provider)? {
+                    sources.rule_provider_updated_at.entry(name.clone()).or_insert_with(||provider_file_ms(&resolve_home_relative(home_dir,&provider.path)));
                     continue;
                 }
                 let tunnel = build_provider_fetch_tunnel(document, &sources, home_dir);
-                let _ = refresh_http_rule_provider_source(sources, home_dir, provider, &tunnel);
+                if matches!(refresh_http_rule_provider_source(sources, home_dir, provider, &tunnel),Ok(true)) {
+                    sources.rule_provider_updated_at.insert(name.clone(),provider_now_ms());
+                }
+            }
+            Some(mihomo_config::RuleProviderVehicleType::Inline)=>{
+                sources.rule_provider_updated_at.entry(name.clone()).or_insert_with(provider_now_ms);
             }
             _ => {}
         }
@@ -686,8 +701,17 @@ fn load_cached_http_rule_provider_source(
     };
     validate_http_rule_provider_content(provider, &content)
         .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err.to_string()))?;
-    store_http_rule_provider_content(home_dir, sources, &provider.path, &provider.url, &content)?;
+    cache_rule_provider_content(sources, &provider.path, &provider.url, &content);
     Ok(true)
+}
+
+fn provider_now_ms()->u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis().min(u128::from(u64::MAX)) as u64
+}
+fn provider_file_ms(path:&Path)->u64 {
+    fs::metadata(path).and_then(|metadata|metadata.modified()).ok()
+        .and_then(|time|time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|time|time.as_millis().min(u128::from(u64::MAX)) as u64).unwrap_or(0)
 }
 
 fn load_cached_http_proxy_provider_source(
@@ -957,8 +981,8 @@ fn refresh_http_rule_provider_source(
     home_dir: &Path,
     provider: &mihomo_config::RuleProviderDefinition,
     tunnel: &RuntimeTunnel,
-) -> Result<(), BootstrapError> {
-    let content = match fetch_http_provider_bytes(
+) -> Result<bool, BootstrapError> {
+    let fetched = fetch_http_provider_bytes(
         &provider.url,
         &provider.header,
         provider.size_limit,
@@ -980,17 +1004,29 @@ fn refresh_http_rule_provider_source(
                 tunnel,
             )
         }
-    })
-    .or_else(|_| read_http_provider_cache(home_dir, &provider.path))
-    {
-        Ok(content) => content,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(err) => return Err(err.into()),
+    });
+    let (content,fresh)=match fetched {
+        Ok(content)=>(content,true),
+        Err(_)=>match read_http_provider_cache(home_dir,&provider.path) {
+            Ok(content)=>(content,false),
+            Err(err) if err.kind()==io::ErrorKind::NotFound=>return Ok(false),
+            Err(err)=>return Err(err.into()),
+        },
     };
     validate_http_rule_provider_content(provider, &content)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?;
-    store_http_rule_provider_content(home_dir, sources, &provider.path, &provider.url, &content)?;
-    Ok(())
+    if fresh && provider.behavior_kind()==Some(mihomo_config::RuleProviderBehavior::Classical) {
+        // A well-formed YAML payload can still contain invalid rule syntax.
+        // Compile fresh classical rules before replacing a working cache.
+        let providers=BTreeMap::from([("_validate".to_owned(),provider.clone())]);
+        let files=BTreeMap::from([(provider.path.clone(),content.as_slice())]);
+        let remote=BTreeMap::from([(provider.url.clone(),content.as_slice())]);
+        mihomo_rules::compile_rule_table_with_providers(&["RULE-SET,_validate,DIRECT".into()],&BTreeMap::new(),&providers,&files,&remote)
+            .map_err(|err|io::Error::new(io::ErrorKind::InvalidData,err.to_string()))?;
+    }
+    if fresh {store_http_rule_provider_content(home_dir, sources, &provider.path, &provider.url, &content)?;}
+    else {cache_rule_provider_content(sources,&provider.path,&provider.url,&content);}
+    Ok(fresh)
 }
 
 fn validate_http_rule_provider_content(
@@ -1381,6 +1417,13 @@ fn store_http_rule_provider_content(
             fs::create_dir_all(parent)?;
         }
         fs::write(&cache_path, content)?;
+    }
+    cache_rule_provider_content(sources,path,url,content);
+    Ok(())
+}
+
+fn cache_rule_provider_content(sources:&mut ProviderContentSources,path:&str,url:&str,content:&[u8]) {
+    if !path.is_empty() {
         sources.file_blobs.insert(path.to_owned(), content.to_vec());
         if let Ok(text) = String::from_utf8(content.to_vec()) {
             sources.file_contents.insert(path.to_owned(), text);
@@ -1392,7 +1435,6 @@ fn store_http_rule_provider_content(
             sources.http_contents.insert(url.to_owned(), text);
         }
     }
-    Ok(())
 }
 
 fn store_http_proxy_provider_content(
@@ -2804,6 +2846,7 @@ payload:
 "#,
         )
         .unwrap();
+        let original_modified=fs::metadata(temp.join("cache-rules.yaml")).unwrap().modified().unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         listener.set_nonblocking(true).unwrap();
         let addr = listener.local_addr().unwrap();
@@ -2851,6 +2894,12 @@ rules:
         worker.join().unwrap();
 
         assert!(document.rule_providers.contains_key("rule1"));
+        assert_eq!(fs::metadata(temp.join("cache-rules.yaml")).unwrap().modified().unwrap(),original_modified,
+            "loading a cache must not rewrite it or change its update time");
+        assert_eq!(sources.rule_provider_updated_at["rule1"],original_modified.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64);
+        let mut repeated=sources.clone();
+        super::load_cached_http_rule_provider_source(&mut repeated,&temp,&document.rule_providers["rule1"]).unwrap();
+        assert_eq!(fs::metadata(temp.join("cache-rules.yaml")).unwrap().modified().unwrap(),original_modified);
         assert!(sources.file_contents.contains_key("cache-rules.yaml"));
         assert!(sources
             .http_contents

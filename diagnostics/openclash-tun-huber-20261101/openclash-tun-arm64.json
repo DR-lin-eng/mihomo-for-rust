@@ -1,0 +1,182 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "utun exists and is up",
+      "passed": true,
+      "detail": "15: utun: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500\n    link/none \n"
+    },
+    {
+      "name": "Go-compatible default interface address",
+      "passed": true,
+      "detail": "15: utun: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 500\n    inet 198.18.0.1/30 scope global utun\n       valid_lft forever preferred_lft forever\n"
+    },
+    {
+      "name": "OpenClash exact main-table readiness condition",
+      "passed": true,
+      "detail": "default via 172.17.0.1 dev eth0 \n172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.11 \n198.18.0.0/30 dev utun proto kernel scope link src 198.18.0.1 \n"
+    },
+    {
+      "name": "connected subnet is /30",
+      "passed": true,
+      "detail": "default via 172.17.0.1 dev eth0 \n172.17.0.0/16 dev eth0 proto kernel scope link src 172.17.0.11 \n198.18.0.0/30 dev utun proto kernel scope link src 198.18.0.1 \n"
+    },
+    {
+      "name": "frontend still owns policy routing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TUN startup log identifies address",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "closed probes do not become error spam",
+      "passed": true,
+      "detail": "[TUN] interface utun started ipv4=[\"198.18.0.1/30\"] ipv6=[] auto-route=false\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=7 groups=1 providers=0 controllers=127.0.0.1:35325 bound_listeners=2\n"
+    },
+    {
+      "name": "malformed requests remain visible",
+      "passed": true,
+      "detail": "[TUN] interface utun started ipv4=[\"198.18.0.1/30\"] ipv6=[] auto-route=false\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=7 groups=1 providers=0 controllers=127.0.0.1:35325 bound_listeners=2\nlistener dispatch error protocol=mixed listener=Some(127.0.0.1:37047) peer=Some(127.0.0.1:43452): invalid http proxy request: missing request target\n"
+    },
+    {
+      "name": "real truncated upstream responses remain errors",
+      "passed": true,
+      "detail": "HTTP/1.1 502 Bad Gateway\r\n\r\n"
+    },
+    {
+      "name": "authenticated mixed HTTP CONNECT still works",
+      "passed": true,
+      "detail": "HTTP/1.1 200 Connection Established\r\nProxy-Agent: mihomo-rust\r\n\r\n"
+    },
+    {
+      "name": "ordinary proxy forwarding after probes",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "marked TCP goes through real TUN and proxy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "marked UDP goes through real TUN and SOCKS relay",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TCP proxy sees original TUN destination",
+      "passed": true,
+      "detail": [
+        [
+          1,
+          "198.51.100.99",
+          443
+        ],
+        [
+          1,
+          "198.51.100.10",
+          443
+        ],
+        [
+          1,
+          "198.51.100.20",
+          443
+        ],
+        [
+          3,
+          "0.0.0.0",
+          33186
+        ],
+        [
+          "udp",
+          "198.51.100.21",
+          9999
+        ]
+      ]
+    },
+    {
+      "name": "UDP proxy sees original TUN destination",
+      "passed": true,
+      "detail": [
+        [
+          1,
+          "198.51.100.99",
+          443
+        ],
+        [
+          1,
+          "198.51.100.10",
+          443
+        ],
+        [
+          1,
+          "198.51.100.20",
+          443
+        ],
+        [
+          3,
+          "0.0.0.0",
+          33186
+        ],
+        [
+          "udp",
+          "198.51.100.21",
+          9999
+        ]
+      ]
+    },
+    {
+      "name": "TUN disappears on normal core shutdown",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "frontend rules preserved on shutdown",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "custom fake-IP seed derives correct /30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "custom range also passes OpenClash readiness",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "work": "/tmp/openclash-tun-smoke-aql38y9f",
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-openclash-fix",
+  "sha256": "445d3212f16f5dad94171055952878e5b9c430fc11557e4223a3ebd247c241f2",
+  "proxy_hits": [
+    [
+      1,
+      "198.51.100.99",
+      443
+    ],
+    [
+      1,
+      "198.51.100.10",
+      443
+    ],
+    [
+      1,
+      "198.51.100.20",
+      443
+    ],
+    [
+      3,
+      "0.0.0.0",
+      33186
+    ],
+    [
+      "udp",
+      "198.51.100.21",
+      9999
+    ]
+  ]
+}

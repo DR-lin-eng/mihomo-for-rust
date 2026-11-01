@@ -2371,6 +2371,7 @@ dependencies = [
  "http",
  "hysteria2",
  "ipnet",
+ "libc",
  "md-5",
  "mihomo-core",
  "mihomo-dns",

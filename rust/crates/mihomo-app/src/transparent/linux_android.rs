@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use std::io;
 use std::net::{IpAddr, SocketAddr, TcpStream, UdpSocket};
 use std::os::fd::AsRawFd;
 use std::os::unix::io::FromRawFd;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
 use std::time::Duration;
 
 use mihomo_dns::DnsRuntime;
@@ -64,26 +63,13 @@ pub(crate) fn create_or_get_local_conn(
     original_client_addr: &SocketAddr,
     _tunnel: &RuntimeTunnel,
 ) -> io::Result<Arc<UdpSocket>> {
-    static CACHE: OnceLock<Mutex<HashMap<(SocketAddr, SocketAddr), Arc<UdpSocket>>>> =
-        OnceLock::new();
-    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    let key = (*original_target_addr, *original_client_addr);
-    if let Some(existing) = cache
-        .lock()
-        .map_err(|_| io::Error::other("transparent udp cache poisoned"))?
-        .get(&key)
-        .cloned()
-    {
-        return Ok(existing);
-    }
-
+    // A connected IP_TRANSPARENT socket is eligible for future incoming
+    // datagrams of this flow. There is no receive pump on reply-only sockets,
+    // so keeping it in a global cache steals traffic from the TProxy listener.
+    // Own it only for this synchronous reply and close immediately afterwards.
     let socket = Arc::new(dial_transparent_udp(*original_target_addr, *original_client_addr)?);
     socket.set_read_timeout(Some(Duration::from_secs(1)))?;
     socket.set_write_timeout(Some(Duration::from_secs(1)))?;
-    cache
-        .lock()
-        .map_err(|_| io::Error::other("transparent udp cache poisoned"))?
-        .insert(key, Arc::clone(&socket));
     Ok(socket)
 }
 

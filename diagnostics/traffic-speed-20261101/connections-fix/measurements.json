@@ -1,0 +1,822 @@
+{
+  "traffic-connections-arm64-domain.json": {},
+  "traffic-connections-arm64-ebpf.json": {},
+  "traffic-connections-arm64-mixed-direct.json": {
+    "upload only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 69
+    },
+    "upload only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 101
+    },
+    "upload only ws-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 15
+    },
+    "upload only ws-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 15
+    },
+    "upload only ws-700ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 2
+    },
+    "upload only ws-700ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "upload only http-250ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 6
+    },
+    "upload only http-250ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "upload only poll-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 13
+    },
+    "upload only poll-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 13
+    },
+    "download only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "download only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 99
+    },
+    "download only ws-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only ws-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "download only ws-700ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "download only ws-700ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 2
+    },
+    "download only http-250ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "download only http-250ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 6
+    },
+    "download only poll-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only poll-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "two full-duplex connections connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "two full-duplex connections connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 99
+    },
+    "two full-duplex connections ws-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216,
+      "samples": 15
+    },
+    "two full-duplex connections ws-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432,
+      "samples": 15
+    },
+    "two full-duplex connections ws-700ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 2
+    },
+    "two full-duplex connections ws-700ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 2
+    },
+    "two full-duplex connections http-250ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 6
+    },
+    "two full-duplex connections http-250ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 6
+    },
+    "two full-duplex connections poll-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 14
+    },
+    "two full-duplex connections poll-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 14
+    },
+    "tunnel UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "tunnel UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "SOCKS5 inbound UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "SOCKS5 inbound UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    }
+  },
+  "traffic-connections-arm64-mixed-socks5.json": {
+    "upload only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "upload only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 101
+    },
+    "upload only ws-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 15
+    },
+    "upload only ws-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 15
+    },
+    "upload only ws-700ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 2
+    },
+    "upload only ws-700ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "upload only http-250ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 6
+    },
+    "upload only http-250ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "upload only poll-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 14
+    },
+    "upload only poll-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 69
+    },
+    "download only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 97
+    },
+    "download only ws-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only ws-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "download only ws-700ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "download only ws-700ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 2
+    },
+    "download only http-250ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "download only http-250ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 6
+    },
+    "download only poll-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 13
+    },
+    "download only poll-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144,
+      "samples": 13
+    },
+    "two full-duplex connections connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "two full-duplex connections connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 99
+    },
+    "two full-duplex connections ws-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216,
+      "samples": 15
+    },
+    "two full-duplex connections ws-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432,
+      "samples": 15
+    },
+    "two full-duplex connections ws-700ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 2
+    },
+    "two full-duplex connections ws-700ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 2
+    },
+    "two full-duplex connections http-250ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 6
+    },
+    "two full-duplex connections http-250ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 6
+    },
+    "two full-duplex connections poll-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 14
+    },
+    "two full-duplex connections poll-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 14
+    },
+    "tunnel UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "SOCKS5 inbound UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "SOCKS5 inbound UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    }
+  },
+  "traffic-connections-arm64-redir-direct.json": {
+    "upload only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 69
+    },
+    "upload only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 98
+    },
+    "upload only ws-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 15
+    },
+    "upload only ws-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 15
+    },
+    "upload only ws-700ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 2
+    },
+    "upload only ws-700ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "upload only http-250ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 6
+    },
+    "upload only http-250ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "upload only poll-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 14
+    },
+    "upload only poll-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "download only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 98
+    },
+    "download only ws-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only ws-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "download only ws-700ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "download only ws-700ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 2
+    },
+    "download only http-250ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "download only http-250ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 6
+    },
+    "download only poll-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only poll-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "two full-duplex connections connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "two full-duplex connections connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 95
+    },
+    "two full-duplex connections ws-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 14
+    },
+    "two full-duplex connections ws-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 14
+    },
+    "two full-duplex connections ws-700ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 2
+    },
+    "two full-duplex connections ws-700ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 2
+    },
+    "two full-duplex connections http-250ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 6
+    },
+    "two full-duplex connections http-250ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 6
+    },
+    "two full-duplex connections poll-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 14
+    },
+    "two full-duplex connections poll-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 14
+    },
+    "tunnel UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "SOCKS5 inbound UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "SOCKS5 inbound UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    }
+  },
+  "traffic-connections-arm64-redir-socks5.json": {
+    "upload only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 69
+    },
+    "upload only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 98
+    },
+    "upload only ws-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 15
+    },
+    "upload only ws-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 15
+    },
+    "upload only ws-700ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 2
+    },
+    "upload only ws-700ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "upload only http-250ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288.0,
+      "samples": 6
+    },
+    "upload only http-250ms down bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "upload only poll-100ms up bytes/s": {
+      "expected": 524288,
+      "median": 524288,
+      "samples": 13
+    },
+    "upload only poll-100ms down bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 13
+    },
+    "download only connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "download only connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 96
+    },
+    "download only ws-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 14
+    },
+    "download only ws-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 14
+    },
+    "download only ws-700ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 2
+    },
+    "download only ws-700ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 2
+    },
+    "download only http-250ms up bytes/s": {
+      "expected": 0,
+      "median": 0.0,
+      "samples": 6
+    },
+    "download only http-250ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144.0,
+      "samples": 6
+    },
+    "download only poll-100ms up bytes/s": {
+      "expected": 0,
+      "median": 0,
+      "samples": 13
+    },
+    "download only poll-100ms down bytes/s": {
+      "expected": 262144,
+      "median": 262144,
+      "samples": 13
+    },
+    "two full-duplex connections connections-ws-50ms totals agree within each live snapshot": {
+      "samples": 68
+    },
+    "two full-duplex connections connections-poll-30ms totals agree within each live snapshot": {
+      "samples": 99
+    },
+    "two full-duplex connections ws-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216,
+      "samples": 15
+    },
+    "two full-duplex connections ws-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432,
+      "samples": 15
+    },
+    "two full-duplex connections ws-700ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 2
+    },
+    "two full-duplex connections ws-700ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 2
+    },
+    "two full-duplex connections http-250ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216.0,
+      "samples": 6
+    },
+    "two full-duplex connections http-250ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432.0,
+      "samples": 6
+    },
+    "two full-duplex connections poll-100ms up bytes/s": {
+      "expected": 393216,
+      "median": 393216,
+      "samples": 13
+    },
+    "two full-duplex connections poll-100ms down bytes/s": {
+      "expected": 786432,
+      "median": 786432,
+      "samples": 13
+    },
+    "tunnel UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "tunnel UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "tunnel UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "tunnel UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "tunnel UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    },
+    "SOCKS5 inbound UDP payload ws-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload ws-700ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384.0
+    },
+    "SOCKS5 inbound UDP payload http-250ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768.0
+    },
+    "SOCKS5 inbound UDP payload poll-100ms up bytes/s": {
+      "expected": 16384,
+      "median": 16384
+    },
+    "SOCKS5 inbound UDP payload poll-100ms down bytes/s": {
+      "expected": 32768,
+      "median": 32768
+    }
+  },
+  "traffic-connections-arm64-tun.json": {},
+  "traffic-connections-arm64-yacd-rules.json": {}
+}

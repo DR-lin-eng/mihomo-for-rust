@@ -1,0 +1,10 @@
+{
+  "model_sha256": "832920df1290454710dd04aa4c7d4b5324edfd7816a7c9ad2272708b5d5a13a8",
+  "model_bytes": 26787747,
+  "trees": 534,
+  "feature_count": 30,
+  "cases": 160,
+  "max_absolute_error": 0.0,
+  "reference": "LightGBM 4.6.0",
+  "passed": true
+}

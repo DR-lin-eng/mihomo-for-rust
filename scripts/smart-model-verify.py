@@ -31,7 +31,7 @@ fixture=pathlib.Path(args.output).with_suffix('.inputs.json');fixture.write_text
 result=json.loads(subprocess.check_output([args.rust,args.model,str(fixture)],text=True))
 raw=np.asarray([item['features'] for item in result['results']],dtype=float)[:,:len(result['features'])]
 scaled=raw.copy()
-trailer=text.split('[transforms]',1)[1].split('[/transforms]',1)[0]
+trailer=text.split('[transforms]',1)[1].split('[/transforms]',1)[0] if '[transforms]' in text else ''
 definitions={};section=''
 for line in trailer.splitlines():
  line=line.strip()

@@ -56,6 +56,18 @@ fn lightgbm_numeric_missing_and_categorical_splits() {
     assert_eq!(category.predict(&[2.0]).unwrap(), 0.75);
     assert_eq!(category.predict(&[-1.0]).unwrap(), 0.75);
 }
+
+#[test]
+fn lightgbm_huber_uses_identity_prediction_link() {
+    for objective in ["huber", "huber alpha:0.9"] {
+        let text = model_text(2, "1.5", "").replace("objective=regression", &format!("objective={objective}"));
+        let model = LightGbmModel::parse(&text).unwrap();
+        assert_eq!(model.predict(&[1.0]).unwrap(), 0.25);
+        assert_eq!(model.predict(&[2.0]).unwrap(), 0.75);
+    }
+    let binary = model_text(2, "1.5", "").replace("objective=regression", "objective=binary sigmoid:1");
+    assert!(LightGbmModel::parse(&binary).is_err());
+}
 #[test]
 fn lightgbm_applies_feature_scalers_and_rejects_invalid_graphs() {
     let text=model_text(2,"0","")+"[transforms]\ntransform=true\n[order]\n0=success\n[/order]\n[definitions]\nstd_type=StandardScaler\nstd_features=0\nstd_mean=4\nstd_scale=2\n[/definitions]\n[/transforms]\n";

@@ -4,7 +4,7 @@
 
 参照为 [vernesong/mihomo Alpha 77af4804](https://github.com/vernesong/mihomo/tree/77af4804d091d89b871c99b52d50915f4a600d81) 的 `adapter/outboundgroup/smart.go`、`component/smart/` 和 Smart API。Smart 属于该扩展核心；这份迁移说明不代表 MetaCubeX 标准 Go 核心具备同一扩展。
 
-当前 OpenWrt ARM64 交付文件为 `bin/mihomo-rust-openwrt-arm64-smart-advanced`，附 `.gz` 和 `.sha256`。构建及复测证据见 `diagnostics/smart-advanced-20261101/`。
+当前 OpenWrt ARM64 交付文件为 `bin/mihomo-rust-openwrt-arm64-yacd-rules-fix`，附 `.gz` 和 `.sha256`。yacd 规则页修复见 `docs/rust-rewrite/yacd-rules-compatibility.md`；实时速度修复见 `docs/rust-rewrite/traffic-statistics.md`；域名映射及嗅探修复见 `docs/rust-rewrite/domain-routing.md` 和 `diagnostics/domain-routing-20261101/`；TUN / Huber 修复证据见 `diagnostics/openclash-tun-huber-20261101/`；高级能力迁移证据见 `diagnostics/smart-advanced-20261101/`。
 
 ## 配置与模型
 
@@ -37,6 +37,8 @@ lgbm-url: https://github.com/vernesong/mihomo/releases/download/LightGBM-Model/M
 `proxies` / `use` / `include-all` 等成员来源仍走现有组装逻辑。`policy-priority` 以分号分隔，按配置顺序匹配节点名，支持正则与字符串匹配。因子须大于零。`sample-rate` 有效区间为 `(0, 1]`，其他值采用上游默认 1；`collectdata` 为 true 才写采集文件。
 
 核心在 `-d` 指定的数据目录中查找不区分大小写的 `Model.bin`，可以直接使用 OpenClash 下载的模型。该文件实际为 LightGBM 文本，并非需要 C 库加载的专有二进制格式。Rust 支持数值 / 类别分裂、缺失值分支，以及模型尾部的 StandardScaler / RobustScaler 参数。模型缺失或损坏时使用自适应公式继续选路，并尝试从配置的 URL 下载；下载支持重定向、核心路由及 TLS 证书验证。更新先完成解析校验，再替换文件和内存模型，失败保留已加载模型。
+
+支持 `regression` 和 `huber` 目标。Huber 使用回归树叶值求和；包含参数的目标名称和附带缩放配置均可加载。原生 LightGBM 4.6.0 对两种 Huber 夹具共 320 组输入的比较最大误差为零。
 
 本轮验证的发布模型 SHA-256 为 `23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788`，9,345,218 字节，557 棵树、30 个特征。特征提取还计算了新版本预留的 32 个槽位。
 

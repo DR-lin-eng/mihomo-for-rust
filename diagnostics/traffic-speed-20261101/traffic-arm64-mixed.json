@@ -1,0 +1,4978 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "new core starts at zero",
+      "passed": true,
+      "detail": {
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      }
+    },
+    {
+      "name": "upload only transfer completes",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "upload only live global totals match fixture",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 1835008,
+          "downTotal": 0
+        },
+        "actual": {
+          "up": 524288,
+          "down": 0,
+          "upTotal": 1835008,
+          "downTotal": 0
+        }
+      }
+    },
+    {
+      "name": "upload only global connections totals remain live",
+      "passed": true,
+      "detail": {
+        "downloadTotal": 0,
+        "uploadTotal": 1835008,
+        "connections": [
+          {
+            "id": "1",
+            "upload": 1835008,
+            "download": 0,
+            "start": 1793511043885,
+            "chains": [
+              "DIRECT"
+            ],
+            "providerChains": [
+              ""
+            ],
+            "rule": "Match",
+            "rulePayload": "",
+            "metadata": {
+              "network": "tcp",
+              "type": "https",
+              "sourceIP": "127.0.0.1",
+              "sourcePort": "35650",
+              "destinationIP": "127.0.0.1",
+              "destinationPort": "42171",
+              "sourceGeoIP": [],
+              "destinationGeoIP": [],
+              "sourceIPASN": "",
+              "destinationIPASN": "",
+              "inboundIP": "",
+              "inboundPort": "",
+              "host": "",
+              "dnsMode": "normal",
+              "uid": 0,
+              "process": "",
+              "processPath": "",
+              "specialProxy": "",
+              "specialRules": "",
+              "remoteDestination": "",
+              "dscp": 0,
+              "sniffHost": "",
+              "inboundName": "__top_level_mixed__",
+              "inboundUser": ""
+            }
+          }
+        ],
+        "memory": 4816896
+      }
+    },
+    {
+      "name": "upload only active per-connection counters 35650",
+      "passed": true,
+      "detail": {
+        "id": "1",
+        "upload": 1835008,
+        "download": 0,
+        "start": 1793511043885,
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "metadata": {
+          "network": "tcp",
+          "type": "https",
+          "sourceIP": "127.0.0.1",
+          "sourcePort": "35650",
+          "destinationIP": "127.0.0.1",
+          "destinationPort": "42171",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_mixed__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "upload only ws-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 524288,
+        "median": 524288,
+        "samples": 15
+      }
+    },
+    {
+      "name": "upload only ws-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0,
+        "samples": 15
+      }
+    },
+    {
+      "name": "upload only ws-700ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 524288,
+        "median": 524288.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "upload only ws-700ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "upload only http-250ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 524288,
+        "median": 524288.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "upload only http-250ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "upload only poll-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 524288,
+        "median": 524288,
+        "samples": 13
+      }
+    },
+    {
+      "name": "upload only poll-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0,
+        "samples": 13
+      }
+    },
+    {
+      "name": "upload paused while connection open returns to zero",
+      "passed": true,
+      "detail": {
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      }
+    },
+    {
+      "name": "upload paused while connection open cumulative totals stay fixed",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 1835008,
+          "downTotal": 0
+        },
+        "actual": {
+          "up": 0,
+          "down": 0,
+          "upTotal": 1835008,
+          "downTotal": 0
+        }
+      }
+    },
+    {
+      "name": "download only transfer completes",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "download only live global totals match fixture",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 1835008,
+          "downTotal": 917504
+        },
+        "actual": {
+          "up": 0,
+          "down": 262144,
+          "upTotal": 1835008,
+          "downTotal": 917504
+        }
+      }
+    },
+    {
+      "name": "download only global connections totals remain live",
+      "passed": true,
+      "detail": {
+        "downloadTotal": 917504,
+        "uploadTotal": 1835008,
+        "connections": [
+          {
+            "id": "1",
+            "upload": 1835008,
+            "download": 917504,
+            "start": 1793511043885,
+            "chains": [
+              "DIRECT"
+            ],
+            "providerChains": [
+              ""
+            ],
+            "rule": "Match",
+            "rulePayload": "",
+            "metadata": {
+              "network": "tcp",
+              "type": "https",
+              "sourceIP": "127.0.0.1",
+              "sourcePort": "35650",
+              "destinationIP": "127.0.0.1",
+              "destinationPort": "42171",
+              "sourceGeoIP": [],
+              "destinationGeoIP": [],
+              "sourceIPASN": "",
+              "destinationIPASN": "",
+              "inboundIP": "",
+              "inboundPort": "",
+              "host": "",
+              "dnsMode": "normal",
+              "uid": 0,
+              "process": "",
+              "processPath": "",
+              "specialProxy": "",
+              "specialRules": "",
+              "remoteDestination": "",
+              "dscp": 0,
+              "sniffHost": "",
+              "inboundName": "__top_level_mixed__",
+              "inboundUser": ""
+            }
+          }
+        ],
+        "memory": 4816896
+      }
+    },
+    {
+      "name": "download only active per-connection counters 35650",
+      "passed": true,
+      "detail": {
+        "id": "1",
+        "upload": 1835008,
+        "download": 917504,
+        "start": 1793511043885,
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "metadata": {
+          "network": "tcp",
+          "type": "https",
+          "sourceIP": "127.0.0.1",
+          "sourcePort": "35650",
+          "destinationIP": "127.0.0.1",
+          "destinationPort": "42171",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_mixed__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "download only ws-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0,
+        "samples": 15
+      }
+    },
+    {
+      "name": "download only ws-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 262144,
+        "median": 262144,
+        "samples": 15
+      }
+    },
+    {
+      "name": "download only ws-700ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "download only ws-700ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 262144,
+        "median": 262144.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "download only http-250ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "download only http-250ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 262144,
+        "median": 262144.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "download only poll-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 0,
+        "median": 0.0,
+        "samples": 14
+      }
+    },
+    {
+      "name": "download only poll-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 262144,
+        "median": 262144.0,
+        "samples": 14
+      }
+    },
+    {
+      "name": "download paused while connection open returns to zero",
+      "passed": true,
+      "detail": {
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      }
+    },
+    {
+      "name": "download paused while connection open cumulative totals stay fixed",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 1835008,
+          "downTotal": 917504
+        },
+        "actual": {
+          "up": 0,
+          "down": 0,
+          "upTotal": 1835008,
+          "downTotal": 917504
+        }
+      }
+    },
+    {
+      "name": "two full-duplex connections transfer completes",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "two full-duplex connections live global totals match fixture",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        },
+        "actual": {
+          "up": 393216,
+          "down": 786432,
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        }
+      }
+    },
+    {
+      "name": "two full-duplex connections global connections totals remain live",
+      "passed": true,
+      "detail": {
+        "downloadTotal": 3670016,
+        "uploadTotal": 3211264,
+        "connections": [
+          {
+            "id": "1",
+            "upload": 2293760,
+            "download": 1835008,
+            "start": 1793511043885,
+            "chains": [
+              "DIRECT"
+            ],
+            "providerChains": [
+              ""
+            ],
+            "rule": "Match",
+            "rulePayload": "",
+            "metadata": {
+              "network": "tcp",
+              "type": "https",
+              "sourceIP": "127.0.0.1",
+              "sourcePort": "35650",
+              "destinationIP": "127.0.0.1",
+              "destinationPort": "42171",
+              "sourceGeoIP": [],
+              "destinationGeoIP": [],
+              "sourceIPASN": "",
+              "destinationIPASN": "",
+              "inboundIP": "",
+              "inboundPort": "",
+              "host": "",
+              "dnsMode": "normal",
+              "uid": 0,
+              "process": "",
+              "processPath": "",
+              "specialProxy": "",
+              "specialRules": "",
+              "remoteDestination": "",
+              "dscp": 0,
+              "sniffHost": "",
+              "inboundName": "__top_level_mixed__",
+              "inboundUser": ""
+            }
+          },
+          {
+            "id": "2",
+            "upload": 917504,
+            "download": 1835008,
+            "start": 1793511055541,
+            "chains": [
+              "DIRECT"
+            ],
+            "providerChains": [
+              ""
+            ],
+            "rule": "Match",
+            "rulePayload": "",
+            "metadata": {
+              "network": "tcp",
+              "type": "https",
+              "sourceIP": "127.0.0.1",
+              "sourcePort": "56696",
+              "destinationIP": "127.0.0.1",
+              "destinationPort": "42171",
+              "sourceGeoIP": [],
+              "destinationGeoIP": [],
+              "sourceIPASN": "",
+              "destinationIPASN": "",
+              "inboundIP": "",
+              "inboundPort": "",
+              "host": "",
+              "dnsMode": "normal",
+              "uid": 0,
+              "process": "",
+              "processPath": "",
+              "specialProxy": "",
+              "specialRules": "",
+              "remoteDestination": "",
+              "dscp": 0,
+              "sniffHost": "",
+              "inboundName": "__top_level_mixed__",
+              "inboundUser": ""
+            }
+          }
+        ],
+        "memory": 7114752
+      }
+    },
+    {
+      "name": "two full-duplex connections active per-connection counters 35650",
+      "passed": true,
+      "detail": {
+        "id": "1",
+        "upload": 2293760,
+        "download": 1835008,
+        "start": 1793511043885,
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "metadata": {
+          "network": "tcp",
+          "type": "https",
+          "sourceIP": "127.0.0.1",
+          "sourcePort": "35650",
+          "destinationIP": "127.0.0.1",
+          "destinationPort": "42171",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_mixed__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "two full-duplex connections active per-connection counters 56696",
+      "passed": true,
+      "detail": {
+        "id": "2",
+        "upload": 917504,
+        "download": 1835008,
+        "start": 1793511055541,
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "metadata": {
+          "network": "tcp",
+          "type": "https",
+          "sourceIP": "127.0.0.1",
+          "sourcePort": "56696",
+          "destinationIP": "127.0.0.1",
+          "destinationPort": "42171",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_mixed__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "two full-duplex connections ws-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 393216,
+        "median": 393216,
+        "samples": 15
+      }
+    },
+    {
+      "name": "two full-duplex connections ws-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 786432,
+        "median": 786432,
+        "samples": 15
+      }
+    },
+    {
+      "name": "two full-duplex connections ws-700ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 393216,
+        "median": 393216.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "two full-duplex connections ws-700ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 786432,
+        "median": 786432.0,
+        "samples": 2
+      }
+    },
+    {
+      "name": "two full-duplex connections http-250ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 393216,
+        "median": 393216.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "two full-duplex connections http-250ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 786432,
+        "median": 786432.0,
+        "samples": 6
+      }
+    },
+    {
+      "name": "two full-duplex connections poll-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 393216,
+        "median": 393216.0,
+        "samples": 14
+      }
+    },
+    {
+      "name": "two full-duplex connections poll-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 786432,
+        "median": 786432.0,
+        "samples": 14
+      }
+    },
+    {
+      "name": "full duplex paused returns to zero",
+      "passed": true,
+      "detail": {
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      }
+    },
+    {
+      "name": "full duplex paused cumulative totals stay fixed",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        },
+        "actual": {
+          "up": 0,
+          "down": 0,
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        }
+      }
+    },
+    {
+      "name": "closing TCP does not count traffic twice",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        },
+        "actual": {
+          "up": 0,
+          "down": 0,
+          "upTotal": 3211264,
+          "downTotal": 3670016
+        }
+      }
+    },
+    {
+      "name": "UDP totals count payload in correct directions",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 3268608,
+          "downTotal": 3784704
+        },
+        "actual": {
+          "up": 16384,
+          "down": 32768,
+          "upTotal": 3268608,
+          "downTotal": 3784704
+        }
+      }
+    },
+    {
+      "name": "UDP ws-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 16384,
+        "median": 16384
+      }
+    },
+    {
+      "name": "UDP ws-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 32768,
+        "median": 32768
+      }
+    },
+    {
+      "name": "UDP ws-700ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 16384,
+        "median": 16384.0
+      }
+    },
+    {
+      "name": "UDP ws-700ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 32768,
+        "median": 32768.0
+      }
+    },
+    {
+      "name": "UDP http-250ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 16384,
+        "median": 16384.0
+      }
+    },
+    {
+      "name": "UDP http-250ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 32768,
+        "median": 32768.0
+      }
+    },
+    {
+      "name": "UDP poll-100ms up bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 16384,
+        "median": 16384
+      }
+    },
+    {
+      "name": "UDP poll-100ms down bytes/s",
+      "passed": true,
+      "detail": {
+        "expected": 32768,
+        "median": 32768
+      }
+    },
+    {
+      "name": "UDP pause also returns speed to zero",
+      "passed": true,
+      "detail": {
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      }
+    },
+    {
+      "name": "idle cumulative totals stay positive",
+      "passed": true,
+      "detail": {
+        "expected": {
+          "upTotal": 3268608,
+          "downTotal": 3784704
+        },
+        "actual": {
+          "up": 0,
+          "down": 0,
+          "upTotal": 3268608,
+          "downTotal": 3784704
+        }
+      }
+    },
+    {
+      "name": "ws-100ms stream stays healthy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "ws-100ms totals never decrease",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "ws-700ms stream stays healthy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "ws-700ms totals never decrease",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http-250ms stream stays healthy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "http-250ms totals never decrease",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "poll-100ms stream stays healthy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "poll-100ms totals never decrease",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "phases": [
+    {
+      "name": "upload only",
+      "start": 543566.857338642,
+      "end": 543570.358688519,
+      "expected_up": 524288,
+      "expected_down": 0
+    },
+    {
+      "name": "download only",
+      "start": 543572.658522895,
+      "end": 543576.159280105,
+      "expected_up": 0,
+      "expected_down": 262144
+    },
+    {
+      "name": "two full-duplex connections",
+      "start": 543578.513992106,
+      "end": 543582.015320066,
+      "expected_up": 393216,
+      "expected_down": 786432
+    },
+    {
+      "name": "UDP payload",
+      "start": 543584.4947564,
+      "end": 543587.933821194,
+      "expected_up": 16384,
+      "expected_down": 32768
+    }
+  ],
+  "samples": {
+    "ws-100ms": [
+      {
+        "t": 543566.675260434,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.775372975,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.875918559,
+        "up": 0,
+        "down": 0,
+        "upTotal": 16384,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.976686725,
+        "up": 0,
+        "down": 0,
+        "upTotal": 65536,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.079319225,
+        "up": 0,
+        "down": 0,
+        "upTotal": 131072,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.180874225,
+        "up": 0,
+        "down": 0,
+        "upTotal": 180224,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.281330851,
+        "up": 0,
+        "down": 0,
+        "upTotal": 229376,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.383409392,
+        "up": 0,
+        "down": 0,
+        "upTotal": 278528,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.483948059,
+        "up": 0,
+        "down": 0,
+        "upTotal": 344064,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.584327101,
+        "up": 0,
+        "down": 0,
+        "upTotal": 393216,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.685368684,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 442368,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.787227184,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 491520,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.889622267,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 540672,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.991020518,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 606208,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.091561643,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 655360,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.192382184,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 704512,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.293882601,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 753664,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.395217393,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 819200,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.497857768,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 868352,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.598943768,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 917504,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.69919931,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 966656,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.800167935,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1032192,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.900254226,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1081344,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.001557935,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1130496,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.106966101,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1179648,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.207820768,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1245184,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.308488352,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1294336,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.409547393,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1343488,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.510494935,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1392640,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.611265602,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1458176,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.71138631,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1507328,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.812383477,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1556480,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.913921102,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1605632,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.015225977,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1654784,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.116998185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1720320,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.217969685,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1769472,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.31927181,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1818624,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.419228852,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.520325185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.621456394,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.722377519,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.823443852,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.924533686,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.025963061,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.128156144,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.230197769,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.331719269,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.432209936,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.534093519,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.635890769,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.737766394,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.838312269,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.939475811,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.040283561,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.142419478,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.24385002,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.34826977,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.449677478,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.55023652,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.651782978,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.753369895,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 24576
+      },
+      {
+        "t": 543572.854673145,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 57344
+      },
+      {
+        "t": 543572.955366312,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 81920
+      },
+      {
+        "t": 543573.056445812,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 106496
+      },
+      {
+        "t": 543573.157370728,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 131072
+      },
+      {
+        "t": 543573.258129437,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 163840
+      },
+      {
+        "t": 543573.359269062,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 188416
+      },
+      {
+        "t": 543573.46134427,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 212992
+      },
+      {
+        "t": 543573.562644479,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 237568
+      },
+      {
+        "t": 543573.663708479,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 270336
+      },
+      {
+        "t": 543573.76388652,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 294912
+      },
+      {
+        "t": 543573.864536229,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 319488
+      },
+      {
+        "t": 543573.965926729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 344064
+      },
+      {
+        "t": 543574.066525979,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 376832
+      },
+      {
+        "t": 543574.16759827,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 401408
+      },
+      {
+        "t": 543574.269765771,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 425984
+      },
+      {
+        "t": 543574.370486646,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 450560
+      },
+      {
+        "t": 543574.471499437,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 475136
+      },
+      {
+        "t": 543574.572422729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 507904
+      },
+      {
+        "t": 543574.673564229,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 532480
+      },
+      {
+        "t": 543574.774818062,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 557056
+      },
+      {
+        "t": 543574.876203437,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 581632
+      },
+      {
+        "t": 543574.978193729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 614400
+      },
+      {
+        "t": 543575.079688604,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 638976
+      },
+      {
+        "t": 543575.179870688,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 663552
+      },
+      {
+        "t": 543575.281462021,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 688128
+      },
+      {
+        "t": 543575.382183396,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 720896
+      },
+      {
+        "t": 543575.484068438,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 745472
+      },
+      {
+        "t": 543575.584978271,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 770048
+      },
+      {
+        "t": 543575.686602688,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 794624
+      },
+      {
+        "t": 543575.78782448,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 827392
+      },
+      {
+        "t": 543575.888957063,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 851968
+      },
+      {
+        "t": 543575.98960973,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 876544
+      },
+      {
+        "t": 543576.090432438,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 901120
+      },
+      {
+        "t": 543576.192382188,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.293681397,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.396405022,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.497580897,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.598328688,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.69956448,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.80037648,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.901438522,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.001706814,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.103475439,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.204390314,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.305589897,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.406476772,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.507423814,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.609259939,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.710383397,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.811370106,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.912280147,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.013251106,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.115363689,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.216294064,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.319286689,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.420629398,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.522330273,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1867776,
+        "downTotal": 933888
+      },
+      {
+        "t": 543578.625149939,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1884160,
+        "downTotal": 1007616
+      },
+      {
+        "t": 543578.726624856,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1933312,
+        "downTotal": 1089536
+      },
+      {
+        "t": 543578.827500439,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1966080,
+        "downTotal": 1163264
+      },
+      {
+        "t": 543578.928510648,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2015232,
+        "downTotal": 1228800
+      },
+      {
+        "t": 543579.029279648,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2064384,
+        "downTotal": 1327104
+      },
+      {
+        "t": 543579.129695773,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2080768,
+        "downTotal": 1392640
+      },
+      {
+        "t": 543579.23137394,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2129920,
+        "downTotal": 1482752
+      },
+      {
+        "t": 543579.33230594,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2179072,
+        "downTotal": 1564672
+      },
+      {
+        "t": 543579.433806356,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2211840,
+        "downTotal": 1646592
+      },
+      {
+        "t": 543579.534363481,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2260992,
+        "downTotal": 1720320
+      },
+      {
+        "t": 543579.635387856,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2277376,
+        "downTotal": 1785856
+      },
+      {
+        "t": 543579.736584023,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2326528,
+        "downTotal": 1884160
+      },
+      {
+        "t": 543579.837636732,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2375680,
+        "downTotal": 1957888
+      },
+      {
+        "t": 543579.93833194,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2408448,
+        "downTotal": 2048000
+      },
+      {
+        "t": 543580.03951469,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2457600,
+        "downTotal": 2113536
+      },
+      {
+        "t": 543580.140535232,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2490368,
+        "downTotal": 2195456
+      },
+      {
+        "t": 543580.241425523,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2523136,
+        "downTotal": 2269184
+      },
+      {
+        "t": 543580.342689857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2572288,
+        "downTotal": 2359296
+      },
+      {
+        "t": 543580.443429773,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2605056,
+        "downTotal": 2441216
+      },
+      {
+        "t": 543580.544694357,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2654208,
+        "downTotal": 2506752
+      },
+      {
+        "t": 543580.64529869,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2703360,
+        "downTotal": 2605056
+      },
+      {
+        "t": 543580.746402524,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2719744,
+        "downTotal": 2670592
+      },
+      {
+        "t": 543580.84788444,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2768896,
+        "downTotal": 2752512
+      },
+      {
+        "t": 543580.948649899,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2801664,
+        "downTotal": 2834432
+      },
+      {
+        "t": 543581.049303315,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2850816,
+        "downTotal": 2899968
+      },
+      {
+        "t": 543581.150822357,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2899968,
+        "downTotal": 2998272
+      },
+      {
+        "t": 543581.253221816,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2916352,
+        "downTotal": 3063808
+      },
+      {
+        "t": 543581.353574982,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2965504,
+        "downTotal": 3153920
+      },
+      {
+        "t": 543581.455482857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3014656,
+        "downTotal": 3235840
+      },
+      {
+        "t": 543581.556412191,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3047424,
+        "downTotal": 3301376
+      },
+      {
+        "t": 543581.657782857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3096576,
+        "downTotal": 3391488
+      },
+      {
+        "t": 543581.758638316,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3112960,
+        "downTotal": 3473408
+      },
+      {
+        "t": 543581.859511857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3162112,
+        "downTotal": 3538944
+      },
+      {
+        "t": 543581.960551774,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3629056
+      },
+      {
+        "t": 543582.061314358,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.162872441,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.263369483,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.364385858,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.465595941,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.566304399,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.667533733,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.768397191,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.869474816,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.970611025,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.071496191,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.172639525,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.273700817,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.374575858,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.475670233,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.576169025,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.676357942,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.777333483,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.87839265,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.9785199,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.0797804,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.1811514,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.282739984,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.383843942,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.484494025,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.585513859,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3213312,
+        "downTotal": 3674112
+      },
+      {
+        "t": 543584.686368484,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3215360,
+        "downTotal": 3678208
+      },
+      {
+        "t": 543584.787490734,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3216384,
+        "downTotal": 3680256
+      },
+      {
+        "t": 543584.889153067,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3218432,
+        "downTotal": 3684352
+      },
+      {
+        "t": 543584.991779526,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3219456,
+        "downTotal": 3686400
+      },
+      {
+        "t": 543585.092368817,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3221504,
+        "downTotal": 3690496
+      },
+      {
+        "t": 543585.193431151,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3223552,
+        "downTotal": 3694592
+      },
+      {
+        "t": 543585.294465484,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3224576,
+        "downTotal": 3696640
+      },
+      {
+        "t": 543585.395601818,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3226624,
+        "downTotal": 3700736
+      },
+      {
+        "t": 543585.496472151,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3228672,
+        "downTotal": 3702784
+      },
+      {
+        "t": 543585.597470068,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3229696,
+        "downTotal": 3706880
+      },
+      {
+        "t": 543585.698253734,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3231744,
+        "downTotal": 3710976
+      },
+      {
+        "t": 543585.798502901,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3232768,
+        "downTotal": 3713024
+      },
+      {
+        "t": 543585.899541026,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3234816,
+        "downTotal": 3717120
+      },
+      {
+        "t": 543586.000522693,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3236864,
+        "downTotal": 3721216
+      },
+      {
+        "t": 543586.101686651,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3237888,
+        "downTotal": 3723264
+      },
+      {
+        "t": 543586.204295985,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3239936,
+        "downTotal": 3727360
+      },
+      {
+        "t": 543586.305436901,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3240960,
+        "downTotal": 3729408
+      },
+      {
+        "t": 543586.407250693,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3243008,
+        "downTotal": 3733504
+      },
+      {
+        "t": 543586.508436985,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3245056,
+        "downTotal": 3737600
+      },
+      {
+        "t": 543586.609852568,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3246080,
+        "downTotal": 3739648
+      },
+      {
+        "t": 543586.710573776,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3248128,
+        "downTotal": 3743744
+      },
+      {
+        "t": 543586.811400943,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3250176,
+        "downTotal": 3747840
+      },
+      {
+        "t": 543586.913636027,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3251200,
+        "downTotal": 3749888
+      },
+      {
+        "t": 543587.014938693,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3253248,
+        "downTotal": 3753984
+      },
+      {
+        "t": 543587.115419068,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3254272,
+        "downTotal": 3756032
+      },
+      {
+        "t": 543587.216361652,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3256320,
+        "downTotal": 3760128
+      },
+      {
+        "t": 543587.31799411,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3258368,
+        "downTotal": 3764224
+      },
+      {
+        "t": 543587.41857886,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3259392,
+        "downTotal": 3766272
+      },
+      {
+        "t": 543587.519417777,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3261440,
+        "downTotal": 3770368
+      },
+      {
+        "t": 543587.620394444,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3262464,
+        "downTotal": 3772416
+      },
+      {
+        "t": 543587.721388652,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3264512,
+        "downTotal": 3776512
+      },
+      {
+        "t": 543587.822090444,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3266560,
+        "downTotal": 3780608
+      },
+      {
+        "t": 543587.923279527,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3267584,
+        "downTotal": 3782656
+      },
+      {
+        "t": 543588.024144777,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.125387652,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.227030152,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.329059235,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.430785068,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.532033443,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.633932568,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.73589486,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.83719311,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.940957402,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.04150486,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.143454485,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.244701152,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.345421527,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.446364319,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.547318361,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.649405527,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.750417027,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.851747027,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.952730277,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543590.053254777,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      }
+    ],
+    "ws-700ms": [
+      {
+        "t": 543566.675308559,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.375307767,
+        "up": 0,
+        "down": 0,
+        "upTotal": 278528,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.077149643,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 638976,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.779643851,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1015808,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.482140935,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1376256,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.183915644,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1753088,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.885944894,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.586431311,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.28785002,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.988205937,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 90112
+      },
+      {
+        "t": 543573.688368354,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 270336
+      },
+      {
+        "t": 543574.389594187,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 458752
+      },
+      {
+        "t": 543575.090893313,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 638976
+      },
+      {
+        "t": 543575.791931313,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 827392
+      },
+      {
+        "t": 543576.492516355,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.193622814,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.895940981,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.596249356,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1884160,
+        "downTotal": 983040
+      },
+      {
+        "t": 543579.297409731,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2162688,
+        "downTotal": 1531904
+      },
+      {
+        "t": 543579.998294148,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2424832,
+        "downTotal": 2080768
+      },
+      {
+        "t": 543580.700308399,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2703360,
+        "downTotal": 2637824
+      },
+      {
+        "t": 543581.401413732,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2998272,
+        "downTotal": 3194880
+      },
+      {
+        "t": 543582.102360858,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.803394025,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.505370692,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.20667165,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.907274026,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3218432,
+        "downTotal": 3684352
+      },
+      {
+        "t": 543585.608340818,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3229696,
+        "downTotal": 3706880
+      },
+      {
+        "t": 543586.309443526,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3241984,
+        "downTotal": 3729408
+      },
+      {
+        "t": 543587.010919777,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3253248,
+        "downTotal": 3753984
+      },
+      {
+        "t": 543587.71156711,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3264512,
+        "downTotal": 3776512
+      },
+      {
+        "t": 543588.412307902,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.113930319,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.814775652,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      }
+    ],
+    "http-250ms": [
+      {
+        "t": 543566.674599225,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.925615434,
+        "up": 0,
+        "down": 0,
+        "upTotal": 49152,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.1771101,
+        "up": 0,
+        "down": 0,
+        "upTotal": 180224,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.429348934,
+        "up": 0,
+        "down": 0,
+        "upTotal": 311296,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.680752309,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 442368,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.932148976,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 573440,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.184670226,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 704512,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.436284684,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 835584,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.687273185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 966656,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.938780726,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1097728,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.189407185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1228800,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.440363102,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1359872,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.693032143,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1490944,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.944443185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1622016,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.196851644,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1753088,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.448133977,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.698734477,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.949666269,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.200415644,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.452287644,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.704184019,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.955385728,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.20672077,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.457415603,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.709930228,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 16384
+      },
+      {
+        "t": 543572.960447728,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 81920
+      },
+      {
+        "t": 543573.21164327,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 147456
+      },
+      {
+        "t": 543573.463905228,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 212992
+      },
+      {
+        "t": 543573.71515427,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 278528
+      },
+      {
+        "t": 543573.96659977,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 344064
+      },
+      {
+        "t": 543574.218494354,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 409600
+      },
+      {
+        "t": 543574.469446312,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 475136
+      },
+      {
+        "t": 543574.720717479,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 540672
+      },
+      {
+        "t": 543574.971429313,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 606208
+      },
+      {
+        "t": 543575.222338646,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 671744
+      },
+      {
+        "t": 543575.473307396,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 745472
+      },
+      {
+        "t": 543575.724475105,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 811008
+      },
+      {
+        "t": 543575.975558105,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 876544
+      },
+      {
+        "t": 543576.226912438,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.480445855,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.731371563,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.982394022,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.233964605,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.484434022,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.736083772,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.987236981,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.238448689,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.489548689,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.740614023,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1933312,
+        "downTotal": 1097728
+      },
+      {
+        "t": 543578.991360273,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2031616,
+        "downTotal": 1294336
+      },
+      {
+        "t": 543579.242379898,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2129920,
+        "downTotal": 1490944
+      },
+      {
+        "t": 543579.49420094,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2228224,
+        "downTotal": 1679360
+      },
+      {
+        "t": 543579.744606231,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2326528,
+        "downTotal": 1884160
+      },
+      {
+        "t": 543579.99544519,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2424832,
+        "downTotal": 2080768
+      },
+      {
+        "t": 543580.246427648,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2523136,
+        "downTotal": 2285568
+      },
+      {
+        "t": 543580.497383732,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2621440,
+        "downTotal": 2482176
+      },
+      {
+        "t": 543580.748589565,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2719744,
+        "downTotal": 2670592
+      },
+      {
+        "t": 543580.999693149,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2818048,
+        "downTotal": 2875392
+      },
+      {
+        "t": 543581.252980941,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2916352,
+        "downTotal": 3063808
+      },
+      {
+        "t": 543581.504929524,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3014656,
+        "downTotal": 3260416
+      },
+      {
+        "t": 543581.756350899,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3112960,
+        "downTotal": 3473408
+      },
+      {
+        "t": 543582.007357191,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.258759899,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.509409066,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.760386191,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.01168965,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.262395858,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.514847983,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.766892942,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.017833317,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.268532067,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.51954615,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3212288,
+        "downTotal": 3672064
+      },
+      {
+        "t": 543584.770688942,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3216384,
+        "downTotal": 3680256
+      },
+      {
+        "t": 543585.022065984,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3220480,
+        "downTotal": 3688448
+      },
+      {
+        "t": 543585.272466026,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3224576,
+        "downTotal": 3696640
+      },
+      {
+        "t": 543585.523423151,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3228672,
+        "downTotal": 3704832
+      },
+      {
+        "t": 543585.774395443,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3232768,
+        "downTotal": 3713024
+      },
+      {
+        "t": 543586.024626109,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3236864,
+        "downTotal": 3721216
+      },
+      {
+        "t": 543586.275427235,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3240960,
+        "downTotal": 3729408
+      },
+      {
+        "t": 543586.526541485,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3245056,
+        "downTotal": 3737600
+      },
+      {
+        "t": 543586.777298152,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3249152,
+        "downTotal": 3745792
+      },
+      {
+        "t": 543587.028254693,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3253248,
+        "downTotal": 3753984
+      },
+      {
+        "t": 543587.27964336,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3257344,
+        "downTotal": 3762176
+      },
+      {
+        "t": 543587.530468944,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3261440,
+        "downTotal": 3770368
+      },
+      {
+        "t": 543587.781368985,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3265536,
+        "downTotal": 3778560
+      },
+      {
+        "t": 543588.032097652,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.28404211,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.535105735,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.786609235,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.037729985,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.288853902,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.541588194,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.794473277,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543590.045423402,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543590.297465694,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      }
+    ],
+    "poll-100ms": [
+      {
+        "t": 543566.664634059,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.77556385,
+        "up": 0,
+        "down": 0,
+        "upTotal": 0,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.887159517,
+        "up": 0,
+        "down": 0,
+        "upTotal": 16384,
+        "downTotal": 0
+      },
+      {
+        "t": 543566.9901996,
+        "up": 0,
+        "down": 0,
+        "upTotal": 81920,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.101308309,
+        "up": 0,
+        "down": 0,
+        "upTotal": 147456,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.213537226,
+        "up": 0,
+        "down": 0,
+        "upTotal": 196608,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.324489184,
+        "up": 0,
+        "down": 0,
+        "upTotal": 245760,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.428199517,
+        "up": 0,
+        "down": 0,
+        "upTotal": 311296,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.533553809,
+        "up": 0,
+        "down": 0,
+        "upTotal": 360448,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.639489809,
+        "up": 0,
+        "down": 0,
+        "upTotal": 425984,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.750315392,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 475136,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.863994392,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 540672,
+        "downTotal": 0
+      },
+      {
+        "t": 543567.974267476,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 589824,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.080810143,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 655360,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.190773934,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 704512,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.303253059,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 770048,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.419017809,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 835584,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.532568851,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 884736,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.639511601,
+        "up": 425984,
+        "down": 0,
+        "upTotal": 950272,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.744063143,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 999424,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.857148226,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1064960,
+        "downTotal": 0
+      },
+      {
+        "t": 543568.96906031,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1114112,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.080428101,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1179648,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.18327856,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1228800,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.296617185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1294336,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.413849643,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1359872,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.526422893,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1409024,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.638721185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1474560,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.744057227,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1523712,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.853353477,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1589248,
+        "downTotal": 0
+      },
+      {
+        "t": 543569.96645106,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1638400,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.078183644,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1703936,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.189269727,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1753088,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.301039519,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1818624,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.409551185,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.521223519,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.62529856,
+        "up": 524288,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.736297769,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.848509019,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543570.961470561,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.073359561,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.186123852,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.290794977,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.405963019,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.510624478,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.619156561,
+        "up": 360448,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.731657728,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.843289728,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543571.946360436,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.051241936,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.161143686,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.271468353,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.376669645,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.489362103,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.594273561,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 0
+      },
+      {
+        "t": 543572.703483061,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 16384
+      },
+      {
+        "t": 543572.805847062,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 49152
+      },
+      {
+        "t": 543572.918601603,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 73728
+      },
+      {
+        "t": 543573.03022927,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 106496
+      },
+      {
+        "t": 543573.138274853,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 131072
+      },
+      {
+        "t": 543573.248102395,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 163840
+      },
+      {
+        "t": 543573.358510228,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 188416
+      },
+      {
+        "t": 543573.467426562,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 212992
+      },
+      {
+        "t": 543573.57042527,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 245760
+      },
+      {
+        "t": 543573.67726252,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 270336
+      },
+      {
+        "t": 543573.780205729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 303104
+      },
+      {
+        "t": 543573.88930227,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 327680
+      },
+      {
+        "t": 543574.00133752,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 360448
+      },
+      {
+        "t": 543574.113188729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 385024
+      },
+      {
+        "t": 543574.221276021,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 417792
+      },
+      {
+        "t": 543574.324160396,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 442368
+      },
+      {
+        "t": 543574.426625021,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 466944
+      },
+      {
+        "t": 543574.538679521,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 499712
+      },
+      {
+        "t": 543574.647352521,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 524288
+      },
+      {
+        "t": 543574.759166437,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 557056
+      },
+      {
+        "t": 543574.874336354,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 589824
+      },
+      {
+        "t": 543574.983249104,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 614400
+      },
+      {
+        "t": 543575.086257146,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 647168
+      },
+      {
+        "t": 543575.200062354,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 671744
+      },
+      {
+        "t": 543575.302260729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 696320
+      },
+      {
+        "t": 543575.405569313,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 720896
+      },
+      {
+        "t": 543575.508904729,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 753664
+      },
+      {
+        "t": 543575.61028423,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 778240
+      },
+      {
+        "t": 543575.718592063,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 802816
+      },
+      {
+        "t": 543575.822306105,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 835584
+      },
+      {
+        "t": 543575.935432438,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 860160
+      },
+      {
+        "t": 543576.03954573,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 892928
+      },
+      {
+        "t": 543576.151821271,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.256480646,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.368317938,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.477272397,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.584863522,
+        "up": 0,
+        "down": 262144,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.688938105,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.793546855,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543576.902214938,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.006087855,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.120243064,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.233509689,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.349388105,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.461386689,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.56547548,
+        "up": 0,
+        "down": 131072,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.676251897,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.789386772,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543577.900792106,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.012119856,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.121711106,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.226340064,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.338551647,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.443586689,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1835008,
+        "downTotal": 917504
+      },
+      {
+        "t": 543578.557644148,
+        "up": 0,
+        "down": 0,
+        "upTotal": 1867776,
+        "downTotal": 958464
+      },
+      {
+        "t": 543578.665330398,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1916928,
+        "downTotal": 1032192
+      },
+      {
+        "t": 543578.770410898,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1966080,
+        "downTotal": 1130496
+      },
+      {
+        "t": 543578.880292398,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 1982464,
+        "downTotal": 1212416
+      },
+      {
+        "t": 543578.992271939,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2031616,
+        "downTotal": 1294336
+      },
+      {
+        "t": 543579.101135398,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2080768,
+        "downTotal": 1392640
+      },
+      {
+        "t": 543579.212149231,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2129920,
+        "downTotal": 1482752
+      },
+      {
+        "t": 543579.321260773,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2179072,
+        "downTotal": 1564672
+      },
+      {
+        "t": 543579.433479481,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2211840,
+        "downTotal": 1654784
+      },
+      {
+        "t": 543579.546760856,
+        "up": 81920,
+        "down": 114688,
+        "upTotal": 2260992,
+        "downTotal": 1728512
+      },
+      {
+        "t": 543579.655538773,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2310144,
+        "downTotal": 1826816
+      },
+      {
+        "t": 543579.765312315,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2359296,
+        "downTotal": 1916928
+      },
+      {
+        "t": 543579.87332494,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2375680,
+        "downTotal": 1982464
+      },
+      {
+        "t": 543579.983294732,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2424832,
+        "downTotal": 2080768
+      },
+      {
+        "t": 543580.094340732,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2473984,
+        "downTotal": 2162688
+      },
+      {
+        "t": 543580.203279232,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2523136,
+        "downTotal": 2260992
+      },
+      {
+        "t": 543580.314305982,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2555904,
+        "downTotal": 2342912
+      },
+      {
+        "t": 543580.428398857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2605056,
+        "downTotal": 2441216
+      },
+      {
+        "t": 543580.540849857,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2654208,
+        "downTotal": 2514944
+      },
+      {
+        "t": 543580.652430399,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2703360,
+        "downTotal": 2605056
+      },
+      {
+        "t": 543580.764291982,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2752512,
+        "downTotal": 2703360
+      },
+      {
+        "t": 543580.877482815,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2768896,
+        "downTotal": 2785280
+      },
+      {
+        "t": 543580.988971357,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2818048,
+        "downTotal": 2883584
+      },
+      {
+        "t": 543581.101290149,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2867200,
+        "downTotal": 2957312
+      },
+      {
+        "t": 543581.206635899,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2916352,
+        "downTotal": 3047424
+      },
+      {
+        "t": 543581.319477649,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2949120,
+        "downTotal": 3137536
+      },
+      {
+        "t": 543581.431090399,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 2998272,
+        "downTotal": 3227648
+      },
+      {
+        "t": 543581.544349107,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3047424,
+        "downTotal": 3301376
+      },
+      {
+        "t": 543581.658258899,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3096576,
+        "downTotal": 3391488
+      },
+      {
+        "t": 543581.762259441,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3145728,
+        "downTotal": 3489792
+      },
+      {
+        "t": 543581.875645858,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3162112,
+        "downTotal": 3571712
+      },
+      {
+        "t": 543581.986141024,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3661824
+      },
+      {
+        "t": 543582.096972649,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.208256816,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.313119399,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.419256566,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.534312983,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.638723858,
+        "up": 393216,
+        "down": 786432,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.7492979,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.86030565,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543582.964585608,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.068575566,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.18118315,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.297671858,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.406452483,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.516373692,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.629467192,
+        "up": 114688,
+        "down": 278528,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.733333108,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.846180817,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543583.956314483,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.0632764,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.174189275,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.285082025,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.394912734,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3211264,
+        "downTotal": 3670016
+      },
+      {
+        "t": 543584.505228692,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3212288,
+        "downTotal": 3672064
+      },
+      {
+        "t": 543584.617198817,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3214336,
+        "downTotal": 3676160
+      },
+      {
+        "t": 543584.726310276,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3215360,
+        "downTotal": 3678208
+      },
+      {
+        "t": 543584.838174567,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3217408,
+        "downTotal": 3682304
+      },
+      {
+        "t": 543584.952334026,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3219456,
+        "downTotal": 3686400
+      },
+      {
+        "t": 543585.054247276,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3221504,
+        "downTotal": 3690496
+      },
+      {
+        "t": 543585.166541692,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3222528,
+        "downTotal": 3692544
+      },
+      {
+        "t": 543585.279443317,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3224576,
+        "downTotal": 3696640
+      },
+      {
+        "t": 543585.390759443,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3226624,
+        "downTotal": 3700736
+      },
+      {
+        "t": 543585.501177484,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3228672,
+        "downTotal": 3704832
+      },
+      {
+        "t": 543585.613521193,
+        "up": 3072,
+        "down": 6144,
+        "upTotal": 3230720,
+        "downTotal": 3708928
+      },
+      {
+        "t": 543585.722544318,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3231744,
+        "downTotal": 3710976
+      },
+      {
+        "t": 543585.834247984,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3233792,
+        "downTotal": 3715072
+      },
+      {
+        "t": 543585.944345151,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3235840,
+        "downTotal": 3719168
+      },
+      {
+        "t": 543586.052486734,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3237888,
+        "downTotal": 3723264
+      },
+      {
+        "t": 543586.163289526,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3238912,
+        "downTotal": 3725312
+      },
+      {
+        "t": 543586.265410943,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3240960,
+        "downTotal": 3729408
+      },
+      {
+        "t": 543586.368477985,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3243008,
+        "downTotal": 3733504
+      },
+      {
+        "t": 543586.482379068,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3244032,
+        "downTotal": 3735552
+      },
+      {
+        "t": 543586.59358911,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3246080,
+        "downTotal": 3739648
+      },
+      {
+        "t": 543586.696223318,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3248128,
+        "downTotal": 3743744
+      },
+      {
+        "t": 543586.799561235,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3249152,
+        "downTotal": 3745792
+      },
+      {
+        "t": 543586.910348402,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3251200,
+        "downTotal": 3749888
+      },
+      {
+        "t": 543587.019271902,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3253248,
+        "downTotal": 3753984
+      },
+      {
+        "t": 543587.129523443,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3255296,
+        "downTotal": 3758080
+      },
+      {
+        "t": 543587.241793402,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3257344,
+        "downTotal": 3762176
+      },
+      {
+        "t": 543587.354330235,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3258368,
+        "downTotal": 3764224
+      },
+      {
+        "t": 543587.467236527,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3260416,
+        "downTotal": 3768320
+      },
+      {
+        "t": 543587.580039944,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3262464,
+        "downTotal": 3772416
+      },
+      {
+        "t": 543587.69000361,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3264512,
+        "downTotal": 3776512
+      },
+      {
+        "t": 543587.800125444,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3266560,
+        "downTotal": 3778560
+      },
+      {
+        "t": 543587.909036652,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3267584,
+        "downTotal": 3782656
+      },
+      {
+        "t": 543588.017215694,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.126042818,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.233318402,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.34709186,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.459224985,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.56883086,
+        "up": 16384,
+        "down": 32768,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.67243611,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.784444027,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543588.895137235,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.006136819,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.11982711,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.23049436,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.343477277,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.455178402,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.570048027,
+        "up": 5120,
+        "down": 10240,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.679599444,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.790354444,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543589.901342819,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543590.006422694,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      },
+      {
+        "t": 543590.119403944,
+        "up": 0,
+        "down": 0,
+        "upTotal": 3268608,
+        "downTotal": 3784704
+      }
+    ]
+  },
+  "work": "/tmp/traffic-speed-vw0rq2kr",
+  "inbound": "mixed",
+  "sha256": "90860874bcf6cd82c656340264f4528d45be12be396c9c43615c0b753fe9e619"
+}

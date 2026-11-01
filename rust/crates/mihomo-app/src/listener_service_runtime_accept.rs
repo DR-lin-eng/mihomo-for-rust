@@ -39,6 +39,8 @@ pub(super) fn accept_loop(
         match accept_with_shutdown_poll(&listener, &shutdown) {
             Ok((stream, _)) => {
                 let peer_addr = stream.peer_addr().ok();
+                let listener_addr = stream.local_addr().ok();
+                let listener_kind = handler.kind_name();
                 let tunnel = tunnel.clone();
                 let handler = handler.clone();
                 let dns_runtime = dns_runtime.clone();
@@ -52,11 +54,20 @@ pub(super) fn accept_loop(
                         dns_runtime,
                         udp_queue,
                     ) {
-                        log_listener_error("listener dispatch error", err);
+                        if matches!(listener_kind, "http" | "socks" | "mixed")
+                            && err.is_client_handshake_disconnect() {
+                            push_log(LogLevel::Debug, format!(
+                                "client disconnected during {listener_kind} handshake listener={listener_addr:?} peer={peer_addr:?}: {err}"));
+                        } else {
+                            log_listener_error(&format!(
+                                "listener dispatch error protocol={listener_kind} listener={listener_addr:?} peer={peer_addr:?}"), err);
+                        }
                     }
                 });
             }
             Err(err) if err.kind() == std::io::ErrorKind::TimedOut => {}
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted
+                && shutdown.load(Ordering::Relaxed) => break,
             Err(err) => {
                 let message = format!("listener accept error: {err}");
                 eprintln!("{message}");

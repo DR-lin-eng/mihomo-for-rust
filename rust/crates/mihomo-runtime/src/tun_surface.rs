@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use mihomo_config::RuntimeConfigDocument;
 use mihomo_core::{
-    ConnectionContext, DnsMode, Metadata, PacketEnvelope, TcpStream, UdpPacket,
+    ConnectionContext, DnsMode, Metadata, NetworkKind, PacketEnvelope, TcpStream, UdpPacket,
 };
 use mihomo_inbound::InboundDefinition;
 use mihomo_transport::TcpDialer;
@@ -20,9 +20,20 @@ pub struct PreparedTunUdpPacket {
 pub fn build_tun_runtime_specs(document: &RuntimeConfigDocument) -> Vec<TunRuntimeSpec> {
     let mut specs = Vec::new();
     if document.tun.enable {
+        let mut config = document.tun.config.clone();
+        // Go's top-level parseTun derives an interface /30 from the fake-IP
+        // address, even in redir-host mode and when a frontend owns routing.
+        // The connected route is also OpenClash's TUN readiness condition.
+        if config.inet4_address.is_empty() {
+            let address = document.dns.fake_ip_range
+                .split('/').next().unwrap_or_default().trim()
+                .parse::<std::net::Ipv4Addr>()
+                .unwrap_or(std::net::Ipv4Addr::new(198, 18, 0, 1));
+            config.inet4_address.push(format!("{address}/30"));
+        }
         specs.push(TunRuntimeSpec::new(
             "__top_level_tun__",
-            document.tun.config.clone(),
+            config,
         ));
     }
 
@@ -46,7 +57,12 @@ pub fn prepare_tun_tcp_context(
     source: Option<SocketAddr>,
     destination: SocketAddr,
 ) -> ConnectionContext {
-    ConnectionContext::new(stream, spec.prepare_tcp_metadata(source, destination))
+    let mut metadata = spec.prepare_tcp_metadata(source, destination);
+    if spec.should_hijack_dns_for_network(NetworkKind::Tcp, destination) {
+        metadata.dns_hijacked = true;
+        metadata.dns_mode = DnsMode::Mapping;
+    }
+    ConnectionContext::new(stream, metadata)
 }
 
 pub fn dispatch_tun_tcp_stream(
@@ -81,8 +97,9 @@ pub fn prepare_tun_udp_metadata(
     destination: SocketAddr,
 ) -> Metadata {
     let mut metadata = spec.prepare_udp_metadata(source, destination);
-    if spec.should_hijack_dns(destination) {
+    if spec.should_hijack_dns_for_network(NetworkKind::Udp, destination) {
         metadata.dns_mode = DnsMode::Mapping;
+        metadata.dns_hijacked = true;
     }
     metadata
 }
@@ -93,7 +110,7 @@ pub fn prepare_tun_udp_packet(
     source: Option<SocketAddr>,
     destination: SocketAddr,
 ) -> PreparedTunUdpPacket {
-    let hijacked_dns = spec.should_hijack_dns(destination);
+    let hijacked_dns = spec.should_hijack_dns_for_network(NetworkKind::Udp, destination);
     let metadata = prepare_tun_udp_metadata(spec, source, destination);
     PreparedTunUdpPacket {
         envelope: PacketEnvelope::new(packet, metadata),
@@ -127,10 +144,51 @@ mod tests {
 
     use crate::build_runtime_registry;
 
+    #[test]
+    fn top_level_tun_gets_connected_subnet_without_auto_routing() {
+        let document = parse_runtime_config_document(
+            "tun:\n  enable: true\n  device: utun\n  auto-route: false\n",
+        ).unwrap();
+        let spec = build_tun_runtime_specs(&document).remove(0);
+        assert_eq!(spec.config.inet4_address, ["198.18.0.1/30"]);
+        assert!(!spec.config.auto_route);
+        // Keep the user's document intact; defaults belong to the runtime plan.
+        assert!(document.tun.config.inet4_address.is_empty());
+    }
+
+    #[test]
+    fn top_level_tun_uses_fake_ip_address_and_preserves_explicit_addresses() {
+        let mut document = parse_runtime_config_document(
+            "dns:\n  fake-ip-range: 198.19.12.1/16\ntun:\n  enable: true\n",
+        ).unwrap();
+        assert_eq!(build_tun_runtime_specs(&document)[0].config.inet4_address, ["198.19.12.1/30"]);
+        document.tun.config.inet4_address = vec!["10.20.30.1/30".into()];
+        assert_eq!(build_tun_runtime_specs(&document)[0].config.inet4_address, ["10.20.30.1/30"]);
+    }
+
     use super::{
         build_tun_runtime_specs, dispatch_tun_tcp_stream_with_dialer, dispatch_tun_udp_packet,
         prepare_tun_tcp_context, prepare_tun_udp_metadata,
     };
+
+    #[test]
+    fn tun_dns_hijack_dispatches_without_a_user_named_dns_proxy() {
+        let document = parse_runtime_config_document(
+            "dns:\n  enable: true\ntun:\n  enable: true\n  stack: mixed\n  dns-hijack: [any:53, 'tcp://any:53']\nrules: ['MATCH,REJECT']\n",
+        ).unwrap();
+        let spec = build_tun_runtime_specs(&document).remove(0);
+        let tunnel = crate::RuntimeTunnel::new(document.mode.clone(), build_runtime_registry(&document).unwrap())
+            .with_dns_runtime(mihomo_dns::DnsRuntime::from_document(&document).unwrap())
+            .with_rule_set(mihomo_rules::compile_rule_set(&document.rules).unwrap());
+        let udp = prepare_tun_udp_metadata(&spec, None, "8.8.8.8:53".parse().unwrap());
+        assert!(udp.dns_hijacked);
+        assert!(udp.special_proxy.is_empty());
+        assert!(matches!(tunnel.resolve_udp_outbound(&udp).unwrap(), crate::UdpOutboundRoute::Dns));
+        let tcp = prepare_tun_tcp_context(&spec, MemoryStream(Cursor::new(Vec::new())), None, "8.8.8.8:53".parse().unwrap());
+        assert!(tcp.metadata().dns_hijacked);
+        let ordinary = prepare_tun_udp_metadata(&spec, None, "8.8.8.8:853".parse().unwrap());
+        assert!(!ordinary.dns_hijacked);
+    }
 
     struct MemoryStream(Cursor<Vec<u8>>);
 

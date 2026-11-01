@@ -46,6 +46,10 @@ fn dns_hijack_matches_any_and_protocol_prefixed_targets() {
     assert!(spec.should_hijack_dns("8.8.8.8:53".parse().unwrap()));
     assert!(spec.should_hijack_dns("1.1.1.1:5353".parse().unwrap()));
     assert!(!spec.should_hijack_dns("1.1.1.1:853".parse().unwrap()));
+    assert!(spec.should_hijack_dns_for_network(NetworkKind::Udp, "8.8.8.8:53".parse().unwrap()));
+    assert!(!spec.should_hijack_dns_for_network(NetworkKind::Tcp, "8.8.8.8:53".parse().unwrap()));
+    assert!(spec.should_hijack_dns_for_network(NetworkKind::Tcp, "8.8.8.8:5353".parse().unwrap()));
+    assert!(!spec.should_hijack_dns_for_network(NetworkKind::Udp, "8.8.8.8:5353".parse().unwrap()));
 }
 
 #[test]
@@ -158,19 +162,19 @@ fn linux_tun_setup_commands_include_auto_route_rules() {
         .collect::<Vec<_>>();
     assert!(rendered.contains(&"route replace 0.0.0.0/0 dev mihomo0 table 2022".to_owned()));
     assert!(rendered.contains(&"-6 route replace ::/0 dev mihomo0 table 2022".to_owned()));
-    assert!(rendered.contains(&"rule replace to 198.19.0.0/30 lookup 2022 priority 9000".to_owned()));
-    assert!(rendered.contains(&"rule replace lookup main suppress_prefixlength 0 priority 9001".to_owned()));
-    assert!(rendered.contains(&"rule replace iif mihomo0 lookup main priority 9002".to_owned()));
-    assert!(rendered.contains(&"rule replace not iif lo lookup 2022 priority 9003".to_owned()));
-    assert!(rendered.contains(&"rule replace iif lo from 0.0.0.0/32 lookup 2022 priority 9004".to_owned()));
-    assert!(rendered.contains(&"rule replace iif lo from 198.19.0.0/30 lookup 2022 priority 9005".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace to fd00::/126 lookup 2022 priority 9000".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace lookup main suppress_prefixlength 0 priority 9001".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace iif mihomo0 lookup main priority 9002".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace iif lo from ::/1 lookup main priority 9003".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace iif lo from 8000::/1 lookup main priority 9004".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace iif lo from fd00::/126 lookup 2022 priority 9005".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace lookup 2022 priority 9006".to_owned()));
+    assert!(rendered.contains(&"rule add to 198.19.0.0/30 lookup 2022 priority 9000".to_owned()));
+    assert!(rendered.contains(&"rule add not dport 53 lookup main suppress_prefixlength 0 priority 9001".to_owned()));
+    assert!(rendered.contains(&"rule add lookup main iif mihomo0 priority 9002".to_owned()));
+    assert!(rendered.contains(&"rule add not iif lo lookup 2022 priority 9003".to_owned()));
+    assert!(rendered.contains(&"rule add iif lo from 0.0.0.0/32 lookup 2022 priority 9004".to_owned()));
+    assert!(rendered.contains(&"rule add iif lo from 198.19.0.0/30 lookup 2022 priority 9005".to_owned()));
+    assert!(rendered.contains(&"-6 rule add to fd00::/126 lookup 2022 priority 9000".to_owned()));
+    assert!(rendered.contains(&"-6 rule add not dport 53 lookup main suppress_prefixlength 0 priority 9001".to_owned()));
+    assert!(rendered.contains(&"-6 rule add lookup main iif mihomo0 priority 9002".to_owned()));
+    assert!(rendered.contains(&"-6 rule add iif lo from ::/1 lookup main priority 9003".to_owned()));
+    assert!(rendered.contains(&"-6 rule add iif lo from 8000::/1 lookup main priority 9004".to_owned()));
+    assert!(rendered.contains(&"-6 rule add iif lo from fd00::/126 lookup 2022 priority 9005".to_owned()));
+    assert!(rendered.contains(&"-6 rule add lookup 2022 priority 9006".to_owned()));
 }
 
 #[cfg(target_os = "linux")]
@@ -203,22 +207,22 @@ fn linux_tun_setup_commands_include_linux_rule_filters() {
         .iter()
         .map(|parts| parts.join(" "))
         .collect::<Vec<_>>();
-    assert!(rendered.contains(&"rule replace sport 53 goto 9010 priority 9000".to_owned()));
-    assert!(rendered.contains(&"rule replace sport 1000-2000 goto 9010 priority 9000".to_owned()));
-    assert!(rendered.contains(&"rule replace dport 443 goto 9010 priority 9001".to_owned()));
-    assert!(rendered.contains(&"rule replace dport 8000-8100 goto 9010 priority 9001".to_owned()));
-    assert!(rendered.contains(&"rule replace uidrange 3000 goto 9010 priority 9002".to_owned()));
-    assert!(rendered.contains(&"rule replace uidrange 4000-4999 goto 9010 priority 9002".to_owned()));
-    assert!(rendered.contains(&"rule replace iif br-lan goto 9006 priority 9003".to_owned()));
-    assert!(rendered.contains(&"rule replace goto 9010 priority 9004".to_owned()));
-    assert!(rendered.contains(&"rule replace priority 9006".to_owned()));
-    assert!(rendered.contains(&"rule replace uidrange 1000 goto 9008 priority 9006".to_owned()));
-    assert!(rendered.contains(&"rule replace uidrange 2000-2999 goto 9008 priority 9006".to_owned()));
-    assert!(rendered.contains(&"rule replace goto 9010 priority 9007".to_owned()));
-    assert!(rendered.contains(&"rule replace priority 9008".to_owned()));
-    assert!(rendered.contains(&"rule replace priority 9010".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace sport 53 goto 9010 priority 9000".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace dport 443 goto 9010 priority 9001".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace uidrange 1000 goto 9008 priority 9006".to_owned()));
-    assert!(rendered.contains(&"-6 rule replace priority 9010".to_owned()));
+    assert!(rendered.contains(&"rule add sport 53 goto 9010 priority 9000".to_owned()));
+    assert!(rendered.contains(&"rule add sport 1000-2000 goto 9010 priority 9000".to_owned()));
+    assert!(rendered.contains(&"rule add dport 443 goto 9010 priority 9001".to_owned()));
+    assert!(rendered.contains(&"rule add dport 8000-8100 goto 9010 priority 9001".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 3000 goto 9010 priority 9002".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 4000-4999 goto 9010 priority 9002".to_owned()));
+    assert!(rendered.contains(&"rule add iif br-lan goto 9005 priority 9003".to_owned()));
+    assert!(rendered.contains(&"rule add goto 9010 priority 9004".to_owned()));
+    assert!(rendered.contains(&"rule add priority 9005".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 2000-2999 goto 9008 priority 9006".to_owned()));
+    assert!(rendered.contains(&"rule add goto 9010 priority 9007".to_owned()));
+    assert!(rendered.contains(&"rule add priority 9008".to_owned()));
+    assert!(rendered.contains(&"rule add priority 9010".to_owned()));
+    assert!(rendered.contains(&"-6 rule add sport 53 goto 9010 priority 9000".to_owned()));
+    assert!(rendered.contains(&"-6 rule add dport 443 goto 9010 priority 9001".to_owned()));
+    assert!(rendered.contains(&"-6 rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
+    assert!(rendered.contains(&"-6 rule add priority 9010".to_owned()));
 }

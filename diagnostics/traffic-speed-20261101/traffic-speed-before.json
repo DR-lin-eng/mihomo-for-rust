@@ -1,0 +1,74 @@
+{
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-domain-routing",
+  "sha256": "e8f850e5f0f21cc6fd07d4eeed79d02bd2fde84c3ddbaff34eeaa0602e4378be",
+  "fixture": {
+    "upload": 65536,
+    "download": 32768
+  },
+  "while_connection_open": {
+    "up": 0,
+    "down": 0,
+    "upTotal": 0,
+    "downTotal": 0
+  },
+  "live_connections": {
+    "downloadTotal": 0,
+    "uploadTotal": 0,
+    "connections": [
+      {
+        "id": "1",
+        "upload": 65536,
+        "download": 32768,
+        "start": 1793510913873,
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "metadata": {
+          "network": "tcp",
+          "type": "https",
+          "sourceIP": "127.0.0.1",
+          "sourcePort": "51304",
+          "destinationIP": "127.0.0.1",
+          "destinationPort": "41285",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_mixed__",
+          "inboundUser": ""
+        }
+      }
+    ],
+    "memory": 8957952
+  },
+  "after_close": {
+    "up": 65536,
+    "down": 32768,
+    "upTotal": 65536,
+    "downTotal": 32768
+  },
+  "idle": {
+    "up": 65536,
+    "down": 32768,
+    "upTotal": 65536,
+    "downTotal": 32768
+  },
+  "reproduced": true
+}

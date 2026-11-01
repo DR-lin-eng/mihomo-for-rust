@@ -1125,7 +1125,7 @@ rules:
     }
 
     #[test]
-    fn top_level_tun_mixed_stack_still_triggers_native_support_gap() {
+    fn top_level_tun_mixed_stack_without_auto_redirect_uses_native_bridge() {
         let temp = unique_temp_dir();
         let options = BootOptions {
             home_dir: Some(temp.to_string_lossy().into_owned()),
@@ -1160,15 +1160,7 @@ rules:
         mihomo_app::restore_selected_proxy_mapping(&mut state);
         let gaps = super::effective_native_support_gaps(&state);
         assert!(
-            gaps.iter().any(|gap| gap.proxy_name == "__top_level_tun__"),
-            "{gaps:?}"
-        );
-        assert!(
-            gaps.iter().any(|gap| {
-                gap.proxy_name == "__top_level_tun__"
-                    && gap.reason.contains("only partially served")
-                    && gap.reason.contains("requires Linux `auto-route` + `auto-redirect`")
-            }),
+            !gaps.iter().any(|gap| gap.proxy_name == "__top_level_tun__"),
             "{gaps:?}"
         );
     }
@@ -1305,7 +1297,7 @@ rules:
     }
 
     #[test]
-    fn top_level_tun_android_package_filters_still_trigger_native_support_gap() {
+    fn linux_top_level_tun_accepts_inactive_android_template_filters() {
         let temp = unique_temp_dir();
         let options = BootOptions {
             home_dir: Some(temp.to_string_lossy().into_owned()),
@@ -1342,7 +1334,7 @@ rules:
         mihomo_app::restore_selected_proxy_mapping(&mut state);
         let gaps = super::effective_native_support_gaps(&state);
         assert!(
-            gaps.iter().any(|gap| gap.proxy_name == "__top_level_tun__"),
+            !gaps.iter().any(|gap| gap.proxy_name == "__top_level_tun__"),
             "{gaps:?}"
         );
     }
@@ -1746,6 +1738,9 @@ tun:
   stack: mixed
   include-package:
     - com.example.app
+  gso: true
+  include-mac-address:
+    - '02:00:00:00:00:01'
   loopback-address:
     - 10.0.0.1
 proxies:
@@ -1777,13 +1772,13 @@ rules:
             .map(|gap| gap.reason.as_str())
             .collect::<Vec<_>>();
         assert!(
-            tun_reasons.iter().any(|reason| reason.contains("system-style TCP interception")),
+            tun_reasons.iter().any(|reason| reason.contains("GSO")),
             "{gaps:?}"
         );
         assert!(
             tun_reasons
                 .iter()
-                .any(|reason| reason.contains("Android package and user filters")),
+                .any(|reason| reason.contains("MAC address filters")),
             "{gaps:?}"
         );
         assert!(

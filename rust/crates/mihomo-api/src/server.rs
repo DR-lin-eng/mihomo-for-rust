@@ -19,7 +19,6 @@ use std::time::UNIX_EPOCH;
 use std::time::Duration;
 
 use base64::Engine as _;
-use chrono::{DateTime, Utc};
 use mihomo_config::RuntimeConfigDocument;
 use mihomo_core::{recent_logs, subscribe_logs, LogEntry, LogLevel};
 use mihomo_dns::DnsRecordType;
@@ -1325,12 +1324,12 @@ impl ApiController {
     }
 
     fn current_connections_payload(&self) -> ConnectionsPayload {
-        let traffic = self.current_traffic_payload();
-        let connections = self
+        let (traffic, connections) = self
             .runtime_tunnel
             .as_ref()
-            .map(|runtime_tunnel| runtime_tunnel.connections_snapshot())
-            .unwrap_or_default()
+            .map(|runtime_tunnel| runtime_tunnel.connections_with_traffic_snapshot())
+            .unwrap_or_default();
+        let connections = connections
             .into_iter()
             .map(connection_payload_from_snapshot)
             .collect();
@@ -2418,7 +2417,7 @@ struct ConnectionPayload {
     id: String,
     upload: u64,
     download: u64,
-    start: u64,
+    start: String,
     chains: Vec<String>,
     #[serde(rename = "providerChains")]
     provider_chains: Vec<String>,
@@ -2594,7 +2593,7 @@ fn connection_payload_from_snapshot(snapshot: ActiveConnectionSnapshot) -> Conne
         id: snapshot.id.to_string(),
         upload: snapshot.upload,
         download: snapshot.download,
-        start: snapshot.start_unix_ms,
+        start: crate::time_format::format_unix_ms(snapshot.start_unix_ms),
         chains: snapshot.chains,
         provider_chains: snapshot.provider_chains,
         rule: crate::snapshot_types::controller_rule_type_name(&snapshot.rule).to_owned(),
@@ -2674,11 +2673,7 @@ fn runtime_rule_snapshots_payload(runtime_tunnel: &RuntimeTunnel) -> Vec<ApiRule
 }
 
 fn format_rule_time(timestamp_unix_ms: u64) -> String {
-    if timestamp_unix_ms == 0 {
-        return "0001-01-01T00:00:00Z".to_owned();
-    }
-    let time = UNIX_EPOCH + Duration::from_millis(timestamp_unix_ms);
-    DateTime::<Utc>::from(time).to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+    crate::time_format::format_unix_ms(timestamp_unix_ms)
 }
 
 fn write_http_response<W: Write>(stream: &mut W, response: &ApiHttpResponse) -> Result<(), ControllerError> {
@@ -3416,6 +3411,9 @@ proxies:
         assert_eq!(rule_providers_body["providers"]["rule1"]["behavior"], "Domain");
         assert_eq!(rule_providers_body["providers"]["rule1"]["format"], "YamlRule");
         assert_eq!(rule_providers_body["providers"]["rule1"]["ruleCount"], 1);
+        let updated_at=rule_providers_body["providers"]["rule1"]["updatedAt"].as_str().unwrap();
+        assert_eq!(updated_at,crate::time_format::ZERO_TIME);
+        assert!(chrono::DateTime::parse_from_rfc3339(updated_at).is_ok());
 
         let rule_provider = controller.handle_request(
             &ApiHttpRequest::get("/providers/rules/rule1")
@@ -3425,6 +3423,7 @@ proxies:
         let rule_provider_body: Value = serde_json::from_slice(&rule_provider.body).unwrap();
         assert_eq!(rule_provider_body["name"], "rule1");
         assert_eq!(rule_provider_body["behavior"], "Domain");
+        assert_eq!(rule_provider_body["updatedAt"],updated_at);
     }
 
     #[test]
@@ -3476,6 +3475,9 @@ proxies:
         assert_eq!(rule_providers_body["providers"]["rule1"]["behavior"], "Classical");
         assert_eq!(rule_providers_body["providers"]["rule1"]["format"], "YamlRule");
         assert_eq!(rule_providers_body["providers"]["rule1"]["ruleCount"], 2);
+        let expected_time=crate::time_format::format_unix_ms(std::fs::metadata(temp.join("rule-provider.yaml")).unwrap().modified().unwrap()
+            .duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64);
+        assert_eq!(rule_providers_body["providers"]["rule1"]["updatedAt"],expected_time);
 
         let rule_provider = controller.handle_request(
             &ApiHttpRequest::get("/providers/rules/rule1")
@@ -3485,6 +3487,7 @@ proxies:
         let rule_provider_body: Value = serde_json::from_slice(&rule_provider.body).unwrap();
         assert_eq!(rule_provider_body["name"], "rule1");
         assert_eq!(rule_provider_body["ruleCount"], 2);
+        assert_eq!(rule_provider_body["updatedAt"],expected_time);
     }
 
     #[test]

@@ -542,6 +542,8 @@ fn build_rule_provider_snapshots(
                     .map(rule_provider_format_name)
                     .unwrap_or_else(|| "Unknown".to_owned()),
                 rule_count,
+                updated_at:crate::time_format::format_unix_ms(
+                    provider_sources.rule_provider_updated_at.get(name).copied().unwrap_or(0)),
             })
         })
         .collect()

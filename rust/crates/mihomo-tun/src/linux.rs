@@ -77,6 +77,11 @@ pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<File> {
     let actual_name = linux_ifreq_name(&ifreq);
     if !actual_name.is_empty() {
         configure_linux_tun_interface(spec, &actual_name)?;
+        let message = format!(
+            "[TUN] interface {actual_name} started ipv4={:?} ipv6={:?} auto-route={}",
+            spec.config.inet4_address, spec.config.inet6_address, spec.config.auto_route);
+        eprintln!("{message}");
+        mihomo_core::push_log(mihomo_core::LogLevel::Info, message);
     }
     Ok(file)
 }
@@ -329,6 +334,7 @@ fn linux_tun_auto_route_rule_commands(
         commands.push(vec![
             "rule".into(),
             action.into(),
+            "not".into(),
             "dport".into(),
             "53".into(),
             "lookup".into(),
@@ -451,6 +457,7 @@ fn linux_tun_auto_route_rule_commands(
             "-6".into(),
             "rule".into(),
             action.into(),
+            "not".into(),
             "dport".into(),
             "53".into(),
             "lookup".into(),

@@ -1,0 +1,9 @@
+{
+  "work": "/tmp/openclash-tun-before-2tmv89zv",
+  "core_alive": true,
+  "link": "12: utun: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN mode DEFAULT group default qlen 500\n    link/none \n",
+  "addresses": "",
+  "routes": "",
+  "openclash_ready": false,
+  "log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=6 groups=1 providers=0 controllers=127.0.0.1:41975 bound_listeners=2\nlistener dispatch error: failed to fill whole buffer\nlistener dispatch error: failed to fill whole buffer\nlistener dispatch error: invalid http proxy request: client closed before request headers completed\n"
+}

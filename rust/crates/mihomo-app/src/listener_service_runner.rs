@@ -318,6 +318,7 @@ impl RunningListenerService {
         for handle in self.join_handles.drain(..) {
             let _ = handle.join();
         }
+        self.smart_tunnel.clear_sniffer_state();
         self.tun_auto_redirect.take();
         if self.detected_default_interface.take().is_some() {
             mihomo_transport::clear_default_interface_name();
@@ -386,8 +387,11 @@ fn configure_tun_default_interface(specs: &[TunRuntimeSpec]) -> Option<String> {
         return None;
     }
 
-    let interface = detect_linux_default_interface_name()
-        .or_else(|| detect_linux_default_interface_name_for_family("-6"))
+    let excluded = specs.iter().filter_map(|spec| {
+        mihomo_tun::requested_linux_tun_name(spec).ok()
+    }).collect::<Vec<_>>();
+    let interface = detect_linux_default_interface_name_for_family("", &excluded)
+        .or_else(|| detect_linux_default_interface_name_for_family("-6", &excluded))
         .unwrap_or_default();
     if interface.trim().is_empty() {
         return None;
@@ -396,25 +400,25 @@ fn configure_tun_default_interface(specs: &[TunRuntimeSpec]) -> Option<String> {
     Some(interface)
 }
 
-fn detect_linux_default_interface_name() -> Option<String> {
-    detect_linux_default_interface_name_for_family("")
-}
-
-fn detect_linux_default_interface_name_for_family(family_flag: &str) -> Option<String> {
+fn detect_linux_default_interface_name_for_family(family_flag: &str, excluded: &[String]) -> Option<String> {
     #[cfg(not(target_os = "linux"))]
     {
-        let _ = family_flag;
+        let _ = (family_flag, excluded);
         None
     }
     #[cfg(target_os = "linux")]
     {
-        let candidates = ["/sbin/ip", "/usr/sbin/ip", "ip"];
-        for candidate in candidates {
+        // Android commonly keeps the usable default route in a netd table,
+        // and its ip binary lives outside the usual OpenWrt paths.
+        for all_tables in [false, true] {
+        for candidate in ["/system/bin/ip", "/sbin/ip", "/usr/sbin/ip", "ip"] {
             let mut command = std::process::Command::new(candidate);
             if !family_flag.is_empty() {
                 command.arg(family_flag);
             }
-            let output = command.args(["route", "show", "default"]).output().ok()?;
+            command.args(["route", "show"]);
+            if all_tables { command.args(["table", "all"]); }
+            let Ok(output) = command.output() else { continue; };
             if !output.status.success() {
                 continue;
             }
@@ -422,11 +426,13 @@ fn detect_linux_default_interface_name_for_family(family_flag: &str) -> Option<S
             for line in stdout.lines() {
                 let tokens = line.split_whitespace().collect::<Vec<_>>();
                 for pair in tokens.windows(2) {
-                    if pair[0] == "dev" && !pair[1].trim().is_empty() {
+                    if pair[0] == "dev" && !pair[1].trim().is_empty()
+                        && pair[1] != "lo" && !excluded.iter().any(|name| name == pair[1]) {
                         return Some(pair[1].trim().to_owned());
                     }
                 }
             }
+        }
         }
         None
     }

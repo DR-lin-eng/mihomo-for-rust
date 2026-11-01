@@ -140,6 +140,46 @@ impl std::fmt::Display for ListenerRuntimeError {
 
 impl std::error::Error for ListenerRuntimeError {}
 
+impl ListenerRuntimeError {
+    /// HTTP/SOCKS setup uses this variant for client I/O. Their upstream
+    /// connect and relay failures have separate variants and remain failures.
+    pub fn is_client_handshake_disconnect(&self) -> bool {
+        matches!(self, Self::Io(error) if matches!(error.kind(),
+            io::ErrorKind::UnexpectedEof | io::ErrorKind::ConnectionReset |
+            io::ErrorKind::ConnectionAborted | io::ErrorKind::BrokenPipe))
+    }
+}
+
+#[cfg(test)]
+mod handshake_disconnect_tests {
+    use super::*;
+    #[test]
+    fn client_eof_is_distinct_from_upstream_eof() {
+        let client = ListenerRuntimeError::Io(io::ErrorKind::UnexpectedEof.into());
+        assert!(client.is_client_handshake_disconnect());
+        let upstream = ListenerRuntimeError::Connect(ExecutionError::Transport(
+            mihomo_transport::TransportError::Io {
+                kind: io::ErrorKind::UnexpectedEof,
+                message: "truncated upstream response".into(),
+            },
+        ));
+        assert!(!upstream.is_client_handshake_disconnect());
+        assert!(!ListenerRuntimeError::Io(io::ErrorKind::PermissionDenied.into()).is_client_handshake_disconnect());
+        assert!(!ListenerRuntimeError::HttpProtocol("bad request".into()).is_client_handshake_disconnect());
+    }
+    #[test]
+    fn incomplete_client_headers_are_disconnects_but_malformed_headers_are_errors() {
+        for bytes in [b"".as_slice(), b"GET / HTTP/1.1\r\nHost:".as_slice()] {
+            let error = read_http_proxy_request(&mut Cursor::new(bytes.to_vec())).err().unwrap();
+            assert!(error.is_client_handshake_disconnect());
+        }
+        let error = read_http_proxy_request(&mut Cursor::new(b"INVALID\r\n\r\n".to_vec())).err().unwrap();
+        assert!(!error.is_client_handshake_disconnect());
+        let error = negotiate_socks5(&mut Cursor::new(b"\x05".to_vec()), &[]).err().unwrap();
+        assert!(error.is_client_handshake_disconnect());
+    }
+}
+
 impl From<ParseMetadataError> for ListenerRuntimeError {
     fn from(value: ParseMetadataError) -> Self {
         Self::InvalidTarget(value)
@@ -190,6 +230,8 @@ impl Write for PrefixedStream {
 }
 
 impl TcpStream for PrefixedStream {
+    fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{self.inner.read_timeout()}
+    fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{self.inner.set_read_timeout(timeout)}
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         self.inner.try_clone_box()
     }
@@ -790,9 +832,8 @@ fn read_http_proxy_request(
     loop {
         let read = stream.read(&mut chunk)?;
         if read == 0 {
-            return Err(ListenerRuntimeError::HttpProtocol(
-                "client closed before request headers completed".to_owned(),
-            ));
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof,
+                "client closed before request headers completed").into());
         }
         buffer.extend_from_slice(&chunk[..read]);
         if let Some(position) = buffer.windows(4).position(|window| window == b"\r\n\r\n") {

@@ -1,0 +1,110 @@
+[
+  {
+    "inbound": "mixed",
+    "name": "upload only ws-100ms up bytes/s",
+    "expected": 524288,
+    "median": 524288,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "upload only ws-100ms down bytes/s",
+    "expected": 0,
+    "median": 0,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "download only ws-100ms up bytes/s",
+    "expected": 0,
+    "median": 0,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "download only ws-100ms down bytes/s",
+    "expected": 262144,
+    "median": 262144,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "two full-duplex connections ws-100ms up bytes/s",
+    "expected": 393216,
+    "median": 393216,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "two full-duplex connections ws-100ms down bytes/s",
+    "expected": 786432,
+    "median": 786432,
+    "samples": 15
+  },
+  {
+    "inbound": "mixed",
+    "name": "UDP ws-100ms up bytes/s",
+    "expected": 16384,
+    "median": 16384
+  },
+  {
+    "inbound": "mixed",
+    "name": "UDP ws-100ms down bytes/s",
+    "expected": 32768,
+    "median": 32768
+  },
+  {
+    "inbound": "redir",
+    "name": "upload only ws-100ms up bytes/s",
+    "expected": 524288,
+    "median": 524288,
+    "samples": 15
+  },
+  {
+    "inbound": "redir",
+    "name": "upload only ws-100ms down bytes/s",
+    "expected": 0,
+    "median": 0,
+    "samples": 15
+  },
+  {
+    "inbound": "redir",
+    "name": "download only ws-100ms up bytes/s",
+    "expected": 0,
+    "median": 0.0,
+    "samples": 14
+  },
+  {
+    "inbound": "redir",
+    "name": "download only ws-100ms down bytes/s",
+    "expected": 262144,
+    "median": 262144.0,
+    "samples": 14
+  },
+  {
+    "inbound": "redir",
+    "name": "two full-duplex connections ws-100ms up bytes/s",
+    "expected": 393216,
+    "median": 393216,
+    "samples": 15
+  },
+  {
+    "inbound": "redir",
+    "name": "two full-duplex connections ws-100ms down bytes/s",
+    "expected": 786432,
+    "median": 786432,
+    "samples": 15
+  },
+  {
+    "inbound": "redir",
+    "name": "UDP ws-100ms up bytes/s",
+    "expected": 16384,
+    "median": 16384.0
+  },
+  {
+    "inbound": "redir",
+    "name": "UDP ws-100ms down bytes/s",
+    "expected": 32768,
+    "median": 32768.0
+  }
+]

@@ -18,6 +18,78 @@ use crate::tun_tcp_packet::{parse_tun_tcp_packet, TunTcpFlowKey};
 
 use super::{TunTcpPassiveStack, TunTcpStreamHandle};
 
+fn stream_for_backpressure_test() -> (TunTcpStreamHandle, std::net::SocketAddr, std::net::SocketAddr) {
+    let client: std::net::SocketAddr = "10.0.0.2:50190".parse().unwrap();
+    let server: std::net::SocketAddr = "198.51.100.44:443".parse().unwrap();
+    let frame = |control, seq, ack| {
+        crate::tun_tcp_packet::encode_tun_tcp_packet(client, server, 64, &TcpRepr {
+            src_port: client.port(), dst_port: server.port(), control,
+            seq_number: TcpSeqNumber(seq), ack_number: ack,
+            window_len: 65535, window_scale: None, max_seg_size: Some(1460),
+            sack_permitted: false, sack_ranges: [None, None, None], payload: &[],
+        }).unwrap()
+    };
+    let syn = parse_tun_tcp_packet(&frame(TcpControl::Syn, 100, None)).unwrap();
+    let mut stack = TunTcpPassiveStack::new(&syn, 1500).unwrap();
+    stack.ingest_packet(&syn).unwrap();
+    stack.poll();
+    let syn_ack = parse_tun_tcp_packet(&stack.drain_outgoing()[0]).unwrap();
+    let ack = parse_tun_tcp_packet(&frame(TcpControl::None, 101, Some(syn_ack.tcp_repr.seq_number + 1))).unwrap();
+    stack.ingest_packet(&ack).unwrap();
+    stack.poll();
+    assert!(stack.is_established());
+    (TunTcpStreamHandle::new(stack), client, server)
+}
+
+#[test]
+fn full_tun_send_buffer_waits_for_ack_instead_of_returning_zero() {
+    let (mut handle, client, server) = stream_for_backpressure_test();
+    assert_eq!(handle.write(&vec![7; 128 * 1024]).unwrap(), 128 * 1024);
+    let stack = handle.stack();
+    let mut writer = handle.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let worker = thread::spawn(move || tx.send(writer.write(b"next")).unwrap());
+    assert!(matches!(rx.recv_timeout(Duration::from_millis(50)), Err(std::sync::mpsc::RecvTimeoutError::Timeout)));
+    let mut stack = stack.lock().unwrap();
+    let sent = stack.drain_outgoing();
+    let last = sent.iter().filter_map(|p| parse_tun_tcp_packet(p).ok())
+        .filter(|p| !p.tcp_repr.payload.is_empty()).last().unwrap();
+    let ack = crate::tun_tcp_packet::encode_tun_tcp_packet(client, server, 64, &TcpRepr {
+        src_port: client.port(), dst_port: server.port(), control: TcpControl::None,
+        seq_number: TcpSeqNumber(101), ack_number: Some(last.tcp_repr.seq_number + last.tcp_repr.payload.len()),
+        window_len: 65535, window_scale: None, max_seg_size: None, sack_permitted: false,
+        sack_ranges: [None, None, None], payload: &[],
+    }).unwrap();
+    stack.ingest_packet(&parse_tun_tcp_packet(&ack).unwrap()).unwrap();
+    stack.poll();
+    drop(stack);
+    assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap().unwrap(), 4);
+    worker.join().unwrap();
+}
+
+#[test]
+fn closing_tun_stream_wakes_a_writer_waiting_for_send_space() {
+    use mihomo_core::TcpStream as _;
+    let (mut handle, _, _) = stream_for_backpressure_test();
+    assert_eq!(handle.write(&vec![7; 128 * 1024]).unwrap(), 128 * 1024);
+    let mut writer = handle.clone();
+    let (tx, rx) = std::sync::mpsc::channel();
+    let worker = thread::spawn(move || tx.send(writer.write(b"next")).unwrap());
+    assert!(matches!(rx.recv_timeout(Duration::from_millis(50)), Err(std::sync::mpsc::RecvTimeoutError::Timeout)));
+    handle.shutdown_all().unwrap();
+    assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap().unwrap_err().kind(), io::ErrorKind::BrokenPipe);
+    worker.join().unwrap();
+}
+
+#[test]
+fn tun_send_backpressure_honors_write_timeout() {
+    use mihomo_core::TcpStream as _;
+    let (mut handle, _, _) = stream_for_backpressure_test();
+    assert_eq!(handle.write(&vec![7; 128 * 1024]).unwrap(), 128 * 1024);
+    handle.set_timeouts(None, Some(Duration::from_millis(50))).unwrap();
+    assert_eq!(handle.write(b"next").unwrap_err().kind(), io::ErrorKind::TimedOut);
+}
+
 #[test]
 fn passive_stack_replies_to_syn_and_reaches_established() {
     let client: std::net::SocketAddr = "10.0.0.2:50000".parse().unwrap();

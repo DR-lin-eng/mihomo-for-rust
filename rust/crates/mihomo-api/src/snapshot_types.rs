@@ -270,6 +270,8 @@ pub struct ApiRuleProviderSnapshot {
     pub format: String,
     #[serde(rename = "ruleCount")]
     pub rule_count: usize,
+    #[serde(rename="updatedAt")]
+    pub updated_at:String,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

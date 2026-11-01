@@ -29,6 +29,7 @@ mod sudoku;
 mod sudoku_httpmask;
 mod tls_client;
 mod transport_types;
+mod quic_sniff;
 mod tunnel_dns;
 mod tuic_stream;
 mod trojan;

@@ -84,6 +84,9 @@ pub struct ProviderContentSources {
     pub http_contents: BTreeMap<String, String>,
     pub file_blobs: BTreeMap<String, Vec<u8>>,
     pub http_blobs: BTreeMap<String, Vec<u8>>,
+    /// Per rule-provider load/refresh time. Kept with the content so rollback
+    /// restores both and API snapshots do not invent new update times.
+    pub rule_provider_updated_at: BTreeMap<String,u64>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -745,6 +748,7 @@ proxies:
             http_contents: BTreeMap::new(),
             file_blobs: BTreeMap::new(),
             http_blobs: BTreeMap::new(),
+            rule_provider_updated_at: BTreeMap::new(),
         };
 
         let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
@@ -778,6 +782,7 @@ proxies:
             )]),
             file_blobs: BTreeMap::new(),
             http_blobs: BTreeMap::new(),
+            rule_provider_updated_at: BTreeMap::new(),
         };
 
         let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
@@ -816,6 +821,7 @@ proxies:
             )]),
             file_blobs: BTreeMap::new(),
             http_blobs: BTreeMap::new(),
+            rule_provider_updated_at: BTreeMap::new(),
         };
 
         let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
@@ -853,6 +859,7 @@ proxies:
             http_contents: BTreeMap::new(),
             file_blobs: BTreeMap::new(),
             http_blobs: BTreeMap::new(),
+            rule_provider_updated_at: BTreeMap::new(),
         };
 
         let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();

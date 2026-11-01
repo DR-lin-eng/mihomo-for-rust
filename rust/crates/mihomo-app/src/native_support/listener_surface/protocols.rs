@@ -371,14 +371,8 @@ fn tun_inbound_support_gap_reasons(
     {
         let mut reasons = Vec::new();
         match config.stack {
-            mihomo_inbound::TunStack::System => {}
-            mihomo_inbound::TunStack::Mixed => {
-                if !(config.auto_route && config.auto_redirect) {
-                    reasons.push(
-                        "tun stack `mixed` is only partially served by the native Rust app: the current Rust path requires Linux `auto-route` + `auto-redirect` so TCP can stay on the transparent listener path while UDP continues through the TUN packet relay",
-                    );
-                }
-            }
+            // Both can use the passive TCP bridge when auto-redirect is off.
+            mihomo_inbound::TunStack::System | mihomo_inbound::TunStack::Mixed => {}
             mihomo_inbound::TunStack::Gvisor => {
                 // The gvisor stack runs on the smoltcp passive TCP bridge:
                 // user-space TCP termination without auto-route/redirect.
@@ -390,14 +384,8 @@ fn tun_inbound_support_gap_reasons(
                 );
             }
         }
-        if !config.include_package.is_empty()
-            || !config.exclude_package.is_empty()
-            || !config.include_android_user.is_empty()
-        {
-            reasons.push(
-                "tun Android package and user filters are not yet served by the native Rust app",
-            );
-        }
+        // Linux builds of Go also leave Android package/user options inactive.
+        // Android template entries must not force a Linux core into legacy mode.
         if !config.include_mac_address.is_empty() || !config.exclude_mac_address.is_empty() {
             reasons.push("tun MAC address filters are not yet served by the native Rust app");
         }

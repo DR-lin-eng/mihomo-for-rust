@@ -197,7 +197,7 @@
         };
         let message = render_test_config_success(
             &resolved,
-            Some("native Rust runtime does not yet support one or more configured proxy protocols or features:\n- proxy=__top_level_tun__ reason=tun stack `mixed` is only partially served by the native Rust app: the current Rust path requires Linux `auto-route` + `auto-redirect` so TCP can stay on the transparent listener path while UDP continues through the TUN packet relay"),
+            Some("native Rust runtime does not yet support one or more configured proxy protocols or features:\n- proxy=__top_level_tun__ reason=tun MAC address filters are not yet served by the native Rust app"),
         );
         assert!(message.contains("configuration file"));
         assert!(message.contains("test is successful"));
@@ -421,7 +421,7 @@ rules:
             report.contains("- udp-data-plane=fixed-worker-queue-direct-packet-relay status=supported-but-not-go-gvisor"),
             "{report}"
         );
-        assert!(report.contains("- stack=mixed status=gap"), "{report}");
+        assert!(report.contains("- stack=mixed status=supported-passive-tcp-and-packet-udp"), "{report}");
     }
 
     #[test]

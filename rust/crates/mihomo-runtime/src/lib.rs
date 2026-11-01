@@ -10,11 +10,16 @@ mod registry;
 mod resolver;
 mod runtime_plan;
 pub mod smart;
+mod sniffer;
+mod sniffer_quic;
+#[cfg(test)]
+mod sniffer_tests;
 mod support;
 mod support_helpers;
 mod support_protocols;
 mod topology;
 mod tcp;
+mod traffic;
 mod tun_surface;
 mod tunnel_runtime;
 mod udp;

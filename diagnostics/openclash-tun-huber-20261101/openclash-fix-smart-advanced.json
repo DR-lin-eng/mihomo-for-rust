@@ -1,0 +1,2382 @@
+{
+  "passed": true,
+  "checks": 62,
+  "results": [
+    {
+      "name": "diagnostics requires authentication",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "race forwards actual TLS traffic",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "race chooses fast protocol handshake",
+      "passed": true,
+      "detail": "fast"
+    },
+    {
+      "name": "race finishes before slow CONNECT reply",
+      "passed": true,
+      "detail": 0.18775595899205655
+    },
+    {
+      "name": "race schedule recorded",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "race cancels pending losers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "race loser sockets close",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "winning route reused",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no application payload reaches slow losers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "worker budget preserves concurrent normal connections",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Race reject1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "failed manual node stays fixed",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual selection visible",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "clear pin Race",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "all failed candidates return failure",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dial candidates capped at ten",
+      "passed": true,
+      "detail": 10
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe b",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe c",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "two independent refusals and cross-region control confirm region",
+      "passed": true,
+      "detail": {
+        "region.test\u001fregion:US": 1793505923
+      }
+    },
+    {
+      "name": "target traces collected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "global trace fallback parses JSON ASN",
+      "passed": true,
+      "detail": {
+        "asn": "111",
+        "failed": 0,
+        "key": "53a646ea04ae",
+        "region": "US",
+        "updated": 1793504123
+      }
+    },
+    {
+      "name": "exit identity hashed",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "raw exit IP not exposed",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "clear pin Probe",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "automatic route skips known suspected exits",
+      "passed": true,
+      "detail": "alias"
+    },
+    {
+      "name": "newly discovered exit is classified before next selection",
+      "passed": true,
+      "detail": "c"
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual selection overrides regional exclusion",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "clear pin Probe",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe alias",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe c",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "same exit IP cannot count as independent regional evidence",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual HTTPS classification challenge.test",
+      "passed": true,
+      "detail": {
+        "status": 403,
+        "until": 1793504724,
+        "updated": 1793504124,
+        "verdict": {
+          "action": "record",
+          "control_success": false,
+          "reason": "challenge",
+          "ttl": 600,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual HTTPS classification rate.test",
+      "passed": true,
+      "detail": {
+        "status": 429,
+        "until": 1793504248,
+        "updated": 1793504125,
+        "verdict": {
+          "action": "record",
+          "control_success": false,
+          "reason": "rate limited",
+          "ttl": 123,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "actual Retry-After TTL",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual HTTPS classification body-region.test",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "until": 1793505925,
+        "updated": 1793504125,
+        "verdict": {
+          "action": "record",
+          "control_success": false,
+          "reason": "region unavailable",
+          "ttl": 1800,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual HTTPS classification regional-redirect.test",
+      "passed": true,
+      "detail": {
+        "status": 302,
+        "until": 1793505925,
+        "updated": 1793504125,
+        "verdict": {
+          "action": "record",
+          "control_success": false,
+          "reason": "region unavailable",
+          "ttl": 1800,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "ordinary redirect does not block or clear",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "probe never follows redirects",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TLS hostname verification affects probe",
+      "passed": true,
+      "detail": {
+        "status": 0,
+        "until": 1793504725,
+        "updated": 1793504125,
+        "verdict": {
+          "action": "record",
+          "control_success": false,
+          "reason": "certificate hostname mismatch",
+          "ttl": 600,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "probe body limited to 4096 bytes",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "until": 1793504125,
+        "updated": 1793504125,
+        "verdict": {
+          "action": "reachable",
+          "control_success": true,
+          "reason": "answered",
+          "ttl": 0,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "body wait preserves valid response",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "until": 1793504127,
+        "updated": 1793504127,
+        "verdict": {
+          "action": "reachable",
+          "control_success": true,
+          "reason": "answered",
+          "ttl": 0,
+          "unproven": false
+        }
+      }
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "target-specific trace overrides global trace",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "cancelled race losers do not become node failures",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "advanced evidence survives restart",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "advanced exits survive restart",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin Probe a",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "flush during in-flight HTTPS probe",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "in-flight result cannot repopulate flushed state",
+      "passed": true,
+      "detail": {
+        "cancelled": 0,
+        "evidence": {},
+        "exits": {},
+        "half_open": {},
+        "pins": {},
+        "probes": {},
+        "probes_completed": 0,
+        "probes_dropped": 0,
+        "races": 0,
+        "suspects": {},
+        "target_exits": {}
+      }
+    },
+    {
+      "name": "flush keeps manual selection",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "shutdown completes without waiting for stale probe",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "work": "/tmp/mihomo-smart-advanced-bcd3z9kx",
+  "events": [
+    {
+      "node": "reject1",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.27305774
+    },
+    {
+      "node": "reject2",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.274052698
+    },
+    {
+      "node": "reject3",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.27491299
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.278761573
+    },
+    {
+      "node": "late",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.27891499
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.278973823
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536640.319104698
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536640.319206782
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.372072449
+    },
+    {
+      "node": "fast",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536640.372123282
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536640.45295149
+    },
+    {
+      "node": "fast",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536640.453065157
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536640.453225907
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536640.453404907
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536640.45622799
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536640.490731282
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536640.490861699
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536641.079704407
+    },
+    {
+      "node": "reject2",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536641.080937741
+    },
+    {
+      "node": "reject3",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536641.081824032
+    },
+    {
+      "node": "slow",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536641.082647157
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536641.181029991
+    },
+    {
+      "node": "late",
+      "event": "closed",
+      "time": 536641.780742991
+    },
+    {
+      "node": "slow",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536641.988467241
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536641.988604783
+    },
+    {
+      "node": "fast",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536641.989858074
+    },
+    {
+      "node": "fast",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536642.024196824
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.024320491
+    },
+    {
+      "node": "late",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536642.030914158
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.080898241
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.117815324
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.117933741
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.281695074
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.282219574
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.283452241
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.283698074
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.284569116
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.285399908
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.290690241
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.291743199
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.293445283
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.295529991
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.295751241
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.295777783
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.295921574
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.295946449
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.314951199
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.322411741
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.327619033
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.330487449
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.332662699
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.335890741
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.345312574
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.347087324
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.349994949
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.350616199
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.351637199
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.351846699
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.351922074
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.352446616
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.353932783
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.354378033
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.354498658
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.354599699
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.356609491
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.356710449
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.357467699
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.357861658
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.358179741
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.358984491
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.359652824
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.359855908
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.360102783
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.360417991
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.360923199
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.361058241
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.362159158
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.362716033
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.362863241
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.363420074
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.364436074
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.364727366
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.364749366
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.364871158
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.365296408
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.365316866
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.365604158
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.365621741
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.366307283
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.366330199
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536642.367135699
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536642.367157491
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536642.536333491
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536643.36218695
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536643.362515825
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536643.362557825
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536643.401230033
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536643.401863367
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536643.4019187
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536643.40280845
+    },
+    {
+      "node": "fast",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536643.402909492
+    },
+    {
+      "node": "fast",
+      "event": "closed",
+      "time": 536643.403227033
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536643.441604408
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536643.441699075
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536643.500869033
+    },
+    {
+      "node": "slow",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536643.524379283
+    },
+    {
+      "node": "late",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536643.536375325
+    },
+    {
+      "node": "late",
+      "event": "closed",
+      "time": 536643.536505158
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536644.40484345
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536644.404964242
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "dial",
+      "time": 536644.406079742
+    },
+    {
+      "node": "slow",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536644.429026242
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536644.429118617
+    },
+    {
+      "node": "slow",
+      "host": "race.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536645.311766201
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536645.311892743
+    },
+    {
+      "node": "reject1",
+      "host": "manual.test",
+      "event": "dial",
+      "time": 536645.505285784
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.707240076
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.708368909
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.709298743
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.716656493
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.717108784
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.717531618
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.717675701
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.717976868
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.719605326
+    },
+    {
+      "node": "reject1",
+      "host": "cap.test",
+      "event": "dial",
+      "time": 536645.719640826
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536645.907062076
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536645.911881493
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536645.911986409
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536645.919089993
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536645.922483451
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536645.922584368
+    },
+    {
+      "node": "a",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536645.923909493
+    },
+    {
+      "node": "a",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536645.927373493
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536645.927501451
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536645.928516826
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536645.931186076
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536645.931266951
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.108176576
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536646.113554076
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.113685826
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.134653785
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536646.139290201
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.139419535
+    },
+    {
+      "node": "b",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536646.140468785
+    },
+    {
+      "node": "b",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.14381291
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.143929576
+    },
+    {
+      "node": "b",
+      "host": "api.ip.sb",
+      "event": "dial",
+      "time": 536646.144688451
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.147104826
+    },
+    {
+      "node": "b",
+      "host": "api.ip.sb",
+      "event": "request",
+      "path": "/geoip",
+      "time": 536646.147643368
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.147776993
+    },
+    {
+      "node": "b",
+      "host": "region.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.14983016
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.149915618
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.307971826
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536646.322764243
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.32306316
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.351483743
+    },
+    {
+      "node": "c",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536646.352859743
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536646.354637326
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.354743076
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.35574316
+    },
+    {
+      "node": "c",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.356055576
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.356132618
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.359532076
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.359684118
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.508557035
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536646.513189035
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536646.513329035
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.559555868
+    },
+    {
+      "node": "alias",
+      "host": "www.cloudflare.com",
+      "event": "dial",
+      "time": 536646.561830368
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536646.562920743
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536646.563065493
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.56403541
+    },
+    {
+      "node": "alias",
+      "host": "www.cloudflare.com",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.564459826
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536646.564519493
+    },
+    {
+      "node": "alias",
+      "host": "region.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536646.566612576
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536646.566688868
+    },
+    {
+      "node": "a",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.570202201
+    },
+    {
+      "node": "a",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536646.572452493
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536646.57250741
+    },
+    {
+      "node": "b",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.573176076
+    },
+    {
+      "node": "b",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536646.575741493
+    },
+    {
+      "node": "b",
+      "event": "closed",
+      "time": 536646.575823035
+    },
+    {
+      "node": "alias",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.576652785
+    },
+    {
+      "node": "alias",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536646.57895491
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536646.57903541
+    },
+    {
+      "node": "c",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.579628451
+    },
+    {
+      "node": "c",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536646.581761285
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.581830285
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.582619368
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.583919576
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.58471041
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.585283951
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.585910993
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.58645091
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.586974701
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.587493118
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.588007326
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.588549243
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.589128701
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536646.589731826
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.71075966
+    },
+    {
+      "node": "c",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536646.715602952
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536646.715702952
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "dial",
+      "time": 536646.912065368
+    },
+    {
+      "node": "a",
+      "host": "region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536646.917302077
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536646.917464743
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.114085368
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536647.119694535
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.119823285
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.175388452
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.175674618
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536647.180178285
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.18034991
+    },
+    {
+      "node": "a",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536647.180492035
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.180578493
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.32140666
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536647.329298035
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536647.329429827
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.38384266
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.384189702
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536647.387468077
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536647.387570869
+    },
+    {
+      "node": "alias",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536647.388069869
+    },
+    {
+      "node": "alias",
+      "event": "closed",
+      "time": 536647.388144285
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.51757116
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536647.52213141
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536647.52226191
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.591283702
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "dial",
+      "time": 536647.592301535
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536647.595369244
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536647.595527702
+    },
+    {
+      "node": "c",
+      "host": "shared.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536647.595776952
+    },
+    {
+      "node": "c",
+      "event": "closed",
+      "time": 536647.595862202
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "dial",
+      "time": 536647.718581744
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536647.723809202
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.723907327
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "dial",
+      "time": 536647.800116827
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "dial",
+      "time": 536647.800328535
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536647.804180369
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.804340619
+    },
+    {
+      "node": "a",
+      "host": "challenge.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536647.804472994
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.80454216
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "dial",
+      "time": 536647.919073327
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536647.924256994
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536647.924387494
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "dial",
+      "time": 536648.008090952
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "dial",
+      "time": 536648.008499494
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536648.012521619
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.012662619
+    },
+    {
+      "node": "a",
+      "host": "rate.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536648.01279891
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.012892077
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "dial",
+      "time": 536648.120680161
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536648.126342494
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.126500244
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "dial",
+      "time": 536648.217705619
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "dial",
+      "time": 536648.217763911
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536648.222189286
+    },
+    {
+      "node": "a",
+      "host": "body-region.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536648.222336869
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.222384702
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.222554161
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "dial",
+      "time": 536648.323464619
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536648.331107494
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.331255202
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "dial",
+      "time": 536648.428111786
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "dial",
+      "time": 536648.428202827
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536648.432812869
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.432983077
+    },
+    {
+      "node": "a",
+      "host": "regional-redirect.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536648.435144577
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.435380286
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "dial",
+      "time": 536648.523350369
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536648.524714619
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.524748744
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "dial",
+      "time": 536648.535341119
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536648.536198036
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.536228244
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "dial",
+      "time": 536648.536635411
+    },
+    {
+      "node": "a",
+      "host": "redirect.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536648.537384119
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.537406286
+    },
+    {
+      "node": "a",
+      "host": "wrong.invalid",
+      "event": "dial",
+      "time": 536648.723750202
+    },
+    {
+      "node": "a",
+      "host": "wrong.invalid",
+      "event": "request",
+      "path": "/data",
+      "time": 536648.725477202
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.725511952
+    },
+    {
+      "node": "a",
+      "host": "wrong.invalid",
+      "event": "dial",
+      "time": 536648.739131661
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.740113328
+    },
+    {
+      "node": "a",
+      "host": "wrong.invalid",
+      "event": "dial",
+      "time": 536648.740380036
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.741507203
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "dial",
+      "time": 536648.926153953
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536648.930877119
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.930972286
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "dial",
+      "time": 536648.944223286
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "dial",
+      "time": 536648.944914661
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536648.948451869
+    },
+    {
+      "node": "a",
+      "host": "large.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536648.948602453
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.948855869
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536648.949280619
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "dial",
+      "time": 536649.130096453
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536649.135195078
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536649.135340411
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "dial",
+      "time": 536649.152275786
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "dial",
+      "time": 536649.152328494
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536649.156684286
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536649.156822078
+    },
+    {
+      "node": "a",
+      "host": "slow-body.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536649.156948786
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "dial",
+      "time": 536650.33671937
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536650.34281487
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.342955328
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "dial",
+      "time": 536650.370764495
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536650.377038787
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.377269203
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "dial",
+      "time": 536650.378635037
+    },
+    {
+      "node": "a",
+      "host": "target-exit.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536650.381597912
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.381726162
+    },
+    {
+      "node": "reject1",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536650.566946245
+    },
+    {
+      "node": "reject2",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536650.567771412
+    },
+    {
+      "node": "reject3",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536650.568360162
+    },
+    {
+      "node": "slow",
+      "host": "health.test",
+      "event": "dial",
+      "time": 536650.568891453
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "dial",
+      "time": 536650.767372662
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "request",
+      "path": "/data",
+      "time": 536650.770345787
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.770409203
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "dial",
+      "time": 536650.870476204
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "dial",
+      "time": 536650.870537829
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "request",
+      "path": "/robots.txt",
+      "time": 536650.918474662
+    },
+    {
+      "node": "a",
+      "host": "held.test",
+      "event": "request",
+      "path": "/cdn-cgi/trace",
+      "time": 536650.919441954
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.919691662
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536650.924338745
+    },
+    {
+      "node": "slow",
+      "host": "health.test",
+      "event": "request",
+      "path": "/ping",
+      "time": 536651.47322887
+    },
+    {
+      "node": "slow",
+      "event": "closed",
+      "time": 536651.473363287
+    },
+    {
+      "node": "a",
+      "event": "closed",
+      "time": 536651.658810246
+    }
+  ],
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-openclash-fix",
+  "sha256": "445d3212f16f5dad94171055952878e5b9c430fc11557e4223a3ebd247c241f2"
+}

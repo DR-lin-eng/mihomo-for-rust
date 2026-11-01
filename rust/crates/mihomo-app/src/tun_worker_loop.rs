@@ -39,6 +39,11 @@ pub(crate) fn tun_fd_udp_loop(
     ));
     let udp_workers = spawn_tun_udp_workers(Arc::clone(&udp_queue));
     while !shutdown.load(Ordering::Relaxed) {
+        for flow in tcp_flows.values() {
+            if let Err(err) = flow.poll_timers(&writer) {
+                push_log(LogLevel::Warn, format!("tun worker tcp timer error inbound={}: {err}", spec.name));
+            }
+        }
         tcp_flows.retain(|_, flow| {
             !flow
                 .handle
@@ -192,6 +197,7 @@ pub(crate) fn tun_fd_udp_loop(
     for worker in udp_workers {
         let _ = worker.join();
     }
+    udp_session_pool.shutdown();
     cleanup_linux_tun_worker(&spec, cleanup_name.as_deref());
 }
 

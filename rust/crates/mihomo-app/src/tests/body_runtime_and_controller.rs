@@ -35,7 +35,7 @@ proxies:
 
         let response = fetch_http(addr, Some("top-secret"));
         assert!(response.contains("HTTP/1.1 200 OK"));
-        assert!(response.contains("\"meta\":\"mihomo-rust\""));
+        assert!(response.contains("\"meta\":true"));
 
         app.shutdown();
     }
@@ -611,7 +611,7 @@ proxies:
 
         let response = send_https_request(addr, "GET", "/version", Some("top-secret"), None);
         assert!(response.contains("HTTP/1.1 200 OK"), "{response}");
-        assert!(response.contains("\"meta\":\"mihomo-rust\""), "{response}");
+        assert!(response.contains("\"meta\":true"), "{response}");
 
         app.shutdown();
     }
@@ -672,11 +672,11 @@ proxies:
         let https_addr = addrs.into_iter().find(|addr| *addr != http_addr).unwrap();
 
         let http_response = fetch_http(http_addr, Some("top-secret"));
-        assert!(http_response.contains("\"meta\":\"mihomo-rust\""), "{http_response}");
+        assert!(http_response.contains("\"meta\":true"), "{http_response}");
 
         let https_response = send_https_request(https_addr, "GET", "/version", Some("top-secret"), None);
         assert!(https_response.contains("HTTP/1.1 200 OK"), "{https_response}");
-        assert!(https_response.contains("\"meta\":\"mihomo-rust\""), "{https_response}");
+        assert!(https_response.contains("\"meta\":true"), "{https_response}");
 
         app.shutdown();
     }
@@ -732,7 +732,7 @@ proxies:
         let mut response = String::new();
         stream.read_to_string(&mut response).unwrap();
         assert!(response.contains("HTTP/1.1 200 OK"), "{response}");
-        assert!(response.contains("\"meta\":\"mihomo-rust\""), "{response}");
+        assert!(response.contains("\"meta\":true"), "{response}");
 
         app.shutdown();
         let _ = fs::remove_file(socket_path);
@@ -772,7 +772,7 @@ proxies:
         let addr = app.controller_addr().unwrap();
 
         let response = send_http_request(addr, "POST", "/restart", Some("top-secret"), None);
-        assert!(response.contains("HTTP/1.1 200 OK"), "{response}");
+        assert!(response.contains("HTTP/1.1 204 No Content"), "{response}");
         assert!(
             matches!(
                 app.poll_control_command(),

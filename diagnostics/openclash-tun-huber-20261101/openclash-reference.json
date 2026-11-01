@@ -1,0 +1,20 @@
+{
+  "commit": "e553e82e01c697aefbe1555261a503f425e00ccd",
+  "source": "https://github.com/vernesong/OpenClash",
+  "extracts": [
+    {
+      "path": "/tmp/OpenClash/luci-app-openclash/root/etc/init.d/openclash",
+      "sha256": "f664f3a47a27bc38ff92e26d88fd90c6414d68162d0f4538eadde6f72a01fc44",
+      "first_line": 763,
+      "last_line": 789,
+      "text": "763:       if [ -n \"$en_mode_tun\" ]; then\n764:          ip_=\"ip\"\n765:       else\n766:          ip_=\"ip -6\"\n767:       fi\n768: \n769:       #wait 300s most for core start\n770:       while ( [ -n \"$(pidof clash)\" ] && [ -z \"$($ip_ route list |grep utun)\" ] && [ \"$TUN_WAIT\" -le 300 ] )\n771:       do\n772:          $ip_ link set utun up\n773:          let TUN_WAIT++\n774:          sleep 1\n775:       done\n776: \n777:       if [ -n \"$(pidof clash)\" ] && [ -z \"$($ip_ route list |grep utun)\" ] && [ \"$TUN_WAIT\" -gt 300 ]; then\n778:          while ( [ -n \"$(pidof clash)\" ] && [ -z \"$($ip_ route list |grep utun)\" ] && [ \"$TUN_RESTART\" -le 3 ] )\n779:          do\n780:             LOG_WARN \"TUN Interface Start Failed, Try to Restart Again...\"\n781:             start_run_core\n782:             let TUN_RESTART++\n783:             sleep 300\n784:          done\n785:          if [ -n \"$(pidof clash)\" ] && [ -z \"$($ip_ route list |grep utun)\" ] && [ \"$TUN_RESTART\" -gt 3 ]; then\n786:             LOG_ERROR \"TUN Interface Start Failed, Please Check The Dependence or Try to Restart Again!\"\n787:             LOG_ERROR \"Core Initial Configuration Timeout, Please Check The Log Infos!\"\n788:             start_fail\n789:          fi"
+    },
+    {
+      "path": "/tmp/OpenClash/luci-app-openclash/root/usr/share/openclash/yml_change.sh",
+      "sha256": "963fed9a0b571513c8eb8da1fb38f394d1b19438957e5daede851709cd38c18d",
+      "first_line": 575,
+      "last_line": 590,
+      "text": "575:          if en_mode_tun != '0' || ['2', '3'].include?(ipv6_mode)\n576:             Value['tun'] = {\n577:                'enable' => true, 'stack' => stack_type, 'device' => 'utun',\n578:                'dns-hijack' => ['127.0.0.1:53'], 'endpoint-independent-nat' => true,\n579:                'auto-route' => false, 'auto-detect-interface' => false,\n580:                'auto-redirect' => false, 'strict-route' => false, 'disable-icmp-forwarding' => false,\n581:                'gso' => true\n582:             }\n583:             Value['tun'].delete('iproute2-table-index')\n584:          else\n585:             Value.delete('tun')\n586:          end\n587: \n588:          Value.delete('iptables')\n589:          (Value['profile'] ||= {})['store-selected'] = true\n590:          Value['profile']['store-fake-ip'] = true if store_fake_ip"
+    }
+  ]
+}
