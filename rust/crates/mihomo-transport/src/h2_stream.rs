@@ -665,6 +665,11 @@ struct H2ChannelStream {
     write_closed: bool,
 }
 
+struct H2WriteClone {
+    write_tx: tokio_mpsc::UnboundedSender<WriteCommand>,
+    write_closed: bool,
+}
+
 impl H2ChannelStream {
     fn new(
         read_rx: Receiver<io::Result<Vec<u8>>>,
@@ -730,10 +735,53 @@ impl Write for H2ChannelStream {
 
 impl TcpStream for H2ChannelStream {
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        Ok(Box::new(H2WriteClone {
+            write_tx: self.write_tx.clone(),
+            write_closed: false,
+        }))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        if !self.write_closed {
+            self.write_closed = true;
+            let _ = self.write_tx.send(WriteCommand::Close);
+        }
+        Ok(())
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.shutdown_write()
+    }
+}
+
+impl Read for H2WriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "http2 stream does not support cloning",
+            "http2 write clone does not support reads",
         ))
+    }
+}
+
+impl Write for H2WriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.write_tx
+            .send(WriteCommand::Data(buf.to_vec()))
+            .map_err(|_| io::Error::new(io::ErrorKind::BrokenPipe, "h2 stream closed"))?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl TcpStream for H2WriteClone {
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        Ok(Box::new(Self {
+            write_tx: self.write_tx.clone(),
+            write_closed: false,
+        }))
     }
 
     fn shutdown_write(&mut self) -> io::Result<()> {

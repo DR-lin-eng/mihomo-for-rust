@@ -1,0 +1,18 @@
+{
+  "artifact": "mihomo-rust-openwrt-arm64-geosite-fix",
+  "target": "aarch64-unknown-linux-musl",
+  "bytes": 24545408,
+  "gzip_bytes": 11291273,
+  "sha256": {
+    "mihomo-rust-openwrt-arm64-geosite-fix": "d8850eb3efde8d54c76e0e4e8080b90645134af4d523b2b91cd13821f5a6650a",
+    "mihomo-rust-openwrt-arm64-geosite-fix.gz": "78af1d3fdf76c2c99556458905d60f9b6053c8f0a23502c9b150d057da54f525"
+  },
+  "elf64_aarch64_static": true,
+  "validation": {
+    "openclash_geosite_dat_startup": true,
+    "geosite_protobuf_tests": 2,
+    "xray_reality_vision_scenarios": 6,
+    "native_openwrt_tested": false,
+    "geodata_arm64_tests_passed": 2
+  }
+}

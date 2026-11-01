@@ -1,0 +1,1 @@
+Mihomo Meta 0.1.0 linux aarch64 with rustc 1.88.0 (6b00bc388 2025-06-23) unknown time variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload

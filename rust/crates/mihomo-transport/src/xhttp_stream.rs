@@ -1487,6 +1487,49 @@ mod tests {
     }
 
     #[test]
+    fn validate_options_allows_verified_download_transport_overrides() {
+        for options in [
+            XHttpOptions {
+                has_download_settings: true,
+                download_server: "127.0.0.1".into(),
+                download_port: 8443,
+                has_download_port: true,
+                download_tls: false,
+                has_download_tls: true,
+                download_host: "download.local".into(),
+                download_path: "/download".into(),
+                mode: "stream-up".into(),
+                ..Default::default()
+            },
+            XHttpOptions {
+                has_download_settings: true,
+                download_tls: true,
+                has_download_tls: true,
+                download_sni: "localhost".into(),
+                download_skip_cert_verify: true,
+                has_download_skip_cert_verify: true,
+                download_certificate: "CERT".into(),
+                download_private_key: "KEY".into(),
+                mode: "stream-up".into(),
+                ..Default::default()
+            },
+            XHttpOptions {
+                has_download_settings: true,
+                download_tls: true,
+                has_download_tls: true,
+                download_sni: "localhost".into(),
+                download_skip_cert_verify: true,
+                has_download_skip_cert_verify: true,
+                download_fingerprint: "a".repeat(64),
+                mode: "stream-up".into(),
+                ..Default::default()
+            },
+        ] {
+            validate_options(&test_proxy(), &options).unwrap();
+        }
+    }
+
+    #[test]
     fn resolved_download_tls_overrides_download_fingerprint() {
         let base = TlsOptions {
             enabled: true,

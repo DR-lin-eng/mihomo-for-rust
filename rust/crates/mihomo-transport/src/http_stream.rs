@@ -37,6 +37,13 @@ struct HttpClientStream {
     writer_handshake: bool,
 }
 
+struct HttpClientWriteClone {
+    inner: BoxedTcpStream,
+    options: HttpStreamOptions,
+    default_host: String,
+    writer_handshake: bool,
+}
+
 impl HttpClientStream {
     fn ensure_response(&mut self) -> io::Result<()> {
         if self.reader.is_some() {
@@ -80,11 +87,63 @@ impl Write for HttpClientStream {
     }
 }
 
+impl Read for HttpClientWriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "http stream write clone is write-only",
+        ))
+    }
+}
+
+impl Write for HttpClientWriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if self.writer_handshake {
+            return self.inner.write(buf);
+        }
+
+        let request = build_http_request(&self.default_host, &self.options, buf);
+        self.inner.write_all(&request)?;
+        self.inner.flush()?;
+        self.writer_handshake = true;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 impl TcpStream for HttpClientStream {
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        if self.reader.is_some() {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "http stream cannot be cloned after reads begin",
+            ));
+        }
+        Ok(Box::new(HttpClientWriteClone {
+            inner: self.inner.try_clone_box()?,
+            options: self.options.clone(),
+            default_host: self.default_host.clone(),
+            writer_handshake: self.writer_handshake,
+        }))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        self.inner.shutdown_write()
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.inner.shutdown_all()
+    }
+}
+
+impl TcpStream for HttpClientWriteClone {
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "http stream does not support cloning",
+            "http stream write clone does not support cloning",
         ))
     }
 

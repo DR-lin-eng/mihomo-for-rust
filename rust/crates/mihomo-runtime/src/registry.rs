@@ -318,12 +318,6 @@ fn collect_group_provider_members(
     } else {
         for provider_name in provider_names {
             if let Some(provider) = providers.get(provider_name) {
-                if provider.vehicle_type == ProxyProviderVehicleType::File
-                    || provider.vehicle_type == ProxyProviderVehicleType::Http
-                {
-                    proxies.extend(provider.members.clone());
-                    continue;
-                }
                 let mut new_members = Vec::new();
                 let mut seen = BTreeMap::<String, ()>::new();
                 for filter in &filters {
@@ -789,6 +783,80 @@ proxies:
         let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
         assert_eq!(registry.providers["provider1"].members[0].name, "direct-a");
         assert_eq!(registry.providers["provider1"].health_check.interval_secs, 300);
+    }
+
+    #[test]
+    fn group_filter_applies_to_http_provider_members() {
+        let document = parse_runtime_config_document(
+            r#"
+proxy-providers:
+  provider1:
+    type: http
+    url: https://example.com/provider.yaml
+proxy-groups:
+  - name: hk-hy2
+    type: select
+    use: [provider1]
+    filter: "^(?=.*(香港|HK)).*(Hy2).*$"
+"#,
+        )
+        .unwrap();
+        let sources = ProviderContentSources {
+            file_contents: BTreeMap::new(),
+            http_contents: BTreeMap::from([(
+                "https://example.com/provider.yaml".into(),
+                r#"
+proxies:
+  - type: direct
+    name: 香港-Hy2
+  - type: direct
+    name: 日本-vless
+"#
+                .into(),
+            )]),
+            file_blobs: BTreeMap::new(),
+            http_blobs: BTreeMap::new(),
+        };
+
+        let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
+        assert_eq!(registry.groups["hk-hy2"].candidate_names, vec!["香港-Hy2"]);
+    }
+
+    #[test]
+    fn group_filter_applies_to_file_provider_members() {
+        let document = parse_runtime_config_document(
+            r#"
+proxy-providers:
+  provider1:
+    type: file
+    path: ./provider.yaml
+proxy-groups:
+  - name: hk-hy2
+    type: select
+    use: [provider1]
+    filter: "^(?=.*(香港|HK)).*(Hy2).*$"
+"#,
+        )
+        .unwrap();
+        let sources = ProviderContentSources {
+            file_contents: BTreeMap::from([(
+                "./provider.yaml".into(),
+                r#"
+proxies:
+  - type: direct
+    name: 香港-Hy2
+  - type: direct
+    name: 日本-vless
+"#
+                .into(),
+            )]),
+            http_contents: BTreeMap::new(),
+            file_blobs: BTreeMap::new(),
+            http_blobs: BTreeMap::new(),
+        };
+
+        let registry = build_runtime_registry_with_sources(&document, &sources).unwrap();
+        assert_eq!(registry.groups["hk-hy2"].candidate_names, vec!["香港-Hy2"]);
     }
 
     #[test]

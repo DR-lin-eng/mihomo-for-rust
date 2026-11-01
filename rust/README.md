@@ -4,6 +4,12 @@ This workspace is the primary implementation track for mihomo.
 
 The Go tree remains in the repository for compatibility comparison, legacy release coverage, and unresolved cutover work, but it should no longer be treated as the default runtime target.
 
+Smart groups now have independent adaptive routing and native LightGBM inference. See [configuration, API compatibility, and validation](../docs/rust-rewrite/smart-support.md).
+
+Linux TC eBPF capture supports the legacy `redirect-to-tun` and `auto-redir` configuration. See [setup, dependencies, and validation](../docs/rust-rewrite/ebpf-support.md).
+
+Memory use is reduced through shared configuration snapshots, compact Smart models, bounded DNS/UDP state, and TC loading without the kernel BTF parse. See [measurements and limits](../docs/rust-rewrite/memory-optimization.md).
+
 ## Docker Build
 
 Current dependencies require a newer stable Rust than the original scaffold documentation assumed.

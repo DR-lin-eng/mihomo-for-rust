@@ -1,8 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use mihomo_core::Metadata;
+use mihomo_outbound::OutboundDefinition;
 
-use crate::{ProxyRegistration, ProxySource, RuntimeRegistry};
+use crate::{
+    native_support_gap_for_outbound_with_registry, outbound_supports_udp, ProxyRegistration,
+    ProxySource, RuntimeRegistry,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CandidateState {
@@ -51,8 +55,28 @@ pub fn resolve_proxy_path(
     metadata: Option<&Metadata>,
     states: &BTreeMap<String, CandidateState>,
 ) -> Result<ResolvedProxyPath, ResolveError> {
+    resolve_proxy_path_internal(registry, target, metadata, states, false)
+}
+
+pub fn resolve_proxy_path_preferring_selected(
+    registry: &mut RuntimeRegistry,
+    target: &str,
+    metadata: Option<&Metadata>,
+    states: &BTreeMap<String, CandidateState>,
+) -> Result<ResolvedProxyPath, ResolveError> {
+    resolve_proxy_path_internal(registry, target, metadata, states, true)
+}
+
+fn resolve_proxy_path_internal(
+    registry: &mut RuntimeRegistry,
+    target: &str,
+    metadata: Option<&Metadata>,
+    states: &BTreeMap<String, CandidateState>,
+    prefer_selected: bool,
+) -> Result<ResolvedProxyPath, ResolveError> {
     let mut visited = Vec::new();
-    let (leaf_name, selected_path) = resolve_target(registry, target, metadata, states, &mut visited)?;
+    let (leaf_name, selected_path) =
+        resolve_target(registry, target, metadata, states, &mut visited, prefer_selected)?;
     let (leaf_source, leaf_kind, mut current) = {
         let leaf_registration = get_registration(registry, &leaf_name)?;
         (
@@ -70,7 +94,14 @@ pub fn resolve_proxy_path(
             return Err(ResolveError::DialerResolutionLoop(path));
         }
         let (dialer_leaf, _) =
-            resolve_target(registry, &dialer_target, metadata, states, &mut Vec::new())?;
+            resolve_target(
+                registry,
+                &dialer_target,
+                metadata,
+                states,
+                &mut Vec::new(),
+                prefer_selected,
+            )?;
         current = get_registration(registry, &dialer_leaf)?.dialer_proxy.clone();
         dialer_path.push(dialer_leaf);
     }
@@ -91,6 +122,7 @@ fn resolve_target(
     metadata: Option<&Metadata>,
     states: &BTreeMap<String, CandidateState>,
     visited_groups: &mut Vec<String>,
+    prefer_selected: bool,
 ) -> Result<(String, Vec<String>), ResolveError> {
     if let Some(position) = visited_groups.iter().position(|name| name == target) {
         let mut path = visited_groups[position..].to_vec();
@@ -103,7 +135,14 @@ fn resolve_target(
         let candidate_states = candidate_names
             .iter()
             .map(|candidate| {
-                let state = derive_candidate_state(registry, candidate, metadata, states, visited_groups)?;
+                let state = derive_candidate_state(
+                    registry,
+                    candidate,
+                    metadata,
+                    states,
+                    visited_groups,
+                    prefer_selected,
+                )?;
                 Ok(crate::ProxyCandidate {
                     name: candidate.clone(),
                     alive: state.alive,
@@ -115,13 +154,29 @@ fn resolve_target(
 
         let chosen_name = {
             let view = registry.groups.get_mut(target).expect("group should still exist");
-            view.runtime
-                .choose(&candidate_states, metadata)
-                .map(|proxy| proxy.name.clone())
-                .ok_or_else(|| ResolveError::ProxyNotFound(target.to_owned()))?
+            if prefer_selected {
+                if let Some(selected) = view
+                    .runtime
+                    .selected()
+                    .filter(|selected| view.candidate_names.iter().any(|candidate| candidate == *selected))
+                {
+                    selected.to_owned()
+                } else {
+                    view.runtime
+                        .choose(&candidate_states, metadata)
+                        .map(|proxy| proxy.name.clone())
+                        .ok_or_else(|| ResolveError::ProxyNotFound(target.to_owned()))?
+                }
+            } else {
+                view.runtime
+                    .choose(&candidate_states, metadata)
+                    .map(|proxy| proxy.name.clone())
+                    .ok_or_else(|| ResolveError::ProxyNotFound(target.to_owned()))?
+            }
         };
 
-        let (leaf, mut path) = resolve_target(registry, &chosen_name, metadata, states, visited_groups)?;
+        let (leaf, mut path) =
+            resolve_target(registry, &chosen_name, metadata, states, visited_groups, prefer_selected)?;
         visited_groups.pop();
         let mut selected_path = vec![target.to_owned()];
         selected_path.append(&mut path);
@@ -138,13 +193,15 @@ fn derive_candidate_state(
     metadata: Option<&Metadata>,
     states: &BTreeMap<String, CandidateState>,
     visited_groups: &mut Vec<String>,
+    prefer_selected: bool,
 ) -> Result<CandidateState, ResolveError> {
     if let Some(existing) = states.get(target) {
         return Ok(existing.clone());
     }
 
     if registry.groups.contains_key(target) {
-        let (leaf, _) = resolve_target(registry, target, metadata, states, visited_groups)?;
+        let (leaf, _) =
+            resolve_target(registry, target, metadata, states, visited_groups, prefer_selected)?;
         if let Some(existing) = states.get(&leaf) {
             return Ok(CandidateState {
                 name: target.to_owned(),
@@ -156,25 +213,48 @@ fn derive_candidate_state(
         let registration = get_registration(registry, &leaf)?;
         return Ok(CandidateState {
             name: target.to_owned(),
-            alive: true,
+            alive: default_alive(registration, registry.proxy_definitions.get(&leaf), registry),
             last_delay_ms: 0,
-            supports_udp: default_supports_udp(registration),
+            supports_udp: default_supports_udp(
+                registration,
+                registry.proxy_definitions.get(&leaf),
+            ),
         });
     }
 
     let registration = get_registration(registry, target)?;
     Ok(CandidateState {
         name: target.to_owned(),
-        alive: true,
+        alive: default_alive(registration, registry.proxy_definitions.get(target), registry),
         last_delay_ms: 0,
-        supports_udp: default_supports_udp(registration),
+        supports_udp: default_supports_udp(
+            registration,
+            registry.proxy_definitions.get(target),
+        ),
     })
 }
 
-fn default_supports_udp(registration: &ProxyRegistration) -> bool {
+fn default_alive(
+    registration: &ProxyRegistration,
+    definition: Option<&mihomo_outbound::OutboundDefinition>,
+    registry: &RuntimeRegistry,
+) -> bool {
+    if registration.source == crate::ProxySource::Builtin {
+        return true;
+    }
+
+    definition
+        .map(|definition| native_support_gap_for_outbound_with_registry(definition, registry))
+        .is_none_or(|gap| gap.is_none())
+}
+
+fn default_supports_udp(
+    registration: &ProxyRegistration,
+    definition: Option<&OutboundDefinition>,
+) -> bool {
     match registration.name.as_str() {
         "REJECT" | "REJECT-DROP" => false,
-        _ => true,
+        _ => definition.map_or(true, outbound_supports_udp),
     }
 }
 
@@ -194,7 +274,7 @@ mod tests {
 
     use mihomo_config::parse_runtime_config_document;
 
-    use super::{resolve_proxy_path, CandidateState, ResolveError};
+    use super::{resolve_proxy_path, resolve_proxy_path_preferring_selected, CandidateState, ResolveError};
     use crate::build_runtime_registry;
 
     #[test]
@@ -270,6 +350,367 @@ proxy-groups:
     }
 
     #[test]
+    fn group_candidate_state_respects_outbound_udp_flag() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: socks5
+    name: udp-off
+    server: 1.2.3.4
+    port: 1080
+    udp: false
+  - type: socks5
+    name: udp-on
+    server: 1.2.3.5
+    port: 1080
+    udp: true
+proxy-groups:
+  - name: selector
+    type: select
+    proxies: [udp-off, udp-on]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "selector", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "udp-off");
+
+        let off = super::derive_candidate_state(
+            &mut registry,
+            "udp-off",
+            None,
+            &BTreeMap::new(),
+            &mut Vec::new(),
+            false,
+        )
+        .unwrap();
+        assert!(!off.supports_udp);
+
+        let on = super::derive_candidate_state(
+            &mut registry,
+            "udp-on",
+            None,
+            &BTreeMap::new(),
+            &mut Vec::new(),
+            false,
+        )
+        .unwrap();
+        assert!(on.supports_udp);
+    }
+
+    #[test]
+    fn unresolved_hysteria2_candidates_are_not_treated_as_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2
+    server: 1.2.3.4
+    port: 443
+  - type: vless
+    name: vless
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [hy2, vless]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "hy2");
+        assert_eq!(resolved.selected_path, vec!["auto", "hy2"]);
+    }
+
+    #[test]
+    fn plain_hysteria2_candidates_are_treated_as_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    sni: edge.example
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [hy2]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "hy2");
+        assert_eq!(resolved.selected_path, vec!["auto", "hy2"]);
+    }
+
+    #[test]
+    fn wireguard_over_outer_socks5_udp_is_treated_as_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: socks5
+    name: outer-socks
+    server: 127.0.0.1
+    port: 1080
+    udp: true
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips: [0.0.0.0/0]
+    dialer-proxy: outer-socks
+proxy-groups:
+  - name: auto
+    type: select
+    proxies: [edge-wg]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let state = super::derive_candidate_state(
+            &mut registry,
+            "edge-wg",
+            None,
+            &BTreeMap::new(),
+            &mut Vec::new(),
+            false,
+        )
+        .unwrap();
+        assert!(state.alive);
+    }
+
+    #[test]
+    fn non_salamander_hysteria2_obfs_candidates_are_not_treated_as_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2-obfs
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    sni: edge.example
+    obfs: custom-obfs
+    obfs-password: hidden
+  - type: vless
+    name: vless
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [hy2-obfs, vless]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vless");
+        assert_eq!(resolved.selected_path, vec!["auto", "vless"]);
+    }
+
+    #[test]
+    fn salamander_hysteria2_candidates_are_treated_as_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2-obfs
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    sni: edge.example
+    obfs: salamander
+    obfs-password: hidden
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [hy2-obfs]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "hy2-obfs");
+        assert_eq!(resolved.selected_path, vec!["auto", "hy2-obfs"]);
+    }
+
+    #[test]
+    fn vless_vision_reality_candidates_are_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+    reality-opts:
+      public-key: abc
+      short-id: def
+  - type: vmess
+    name: vmess
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    alterId: 0
+    cipher: none
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision, vmess]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
+    fn vless_vision_without_reality_candidates_stay_dead_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+  - type: direct
+    name: direct
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision, direct]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
+    fn vless_vision_tls_tcp_without_reality_candidates_are_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
+    fn vless_vision_tls_h2_without_reality_candidates_are_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    network: h2
+    flow: xtls-rprx-vision
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
+    fn vless_vision_tls_grpc_without_reality_candidates_are_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    network: grpc
+    flow: xtls-rprx-vision
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
+    fn vless_vision_tls_ws_without_reality_candidates_are_alive_by_default() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    network: ws
+    flow: xtls-rprx-vision
+proxy-groups:
+  - name: auto
+    type: fallback
+    proxies: [vision]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let resolved = resolve_proxy_path(&mut registry, "auto", None, &BTreeMap::new()).unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
+    }
+
+    #[test]
     fn resolves_dialer_proxy_chain_after_group_selection() {
         let document = parse_runtime_config_document(
             r#"
@@ -290,6 +731,47 @@ proxy-groups:
         let resolved = resolve_proxy_path(&mut registry, "selector", None, &BTreeMap::new()).unwrap();
         assert_eq!(resolved.leaf_name, "base");
         assert_eq!(resolved.dialer_path, vec!["upstream"]);
+    }
+
+    #[test]
+    fn preferring_selected_path_honors_fixed_url_test_member_even_when_default_alive_would_skip_it() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vision
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+    reality-opts:
+      public-key: abc
+      short-id: def
+  - type: hysteria2
+    name: hy2
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    sni: edge.example
+proxy-groups:
+  - name: auto
+    type: url-test
+    proxies: [vision, hy2]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        registry
+            .groups
+            .get_mut("auto")
+            .expect("runtime group")
+            .runtime
+            .set_selected("vision");
+        let resolved = resolve_proxy_path_preferring_selected(&mut registry, "auto", None, &BTreeMap::new())
+            .unwrap();
+        assert_eq!(resolved.leaf_name, "vision");
+        assert_eq!(resolved.selected_path, vec!["auto", "vision"]);
     }
 
     #[test]

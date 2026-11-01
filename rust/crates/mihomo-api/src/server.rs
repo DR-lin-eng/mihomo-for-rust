@@ -1,3 +1,8 @@
+mod cors;
+mod smart;
+mod config_control;
+use cors::ControllerCors;
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{self, BufRead, BufReader, Read, Write};
@@ -7,6 +12,7 @@ use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::UNIX_EPOCH;
@@ -22,7 +28,9 @@ use mihomo_runtime::build_runtime_registry_with_sources;
 use rustls::{Certificate, PrivateKey, ServerConfig, ServerConnection, StreamOwned};
 use sha1::{Digest, Sha1};
 use mihomo_runtime::{
-    ActiveConnectionSnapshot, BootstrapError, BootstrapState, RuntimeControlError, RuntimeTunnel,
+    native_support_gap_for_outbound_with_registry, run_provider_healthcheck_with_timeout,
+    ActiveConnectionSnapshot, BootstrapError, BootstrapState, HealthCheckError,
+    RuntimeControlError, RuntimeTunnel,
 };
 use serde::Serialize;
 use serde_json::{Map, Value as JsonValue};
@@ -85,8 +93,9 @@ impl ApiHttpResponse {
 
 #[derive(Clone, Debug)]
 pub struct ApiController {
-    snapshot: ApiSnapshot,
+    snapshot: Arc<ApiSnapshot>,
     secret: String,
+    cors: ControllerCors,
     ui_path: Option<PathBuf>,
     doh_path: Option<String>,
     storage: Option<StorageStore>,
@@ -99,6 +108,8 @@ pub struct ApiController {
     client_auth_cert: String,
     bootstrap_state: Option<Arc<Mutex<BootstrapState>>>,
     runtime_tunnel: Option<Arc<RuntimeTunnel>>,
+    dns_exchange: Option<DnsExchange>,
+    stream_shutdown: Arc<AtomicBool>,
 }
 
 #[derive(Debug)]
@@ -144,14 +155,32 @@ impl From<serde_json::Error> for ControllerError {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum ApiControlCommand {
     Restart,
+    ApplyConfig { state: Box<BootstrapState>, reply: mpsc::Sender<Result<(), String>> },
+}
+
+impl PartialEq for ApiControlCommand {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Restart, Self::Restart) => true,
+            (Self::ApplyConfig { state: left, .. }, Self::ApplyConfig { state: right, .. }) => left.resolved_boot == right.resolved_boot && left.document == right.document,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone)]
+struct DnsExchange(Arc<dyn Fn(&[u8]) -> Result<Option<Vec<u8>>, mihomo_dns::DnsError> + Send + Sync>);
+impl std::fmt::Debug for DnsExchange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str("DnsExchange") }
 }
 
 #[derive(Debug)]
 pub struct RunningApiController {
     local_addr: SocketAddr,
+    stream_shutdown: Arc<AtomicBool>,
     shutdown_tx: Option<mpsc::Sender<()>>,
     join_handle: Option<thread::JoinHandle<()>>,
 }
@@ -162,6 +191,7 @@ impl RunningApiController {
     }
 
     pub fn shutdown(&mut self) {
+        self.stream_shutdown.store(true, Ordering::Relaxed);
         if let Some(tx) = self.shutdown_tx.take() {
             let _ = tx.send(());
         }
@@ -180,8 +210,9 @@ impl Drop for RunningApiController {
 impl ApiController {
     pub fn from_document(document: &RuntimeConfigDocument) -> Result<Self, ApiError> {
         Ok(Self {
-            snapshot: build_api_snapshot(document)?,
+            snapshot: Arc::new(build_api_snapshot(document)?),
             secret: document.secret.clone(),
+            cors: ControllerCors::from_document(document),
             ui_path: (!document.external_ui.is_empty())
                 .then(|| PathBuf::from(document.external_ui.clone())),
             doh_path: normalize_doh_path(&document.external_doh_server),
@@ -195,10 +226,24 @@ impl ApiController {
             client_auth_cert: tls_string(&document.extra, "client-auth-cert"),
             bootstrap_state: None,
             runtime_tunnel: None,
+            dns_exchange: None,
+            stream_shutdown: Arc::new(AtomicBool::new(false)),
         })
     }
 
     pub fn from_bootstrap(state: &BootstrapState) -> Result<Self, ApiError> {
+        Self::from_bootstrap_parts(state,build_api_snapshot_from_bootstrap(state)?,Arc::new(Mutex::new(state.clone())))
+    }
+
+    /// A live controller obtains rule details from the running rule table, and
+    /// shares the app's configuration rather than keeping a second clone.
+    pub fn from_running_state(shared:Arc<Mutex<BootstrapState>>,tunnel:Arc<RuntimeTunnel>)->Result<Self,ApiError>{
+        let state=shared.lock().unwrap();
+        let snapshot=crate::snapshot_builder::build_controller_snapshot(&state)?;
+        Self::from_bootstrap_parts(&state,snapshot,Arc::clone(&shared)).map(|controller|controller.with_runtime_tunnel(tunnel))
+    }
+
+    fn from_bootstrap_parts(state:&BootstrapState,snapshot:ApiSnapshot,shared:Arc<Mutex<BootstrapState>>)->Result<Self,ApiError>{
         let ui_path = (!state.document.external_ui.is_empty()).then(|| {
             let candidate = PathBuf::from(&state.document.external_ui);
             if candidate.is_absolute() {
@@ -208,8 +253,9 @@ impl ApiController {
             }
         });
         Ok(Self {
-            snapshot: build_api_snapshot_from_bootstrap(state)?,
+            snapshot: Arc::new(snapshot),
             secret: state.document.secret.clone(),
+            cors: ControllerCors::from_document(&state.document),
             ui_path,
             doh_path: normalize_doh_path(&state.document.external_doh_server),
             storage: Some(StorageStore::new(default_storage_root(
@@ -225,8 +271,10 @@ impl ApiController {
             private_key: tls_string(&state.document.extra, "private-key"),
             client_auth_type: tls_string(&state.document.extra, "client-auth-type"),
             client_auth_cert: tls_string(&state.document.extra, "client-auth-cert"),
-            bootstrap_state: Some(Arc::new(Mutex::new(state.clone()))),
+            bootstrap_state: Some(shared),
             runtime_tunnel: None,
+            dns_exchange: None,
+            stream_shutdown: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -240,6 +288,20 @@ impl ApiController {
         self
     }
 
+    pub fn with_dns_exchange<F>(mut self, exchange: F) -> Self
+    where F: Fn(&[u8]) -> Result<Option<Vec<u8>>, mihomo_dns::DnsError> + Send + Sync + 'static {
+        self.dns_exchange = Some(DnsExchange(Arc::new(exchange)));
+        self
+    }
+
+    fn exchange_dns_packet(&self, packet: &[u8]) -> Result<Option<Vec<u8>>, mihomo_dns::DnsError> {
+        if let Some(exchange) = &self.dns_exchange { return (exchange.0)(packet); }
+        let runtime = self.runtime_tunnel.as_ref().and_then(|tunnel| tunnel.dns_runtime())
+            .ok_or_else(|| mihomo_dns::DnsError::Io("DNS section is disabled".into()))?;
+        let response = runtime.lock().unwrap().relay_query_packet_via_system(packet);
+        response
+    }
+
     pub fn with_control_tx(mut self, control_tx: mpsc::Sender<ApiControlCommand>) -> Self {
         self.control_tx = Some(control_tx);
         self
@@ -250,6 +312,13 @@ impl ApiController {
     }
 
     pub fn handle_request(&self, request: &ApiHttpRequest) -> ApiHttpResponse {
+        if let Some(response) = self.cors.preflight(request) { return response; }
+        let mut response = self.handle_request_inner(request);
+        self.cors.apply(request, &mut response);
+        response
+    }
+
+    fn handle_request_inner(&self, request: &ApiHttpRequest) -> ApiHttpResponse {
         let method = request.method.to_ascii_uppercase();
         let (path, query) = split_target(&request.target);
         let head_only = method == "HEAD";
@@ -275,6 +344,9 @@ impl ApiController {
             return self.method_not_allowed();
         }
 
+        if let Some(response) = self.handle_smart_get(path) { return response; }
+        if path=="/version" {let response=self.json_ok(&self.snapshot.version);return if head_only{response.head_only()}else{response};}
+        if path=="/rules" && self.runtime_tunnel.is_some() {let response=self.json_ok(&self.current_rules_payload(&self.snapshot));return if head_only{response.head_only()}else{response};}
         let snapshot = self.current_snapshot();
         let response = match path {
             "/" => self.json_ok(&HelloPayload { hello: "mihomo" }),
@@ -309,6 +381,7 @@ impl ApiController {
             "/dns" => self.json_ok(&snapshot.dns),
             "/dns/query" => self.handle_dns_query(query),
             "/tun" => self.json_ok(&snapshot.tun),
+            "/ebpf" => self.json_ok(&self.runtime_tunnel.as_ref().map(|tunnel|tunnel.ebpf_status()).unwrap_or_else(||mihomo_ebpf::EbpfStatus{supported:cfg!(target_os="linux"),..Default::default()})),
             "/listeners" => self.json_ok(&ListenersPayload {
                 listeners: snapshot.listeners.clone(),
             }),
@@ -322,6 +395,9 @@ impl ApiController {
             }
             other if other.starts_with("/proxies/") => {
                 let name = percent_decode(other.trim_start_matches("/proxies/"));
+                if let Some(proxy_name) = name.strip_suffix("/delay") {
+                    return self.handle_proxy_delay(proxy_name, query);
+                }
                 match snapshot.groups.iter().find(|entry| entry.name == name) {
                     Some(group) => self.json_ok(group),
                     None => match snapshot.proxies.iter().find(|entry| entry.name == name) {
@@ -332,6 +408,10 @@ impl ApiController {
             }
             other if other.starts_with("/group/") => {
                 let name = percent_decode(other.trim_start_matches("/group/"));
+                if let Some((group_name, rest)) = name.split_once("/delay") {
+                    let _ = rest;
+                    return self.handle_group_delay(group_name, query);
+                }
                 match snapshot.groups.iter().find(|entry| entry.name == name) {
                     Some(group) => self.json_ok(group),
                     None => self.not_found(),
@@ -339,7 +419,20 @@ impl ApiController {
             }
             other if other.starts_with("/providers/proxies/") => {
                 let suffix = other.trim_start_matches("/providers/proxies/");
+                if let Some(provider_name) = suffix.strip_suffix("/healthcheck") {
+                    return self.handle_provider_healthcheck(
+                        &percent_decode(provider_name),
+                        query,
+                    );
+                }
                 if let Some((provider_name, proxy_name)) = suffix.split_once('/') {
+                    if let Some(proxy_name) = proxy_name.strip_suffix("/healthcheck") {
+                        return self.handle_provider_proxy_healthcheck(
+                            &percent_decode(provider_name),
+                            &percent_decode(proxy_name),
+                            query,
+                        );
+                    }
                     let provider_name = percent_decode(provider_name);
                     let proxy_name = percent_decode(proxy_name);
                     match snapshot
@@ -532,6 +625,7 @@ impl ApiController {
 
     pub fn serve(&self, bind_addr: &str) -> Result<RunningApiController, ControllerError> {
         let listener = TcpListener::bind(bind_addr)?;
+        if self.snapshot.general.ebpf.enabled(){mihomo_core::mark_tcp_listener(&listener,self.snapshot.general.ebpf.effective_bypass_mark())?;}
         let local_addr = listener.local_addr()?;
         listener.set_nonblocking(true)?;
 
@@ -560,6 +654,7 @@ impl ApiController {
         });
 
         Ok(RunningApiController {
+            stream_shutdown: Arc::clone(&self.stream_shutdown),
             local_addr,
             shutdown_tx: Some(shutdown_tx),
             join_handle: Some(join_handle),
@@ -574,6 +669,7 @@ impl ApiController {
             &self.client_auth_cert,
         )?);
         let listener = TcpListener::bind(bind_addr)?;
+        if self.snapshot.general.ebpf.enabled(){mihomo_core::mark_tcp_listener(&listener,self.snapshot.general.ebpf.effective_bypass_mark())?;}
         let local_addr = listener.local_addr()?;
         listener.set_nonblocking(true)?;
 
@@ -603,6 +699,7 @@ impl ApiController {
         });
 
         Ok(RunningApiController {
+            stream_shutdown: Arc::clone(&self.stream_shutdown),
             local_addr,
             shutdown_tx: Some(shutdown_tx),
             join_handle: Some(join_handle),
@@ -642,6 +739,7 @@ impl ApiController {
         });
 
         Ok(RunningApiController {
+            stream_shutdown: Arc::clone(&self.stream_shutdown),
             local_addr: SocketAddr::from(([127, 0, 0, 1], 0)),
             shutdown_tx: Some(shutdown_tx),
             join_handle: Some(join_handle),
@@ -653,7 +751,9 @@ impl ApiController {
         let (path, query) = split_target(&request.target);
         if let Some(route) = self.websocket_route(&request, path) {
             if !self.is_authorized(&request, query) {
-                write_http_response(&mut stream, &self.unauthorized())?;
+                let mut response = self.unauthorized();
+                self.cors.apply(&request, &mut response);
+                write_http_response(&mut stream, &response)?;
                 return Ok(());
             }
             return match route {
@@ -665,7 +765,9 @@ impl ApiController {
         }
         if let Some(route) = self.http_stream_route(&request, path) {
             if !self.is_authorized(&request, query) {
-                write_http_response(&mut stream, &self.unauthorized())?;
+                let mut response = self.unauthorized();
+                self.cors.apply(&request, &mut response);
+                write_http_response(&mut stream, &response)?;
                 return Ok(());
             }
             return match route {
@@ -673,11 +775,6 @@ impl ApiController {
                 LiveHttpStreamRoute::Memory => self.handle_memory_http_stream(Box::new(stream), &request),
                 LiveHttpStreamRoute::Logs => self.handle_logs_http_stream(Box::new(stream), &request),
             };
-        }
-        if self.matches_doh_path(path) {
-            let response = self.handle_doh_request(&request.method, &request, query);
-            write_http_response(&mut stream, &response)?;
-            return Ok(());
         }
         let response = self.handle_request(&request);
         write_http_response(&mut stream, &response)?;
@@ -694,7 +791,9 @@ impl ApiController {
         let (path, query) = split_target(&request.target);
         if let Some(route) = self.websocket_route(&request, path) {
             if !self.is_authorized(&request, query) {
-                write_http_response(&mut tls_stream, &self.unauthorized())?;
+                let mut response = self.unauthorized();
+                self.cors.apply(&request, &mut response);
+                write_http_response(&mut tls_stream, &response)?;
                 return Ok(());
             }
             return match route {
@@ -706,7 +805,9 @@ impl ApiController {
         }
         if let Some(route) = self.http_stream_route(&request, path) {
             if !self.is_authorized(&request, query) {
-                write_http_response(&mut tls_stream, &self.unauthorized())?;
+                let mut response = self.unauthorized();
+                self.cors.apply(&request, &mut response);
+                write_http_response(&mut tls_stream, &response)?;
                 return Ok(());
             }
             return match route {
@@ -714,11 +815,6 @@ impl ApiController {
                 LiveHttpStreamRoute::Memory => self.handle_memory_http_stream(Box::new(tls_stream), &request),
                 LiveHttpStreamRoute::Logs => self.handle_logs_http_stream(Box::new(tls_stream), &request),
             };
-        }
-        if self.matches_doh_path(path) {
-            let response = self.handle_doh_request(&request.method, &request, query);
-            write_http_response(&mut tls_stream, &response)?;
-            return Ok(());
         }
         let response = self.handle_request(&request);
         write_http_response(&mut tls_stream, &response)?;
@@ -758,11 +854,6 @@ impl ApiController {
                 }
             };
         }
-        if self.matches_doh_path(path) {
-            let response = self.handle_doh_request(&request.method, &request, query);
-            write_http_response(&mut stream, &response)?;
-            return Ok(());
-        }
         let response = self.handle_request_unix(&request);
         write_http_response(&mut stream, &response)?;
         Ok(())
@@ -793,6 +884,13 @@ impl ApiController {
     }
 
     fn handle_request_unix(&self, request: &ApiHttpRequest) -> ApiHttpResponse {
+        if let Some(response) = self.cors.preflight(request) { return response; }
+        let mut response = self.handle_request_unix_inner(request);
+        self.cors.apply(request, &mut response);
+        response
+    }
+
+    fn handle_request_unix_inner(&self, request: &ApiHttpRequest) -> ApiHttpResponse {
         let method = request.method.to_ascii_uppercase();
         let (path, query) = split_target(&request.target);
         let head_only = method == "HEAD";
@@ -812,6 +910,9 @@ impl ApiController {
         if method != "GET" && !head_only {
             return self.method_not_allowed();
         }
+        if let Some(response) = self.handle_smart_get(path) { return response; }
+        if path=="/version" {let response=self.json_ok(&self.snapshot.version);return if head_only{response.head_only()}else{response};}
+        if path=="/rules" && self.runtime_tunnel.is_some() {let response=self.json_ok(&self.current_rules_payload(&self.snapshot));return if head_only{response.head_only()}else{response};}
         let snapshot = self.current_snapshot();
         let response = match path {
             "/" => self.json_ok(&HelloPayload { hello: "mihomo" }),
@@ -846,6 +947,7 @@ impl ApiController {
             "/dns" => self.json_ok(&snapshot.dns),
             "/dns/query" => self.handle_dns_query(query),
             "/tun" => self.json_ok(&snapshot.tun),
+            "/ebpf" => self.json_ok(&self.runtime_tunnel.as_ref().map(|tunnel|tunnel.ebpf_status()).unwrap_or_else(||mihomo_ebpf::EbpfStatus{supported:cfg!(target_os="linux"),..Default::default()})),
             "/listeners" => self.json_ok(&ListenersPayload {
                 listeners: snapshot.listeners.clone(),
             }),
@@ -873,7 +975,20 @@ impl ApiController {
             }
             other if other.starts_with("/providers/proxies/") => {
                 let suffix = other.trim_start_matches("/providers/proxies/");
+                if let Some(provider_name) = suffix.strip_suffix("/healthcheck") {
+                    return self.handle_provider_healthcheck(
+                        &percent_decode(provider_name),
+                        query,
+                    );
+                }
                 if let Some((provider_name, proxy_name)) = suffix.split_once('/') {
+                    if let Some(proxy_name) = proxy_name.strip_suffix("/healthcheck") {
+                        return self.handle_provider_proxy_healthcheck(
+                            &percent_decode(provider_name),
+                            &percent_decode(proxy_name),
+                            query,
+                        );
+                    }
                     let provider_name = percent_decode(provider_name);
                     let proxy_name = percent_decode(proxy_name);
                     match snapshot
@@ -924,10 +1039,23 @@ impl ApiController {
         }
 
         let relative = path.strip_prefix("/ui/")?;
-        let file_path = match sanitize_ui_path(ui_root, relative) {
+        if path.ends_with("/index.html") {
+            return Some(ApiHttpResponse { status_code: 301, headers: BTreeMap::from([("Location".into(), path.trim_end_matches("index.html").into())]), body: Vec::new() });
+        }
+
+        let mut file_path = match sanitize_ui_path(ui_root, relative) {
             Some(file_path) => file_path,
             None => return Some(self.not_found()),
         };
+        if let (Ok(root), Ok(file)) = (fs::canonicalize(ui_root), fs::canonicalize(&file_path)) {
+            if !file.starts_with(root) { return Some(self.not_found()); }
+        }
+        if file_path.is_dir() {
+            if !path.ends_with('/') {
+                return Some(ApiHttpResponse { status_code: 301, headers: BTreeMap::from([("Location".into(), format!("{path}/"))]), body: Vec::new() });
+            }
+            file_path.push("index.html");
+        }
         let body = match fs::read(&file_path) {
             Ok(body) => body,
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Some(self.not_found()),
@@ -950,22 +1078,233 @@ impl ApiController {
         json_response(200, value).unwrap_or_else(|err| self.internal_server_error(&err.to_string()))
     }
 
+    fn handle_proxy_delay(&self, proxy_name: &str, query: &str) -> ApiHttpResponse {
+        let Some(runtime_tunnel) = &self.runtime_tunnel else {
+            return error_response(503, "runtime tunnel is unavailable");
+        };
+        let params = parse_query(query);
+        let url = params
+            .get("url")
+            .cloned()
+            .unwrap_or_else(|| "https://www.gstatic.com/generate_204".into());
+        let expected = params
+            .get("expected")
+            .cloned()
+            .unwrap_or_else(|| "*".into());
+        let timeout_ms = params
+            .get("timeout")
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| *value > 0)
+            .unwrap_or(5_000);
+        match mihomo_runtime::run_proxy_health_check_with_timeout(
+            runtime_tunnel,
+            proxy_name,
+            &url,
+            &expected,
+            Some(timeout_ms),
+        ) {
+            Ok(result) => self.json_ok(&DelayPayload {
+                delay: result.delay_ms,
+            }),
+            Err(HealthCheckError::ProxyNotFound(_)) => self.not_found(),
+            Err(HealthCheckError::InvalidUrl(_) | HealthCheckError::InvalidExpectedStatus(_)) => {
+                error_response(400, "Body invalid")
+            }
+            Err(err) => error_response(503, &err.to_string()),
+        }
+    }
+
+    fn handle_group_delay(&self, group_name: &str, query: &str) -> ApiHttpResponse {
+        let Some(runtime_tunnel) = &self.runtime_tunnel else {
+            return error_response(503, "runtime tunnel is unavailable");
+        };
+        let snapshot = self.current_snapshot();
+        let Some(group) = snapshot.groups.iter().find(|entry| entry.name == group_name) else {
+            return self.not_found();
+        };
+        let params = parse_query(query);
+        let url = params
+            .get("url")
+            .cloned()
+            .unwrap_or_else(|| group.test_url.clone());
+        let expected = params
+            .get("expected")
+            .cloned()
+            .unwrap_or_else(|| group.expected_status.clone());
+        let timeout_ms = params
+            .get("timeout")
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| *value > 0)
+            .unwrap_or(5_000);
+
+        let mut delays = BTreeMap::new();
+        for candidate in &group.candidates {
+            match mihomo_runtime::run_proxy_health_check_with_timeout(
+                runtime_tunnel,
+                candidate,
+                &url,
+                &expected,
+                Some(timeout_ms),
+            ) {
+                Ok(result) => {
+                    delays.insert(candidate.clone(), result.delay_ms);
+                }
+                Err(HealthCheckError::ProxyNotFound(_)) => return self.not_found(),
+                Err(HealthCheckError::InvalidUrl(_)
+                | HealthCheckError::InvalidExpectedStatus(_)) => {
+                    return error_response(400, "Body invalid")
+                }
+                Err(_) => {}
+            }
+        }
+        if delays.is_empty() {
+            return error_response(504, "get delay: all proxies timeout");
+        }
+        self.json_ok(&GroupDelayPayload { delays })
+    }
+
+    fn handle_provider_healthcheck(&self, provider_name: &str, query: &str) -> ApiHttpResponse {
+        let snapshot = self.current_snapshot();
+        let Some(provider) = snapshot
+            .proxy_providers
+            .iter()
+            .find(|entry| entry.name == provider_name)
+        else {
+            return self.not_found();
+        };
+        let params = parse_query(query);
+        let url = params
+            .get("url")
+            .cloned()
+            .unwrap_or_else(|| provider.test_url.clone());
+        let expected = params
+            .get("expected")
+            .cloned()
+            .unwrap_or_else(|| provider.expected_status.clone());
+        let timeout_ms = params
+            .get("timeout")
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| *value > 0)
+            .unwrap_or(5_000);
+        let Some(runtime_tunnel) = &self.runtime_tunnel else {
+            return error_response(503, "runtime tunnel is unavailable");
+        };
+        let proxy_names = provider
+            .proxies
+            .iter()
+            .map(|proxy| proxy.name.clone())
+            .collect::<Vec<_>>();
+        let tunnel = Arc::clone(runtime_tunnel);
+        std::thread::spawn(move || {
+            run_provider_healthcheck_with_timeout(
+                tunnel,
+                &proxy_names,
+                &url,
+                &expected,
+                Some(timeout_ms),
+            );
+        });
+        ApiHttpResponse {
+            status_code: 204,
+            headers: BTreeMap::new(),
+            body: Vec::new(),
+        }
+    }
+
+    fn handle_provider_proxy_healthcheck(
+        &self,
+        provider_name: &str,
+        proxy_name: &str,
+        query: &str,
+    ) -> ApiHttpResponse {
+        let snapshot = self.current_snapshot();
+        let Some(provider) = snapshot
+            .proxy_providers
+            .iter()
+            .find(|entry| entry.name == provider_name)
+        else {
+            return self.not_found();
+        };
+        if !provider.proxies.iter().any(|proxy| proxy.name == proxy_name) {
+            return self.not_found();
+        }
+        let Some(runtime_tunnel) = &self.runtime_tunnel else {
+            return error_response(503, "runtime tunnel is unavailable");
+        };
+        let params = parse_query(query);
+        let url = params
+            .get("url")
+            .cloned()
+            .unwrap_or_else(|| provider.test_url.clone());
+        let expected = params
+            .get("expected")
+            .cloned()
+            .unwrap_or_else(|| provider.expected_status.clone());
+        let timeout_ms = params
+            .get("timeout")
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| *value > 0)
+            .unwrap_or(5_000);
+        match mihomo_runtime::run_proxy_health_check_with_timeout(
+            runtime_tunnel,
+            proxy_name,
+            &url,
+            &expected,
+            Some(timeout_ms),
+        ) {
+            Ok(result) => self.json_ok(&DelayPayload {
+                delay: result.delay_ms,
+            }),
+            Err(HealthCheckError::ProxyNotFound(_)) => self.not_found(),
+            Err(HealthCheckError::InvalidUrl(_) | HealthCheckError::InvalidExpectedStatus(_)) => {
+                error_response(400, "Body invalid")
+            }
+            Err(err) => error_response(503, &err.to_string()),
+        }
+    }
+
     fn current_snapshot(&self) -> ApiSnapshot {
         let mut snapshot = self
             .bootstrap_state
             .as_ref()
             .and_then(|state| {
                 let state = state.lock().unwrap();
-                build_api_snapshot_from_bootstrap(&state).ok()
+                crate::snapshot_builder::build_controller_snapshot(&state).ok()
             })
-            .unwrap_or_else(|| self.snapshot.clone());
+            .unwrap_or_else(|| self.snapshot.as_ref().clone());
         let Some(runtime_tunnel) = &self.runtime_tunnel else {
             return snapshot;
         };
         snapshot.general.mode = runtime_tunnel.current_mode();
+        for proxy in &mut snapshot.proxies {
+            crate::snapshot_builder::apply_runtime_proxy_health(proxy, runtime_tunnel);
+        }
+        for provider in &mut snapshot.proxy_providers {
+            for proxy in &mut provider.proxies {
+                crate::snapshot_builder::apply_runtime_proxy_health(proxy, runtime_tunnel);
+            }
+        }
         for group in &mut snapshot.groups {
+            crate::snapshot_builder::apply_runtime_proxy_health(&mut group.common, runtime_tunnel);
             group.selected = runtime_tunnel.effective_group_selected(&group.name, None);
             group.fixed = runtime_tunnel.group_selected(&group.name);
+            if group.group_type == "smart" {
+                group.selected = Some(group.fixed.clone().unwrap_or_else(||"Smart - Select".into()));
+                group.fixed = Some(group.fixed.clone().unwrap_or_default());
+            }
+            let mut selected = group.selected.clone();
+            for _ in 0..16 {
+                let Some(name) = selected.as_deref() else { break; };
+                if let Some(next) = runtime_tunnel.effective_group_selected(name, None) {
+                    if next == name { break; }
+                    selected = Some(next);
+                } else { break; }
+            }
+            if let Some(proxy) = snapshot.proxies.iter().find(|proxy| Some(&proxy.name) == selected.as_ref()) {
+                group.common.udp = proxy.udp;
+                group.common.uot = proxy.uot;
+                group.common.xudp = proxy.xudp;
+            }
         }
         snapshot
     }
@@ -1053,59 +1392,35 @@ impl ApiController {
             return error_response(400, "name is required");
         }
 
-        let query_type = match params
-            .get("type")
-            .map(String::as_str)
-            .unwrap_or("A")
-            .trim()
-            .to_ascii_uppercase()
-            .as_str()
-        {
-            "A" => DnsRecordType::A,
-            "AAAA" => DnsRecordType::Aaaa,
-            _ => return error_response(400, "invalid query type"),
+        use hickory_proto::{op::{Message, Query}, rr::{Name, RecordType}};
+        let raw_type = params.get("type").map(String::as_str).unwrap_or("A").trim().to_ascii_uppercase();
+        let query_type = if let Ok(code) = raw_type.parse::<u16>() { RecordType::from(code) } else {
+            match raw_type.parse::<RecordType>() { Ok(kind) => kind, Err(_) => return error_response(400, "invalid query type") }
         };
-
-        let mut guard = runtime.lock().unwrap();
-        let ips = match guard.resolve_host_via_system(name) {
-            Ok(Some(ip)) if dns_matches_query_type(ip, query_type) => vec![ip],
-            Ok(Some(_)) => Vec::new(),
-            Ok(None) => guard
-                .cached_answer(name)
-                .map(|answer| {
-                    answer
-                        .ips
-                        .iter()
-                        .copied()
-                        .filter(|ip| dns_matches_query_type(*ip, query_type))
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default(),
+        let name = match Name::from_ascii(name) { Ok(name) => name, Err(_) => return error_response(400, "invalid DNS name") };
+        let mut query = Message::new();
+        query.set_id(1).set_recursion_desired(true).add_query(Query::query(name, query_type));
+        let wire = match query.to_vec() { Ok(wire) => wire, Err(err) => return error_response(400, &err.to_string()) };
+        let wire = match self.exchange_dns_packet(&wire) {
+            Ok(Some(wire)) => wire,
+            Ok(None) => return error_response(500, "DNS section is disabled"),
             Err(err) => return error_response(500, &err.to_string()),
         };
-
-        let mut payload = Map::new();
-        payload.insert("Status".into(), JsonValue::from(0));
-        payload.insert(
-            "Question".into(),
-            JsonValue::Array(vec![dns_question_json(name, query_type)]),
-        );
-        payload.insert("TC".into(), JsonValue::Bool(false));
-        payload.insert("RD".into(), JsonValue::Bool(true));
-        payload.insert("RA".into(), JsonValue::Bool(true));
-        payload.insert("AD".into(), JsonValue::Bool(false));
-        payload.insert("CD".into(), JsonValue::Bool(false));
-        if !ips.is_empty() {
-            payload.insert(
-                "Answer".into(),
-                JsonValue::Array(
-                    ips.into_iter()
-                        .map(|ip| dns_answer_json(name, query_type, ip))
-                        .collect(),
-                ),
-            );
+        let response = match Message::from_vec(&wire) { Ok(message) => message, Err(err) => return error_response(500, &err.to_string()) };
+        let records = |records: &[hickory_proto::rr::Record]| records.iter().map(|record| serde_json::json!({
+            "name": record.name().to_ascii(), "type": u16::from(record.record_type()),
+            "TTL": record.ttl(), "data": record.data().map(ToString::to_string).unwrap_or_default()
+        })).collect::<Vec<_>>();
+        let mut payload = serde_json::json!({
+            "Status": u16::from(response.response_code()), "TC": response.truncated(),
+            "RD": response.recursion_desired(), "RA": response.recursion_available(),
+            "AD": response.authentic_data(), "CD": response.checking_disabled(),
+            "Question": response.queries().iter().map(|question| serde_json::json!({"name": question.name().to_ascii(), "qtype": u16::from(question.query_type()), "qclass": u16::from(question.query_class())})).collect::<Vec<_>>()
+        });
+        for (key, entries) in [("Answer", response.answers()), ("Authority", response.name_servers()), ("Additional", response.additionals())] {
+            if !entries.is_empty() { payload[key] = JsonValue::Array(records(entries)); }
         }
-        self.json_ok(&JsonValue::Object(payload))
+        self.json_ok(&payload)
     }
 
     fn handle_doh_request(
@@ -1172,8 +1487,7 @@ impl ApiController {
             }
         };
 
-        let mut guard = runtime.lock().unwrap();
-        match guard.relay_query_packet_via_system(&dns_data) {
+        match self.exchange_dns_packet(&dns_data) {
             Ok(Some(response)) => ApiHttpResponse {
                 status_code: 200,
                 headers: BTreeMap::from([(
@@ -1281,7 +1595,12 @@ impl ApiController {
     ) -> Result<(), ControllerError> {
         let mut ws = self.upgrade_websocket(stream, _request)?;
         let rx = subscribe_logs();
-        for entry in rx {
+        while !self.stream_shutdown.load(Ordering::Relaxed) {
+            let entry = match rx.recv_timeout(Duration::from_millis(100)) {
+                Ok(entry) => entry,
+                Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(_) => break,
+            };
             if !level.includes(entry.level) {
                 continue;
             }
@@ -1298,9 +1617,14 @@ impl ApiController {
         level: LogLevel,
         format: LogFormat,
     ) -> Result<(), ControllerError> {
-        let mut http = self.open_chunked_json_stream(stream)?;
+        let mut http = self.open_chunked_json_stream(stream, _request)?;
         let rx = subscribe_logs();
-        for entry in rx {
+        while !self.stream_shutdown.load(Ordering::Relaxed) {
+            let entry = match rx.recv_timeout(Duration::from_millis(100)) {
+                Ok(entry) => entry,
+                Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(_) => break,
+            };
             if !level.includes(entry.level) {
                 continue;
             }
@@ -1337,12 +1661,16 @@ impl ApiController {
     }
 
     fn handle_post_request(&self, path: &str) -> ApiHttpResponse {
+        if let Some(response) = self.handle_smart_post(path) { return response; }
+        if matches!(path, "/configs/geo" | "/upgrade/geo" | "/upgrade/ui" | "/upgrade") {
+            return error_response(501, "this update operation is not implemented by the Rust core");
+        }
         if path == "/restart" {
             let Some(control_tx) = &self.control_tx else {
                 return error_response(503, "restart control is unavailable");
             };
             match control_tx.send(ApiControlCommand::Restart) {
-                Ok(()) => return self.json_ok(&StatusPayload { status: "ok" }),
+                Ok(()) => return ApiHttpResponse { status_code: 204, headers: BTreeMap::new(), body: Vec::new() },
                 Err(_) => return error_response(503, "restart control is unavailable"),
             }
         }
@@ -1375,6 +1703,7 @@ impl ApiController {
     }
 
     fn handle_put_request(&self, path: &str, request: &ApiHttpRequest) -> ApiHttpResponse {
+        if path == "/configs" { return self.handle_config_replace(request); }
         if let Some(raw_name) = path.strip_prefix("/providers/proxies/") {
             let provider_name = percent_decode(raw_name);
             let Some(runtime_tunnel) = &self.runtime_tunnel else {
@@ -1426,6 +1755,7 @@ impl ApiController {
             }
             let original_sources = state.provider_sources.clone();
             if let Err(err) = state.refresh_rule_provider_sources(&provider_name, runtime_tunnel) {
+                eprintln!("[DBG] PUT rules provider: refresh failed err={err}");
                 return match err {
                     BootstrapError::MissingRuleProvider(_) => self.not_found(),
                     _ => error_response(503, &err.to_string()),
@@ -1453,6 +1783,9 @@ impl ApiController {
             };
             runtime_tunnel.replace_rule_set(rules);
             runtime_tunnel.replace_dns_runtime(Some(dns_runtime));
+            drop(state);
+            self.maybe_request_restart_for_tun_route_rule_provider(&provider_name);
+            self.maybe_request_restart_for_native_gap(runtime_tunnel);
             return ApiHttpResponse {
                 status_code: 204,
                 headers: BTreeMap::new(),
@@ -1475,11 +1808,17 @@ impl ApiController {
                     return error_response(503, "runtime tunnel is unavailable");
                 };
                 match runtime_tunnel.set_group_selected(&group_name, &payload.name) {
-                    Ok(()) => ApiHttpResponse {
-                        status_code: 204,
-                        headers: BTreeMap::new(),
-                        body: Vec::new(),
-                    },
+                    Ok(()) => {
+                        self.store_selected_proxy_mapping(runtime_tunnel);
+                        self.sync_bootstrap_selected_proxy_mapping(runtime_tunnel);
+                        self.maybe_request_restart_for_selected_proxy(&payload.name);
+                        self.maybe_request_restart_for_native_gap(runtime_tunnel);
+                        ApiHttpResponse {
+                            status_code: 204,
+                            headers: BTreeMap::new(),
+                            body: Vec::new(),
+                        }
+                    }
                     Err(RuntimeControlError::InvalidMode(_)) => error_response(400, "Body invalid"),
                     Err(RuntimeControlError::ProxyNotFound(_)) => self.not_found(),
                     Err(RuntimeControlError::GroupNotFound(_)) => {
@@ -1516,25 +1855,7 @@ impl ApiController {
         if path != "/configs" {
             return self.method_not_allowed();
         }
-        let payload = match serde_json::from_slice::<PatchConfigRequest>(&request.body) {
-            Ok(payload) => payload,
-            Err(_) => return error_response(400, "Body invalid"),
-        };
-        let Some(mode) = payload.mode else {
-            return error_response(400, "Body invalid");
-        };
-        let Some(runtime_tunnel) = &self.runtime_tunnel else {
-            return error_response(503, "runtime tunnel is unavailable");
-        };
-        match runtime_tunnel.set_mode(&mode) {
-            Ok(()) => ApiHttpResponse {
-                status_code: 204,
-                headers: BTreeMap::new(),
-                body: Vec::new(),
-            },
-            Err(RuntimeControlError::InvalidMode(_)) => error_response(400, "Body invalid"),
-            Err(err) => self.internal_server_error(&err.to_string()),
-        }
+        self.handle_config_patch(request)
     }
 
     fn handle_delete_request(&self, path: &str) -> ApiHttpResponse {
@@ -1562,11 +1883,16 @@ impl ApiController {
                 return error_response(503, "runtime tunnel is unavailable");
             };
             return match runtime_tunnel.clear_group_selected(&group_name) {
-                Ok(()) => ApiHttpResponse {
-                    status_code: 204,
-                    headers: BTreeMap::new(),
-                    body: Vec::new(),
-                },
+                Ok(()) => {
+                    self.store_selected_proxy_mapping(runtime_tunnel);
+                    self.sync_bootstrap_selected_proxy_mapping(runtime_tunnel);
+                    self.maybe_request_restart_for_native_gap(runtime_tunnel);
+                    ApiHttpResponse {
+                        status_code: 204,
+                        headers: BTreeMap::new(),
+                        body: Vec::new(),
+                    }
+                }
                 Err(RuntimeControlError::ProxyNotFound(_)) => self.not_found(),
                 Err(RuntimeControlError::GroupNotFound(_)) => {
                     error_response(400, "Must be a Selector")
@@ -1669,6 +1995,125 @@ impl ApiController {
         }
     }
 
+    fn store_selected_proxy_mapping(&self, runtime_tunnel: &RuntimeTunnel) {
+        let Some(storage) = &self.storage else {
+            return;
+        };
+        let Some(bootstrap_state) = &self.bootstrap_state else {
+            return;
+        };
+        let state = bootstrap_state.lock().unwrap();
+        if !state.document.profile.store_selected {
+            return;
+        }
+        let mapping = state
+            .document
+            .proxy_groups
+            .iter()
+            .filter_map(|group| {
+                runtime_tunnel
+                    .group_selected(&group.name)
+                    .map(|selected| (group.name.clone(), selected))
+            })
+            .collect::<BTreeMap<_, _>>();
+        let payload = serde_json::to_vec(&mapping).unwrap_or_default();
+        let _ = storage.set(STORAGE_KEY_SELECTED_PROXY, &payload);
+    }
+
+    fn sync_bootstrap_selected_proxy_mapping(&self, runtime_tunnel: &RuntimeTunnel) {
+        let Some(bootstrap_state) = &self.bootstrap_state else {
+            return;
+        };
+        let mut state = bootstrap_state.lock().unwrap();
+        let mapping = state
+            .document
+            .proxy_groups
+            .iter()
+            .filter_map(|group| {
+                runtime_tunnel
+                    .group_selected(&group.name)
+                    .map(|selected| (group.name.clone(), selected))
+            })
+            .collect::<BTreeMap<_, _>>();
+        state.apply_selected_proxy_mapping(&mapping);
+        if let Ok(payload) = serde_json::to_string(&mapping) {
+            unsafe {
+                std::env::set_var(SELECTED_PROXY_ENV, payload);
+            }
+        }
+    }
+
+    fn maybe_request_restart_for_native_gap(&self, _runtime_tunnel: &RuntimeTunnel) {
+        let Some(bootstrap_state) = &self.bootstrap_state else {
+            return;
+        };
+        let state = bootstrap_state.lock().unwrap();
+        let Ok(gaps) = state.detect_default_path_native_support_gaps() else {
+            return;
+        };
+        if gaps.is_empty() {
+            return;
+        }
+        if let Some(control_tx) = &self.control_tx {
+            let _ = control_tx.send(ApiControlCommand::Restart);
+        }
+    }
+
+    fn maybe_request_restart_for_selected_proxy(&self, selected: &str) {
+        let Some(bootstrap_state) = &self.bootstrap_state else {
+            return;
+        };
+        let state = bootstrap_state.lock().unwrap();
+        let Some(definition) = state.registry.proxy_definitions.get(selected) else {
+            return;
+        };
+        if native_support_gap_for_outbound_with_registry(definition, &state.registry).is_none() {
+            return;
+        }
+        if let Some(control_tx) = &self.control_tx {
+            let _ = control_tx.send(ApiControlCommand::Restart);
+        }
+    }
+
+    fn maybe_request_restart_for_tun_route_rule_provider(&self, provider_name: &str) {
+        let Some(bootstrap_state) = &self.bootstrap_state else {
+            return;
+        };
+        let state = bootstrap_state.lock().unwrap();
+        let top_level_referenced = state.document.tun.enable
+            && (state
+                .document
+                .tun
+                .config
+                .route_address_set
+                .iter()
+                .any(|name| name == provider_name)
+                || state
+                    .document
+                    .tun
+                    .config
+                    .route_exclude_address_set
+                    .iter()
+                    .any(|name| name == provider_name));
+        let listener_referenced = state.document.listeners.iter().any(|listener| match listener {
+            mihomo_inbound::InboundDefinition::Tun(config) => {
+                config.route_address_set.iter().any(|name| name == provider_name)
+                    || config
+                        .route_exclude_address_set
+                        .iter()
+                        .any(|name| name == provider_name)
+            }
+            _ => false,
+        });
+        let referenced = top_level_referenced || listener_referenced;
+        if !referenced {
+            return;
+        }
+        if let Some(control_tx) = &self.control_tx {
+            let _ = control_tx.send(ApiControlCommand::Restart);
+        }
+    }
+
     fn websocket_route(&self, request: &ApiHttpRequest, path: &str) -> Option<LiveWebsocketRoute> {
         if !request.method.eq_ignore_ascii_case("GET")
             || !request
@@ -1723,7 +2168,9 @@ impl ApiController {
         let first = serde_json::to_vec(&payload_fn(self))?;
         ws.write_text_frame(&first)?;
         loop {
+            if self.stream_shutdown.load(Ordering::Relaxed) { return Ok(()); }
             thread::sleep(Duration::from_millis(interval_ms));
+            if self.stream_shutdown.load(Ordering::Relaxed) { return Ok(()); }
             let payload = serde_json::to_vec(&payload_fn(self))?;
             ws.write_text_frame(&payload)?;
         }
@@ -1740,11 +2187,13 @@ impl ApiController {
         F: Fn(&Self) -> T,
     {
         let interval_ms = websocket_interval_ms(request)?;
-        let mut http = self.open_chunked_json_stream(stream)?;
+        let mut http = self.open_chunked_json_stream(stream, request)?;
         let first = serde_json::to_vec(&payload_fn(self))?;
         http.write_json_chunk(&first)?;
         loop {
+            if self.stream_shutdown.load(Ordering::Relaxed) { return Ok(()); }
             thread::sleep(Duration::from_millis(interval_ms));
+            if self.stream_shutdown.load(Ordering::Relaxed) { return Ok(()); }
             let payload = serde_json::to_vec(&payload_fn(self))?;
             http.write_json_chunk(&payload)?;
         }
@@ -1770,11 +2219,13 @@ impl ApiController {
     fn open_chunked_json_stream(
         &self,
         mut stream: Box<dyn ReadWriteStream>,
+        request: &ApiHttpRequest,
     ) -> Result<ServerHttpChunkedStream, ControllerError> {
-        write!(
-            stream,
-            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n\r\n"
-        )?;
+        let mut response = ApiHttpResponse { status_code: 200, headers: BTreeMap::new(), body: Vec::new() };
+        self.cors.apply(request, &mut response);
+        write!(stream, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-cache\r\nTransfer-Encoding: chunked\r\n")?;
+        for (key, value) in response.headers { write!(stream, "{key}: {value}\r\n")?; }
+        write!(stream, "\r\n")?;
         stream.flush()?;
         Ok(ServerHttpChunkedStream::new(stream))
     }
@@ -1919,6 +2370,17 @@ struct ListPayload {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 struct GroupListPayload {
     proxies: Vec<ApiGroupSnapshot>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+struct DelayPayload {
+    delay: u16,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+struct GroupDelayPayload {
+    #[serde(flatten)]
+    delays: BTreeMap<String, u16>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -2096,10 +2558,8 @@ struct UpdateProxyRequest {
     name: String,
 }
 
-#[derive(serde::Deserialize)]
-struct PatchConfigRequest {
-    mode: Option<String>,
-}
+const STORAGE_KEY_SELECTED_PROXY: &str = "selected-proxy";
+const SELECTED_PROXY_ENV: &str = "MIHOMO_SELECTED_PROXY_JSON";
 
 fn json_response<T: Serialize>(status_code: u16, value: &T) -> Result<ApiHttpResponse, ControllerError> {
     let body = serde_json::to_vec(value)?;
@@ -2137,7 +2597,7 @@ fn connection_payload_from_snapshot(snapshot: ActiveConnectionSnapshot) -> Conne
         start: snapshot.start_unix_ms,
         chains: snapshot.chains,
         provider_chains: snapshot.provider_chains,
-        rule: snapshot.rule,
+        rule: crate::snapshot_types::controller_rule_type_name(&snapshot.rule).to_owned(),
         rule_payload: snapshot.rule_payload,
         metadata: ConnectionMetadataPayload {
             network: format!("{:?}", snapshot.metadata.network).to_ascii_lowercase(),
@@ -2306,6 +2766,7 @@ fn reason_phrase(status_code: u16) -> &'static str {
         404 => "Not Found",
         405 => "Method Not Allowed",
         500 => "Internal Server Error",
+        501 => "Not Implemented",
         503 => "Service Unavailable",
         _ => "OK",
     }
@@ -2334,10 +2795,7 @@ fn dns_answer_json(name: &str, query_type: DnsRecordType, ip: IpAddr) -> JsonVal
 }
 
 fn dns_record_type_code(query_type: DnsRecordType) -> u16 {
-    match query_type {
-        DnsRecordType::A => 1,
-        DnsRecordType::Aaaa => 28,
-    }
+    query_type.code()
 }
 
 fn dns_matches_query_type(ip: IpAddr, query_type: DnsRecordType) -> bool {
@@ -2814,7 +3272,7 @@ dns:
         );
         let proxy_body: Value = serde_json::from_slice(&proxies.body).unwrap();
         assert!(proxy_body["proxies"]["direct-a"].is_object());
-        assert_eq!(proxy_body["proxies"]["edge-socks5"]["type"], "socks5");
+        assert_eq!(proxy_body["proxies"]["edge-socks5"]["type"], "Socks5");
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["udp"], true);
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["tfo"], true);
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["mptcp"], true);
@@ -2822,7 +3280,7 @@ dns:
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["interface"], "en0");
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["routing-mark"], 9);
         assert_eq!(proxy_body["proxies"]["edge-socks5"]["dialer-proxy"], "direct-a");
-        assert_eq!(proxy_body["proxies"]["auto"]["type"], "url-test");
+        assert_eq!(proxy_body["proxies"]["auto"]["type"], "URLTest");
         assert_eq!(proxy_body["proxies"]["auto"]["all"][0], "direct-a");
         assert_eq!(
             proxy_body["proxies"]["auto"]["testUrl"],
@@ -2836,7 +3294,7 @@ dns:
         );
         let leaf_body: Value = serde_json::from_slice(&proxy.body).unwrap();
         assert_eq!(leaf_body["name"], "edge-socks5");
-        assert_eq!(leaf_body["type"], "socks5");
+        assert_eq!(leaf_body["type"], "Socks5");
         assert_eq!(leaf_body["udp"], true);
         assert_eq!(leaf_body["tfo"], true);
         assert_eq!(leaf_body["mptcp"], true);
@@ -2851,7 +3309,7 @@ dns:
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let rule_body: Value = serde_json::from_slice(&rules.body).unwrap();
-        assert_eq!(rule_body["rules"][0]["type"], "MATCH");
+        assert_eq!(rule_body["rules"][0]["type"], "Match");
         assert_eq!(rule_body["rules"][0]["payload"], "");
         assert_eq!(rule_body["rules"][0]["proxy"], "auto");
         assert_eq!(rule_body["rules"][0]["size"], -1);
@@ -2864,7 +3322,7 @@ dns:
         let groups = group_list_body["proxies"].as_array().unwrap();
         assert!(groups
             .iter()
-            .any(|entry| entry["name"] == "auto" && entry["type"] == "url-test"));
+            .any(|entry| entry["name"] == "auto" && entry["type"] == "URLTest"));
     }
 
     #[test]
@@ -2932,7 +3390,7 @@ proxies:
         assert_eq!(proxy_provider.status_code, 200);
         let proxy_provider_body: Value = serde_json::from_slice(&proxy_provider.body).unwrap();
         assert_eq!(proxy_provider_body["name"], "provider1");
-        assert_eq!(proxy_provider_body["proxies"][0]["type"], "ss");
+        assert_eq!(proxy_provider_body["proxies"][0]["type"], "Shadowsocks");
         assert_eq!(proxy_provider_body["proxies"][0]["provider-name"], "provider1");
         assert_eq!(proxy_provider_body["proxies"][0]["dialer-proxy"], "");
 
@@ -2943,7 +3401,7 @@ proxies:
         assert_eq!(provider_proxy.status_code, 200);
         let provider_proxy_body: Value = serde_json::from_slice(&provider_proxy.body).unwrap();
         assert_eq!(provider_proxy_body["name"], "provider-ss");
-        assert_eq!(provider_proxy_body["type"], "ss");
+        assert_eq!(provider_proxy_body["type"], "Shadowsocks");
         assert_eq!(provider_proxy_body["provider-name"], "provider1");
         assert_eq!(provider_proxy_body["dialer-proxy"], "");
 
@@ -3378,7 +3836,7 @@ proxies:
         assert_eq!(selector_body["all"][0], "provider-a");
         assert_eq!(selector_body["all"][1], "provider-b");
         assert_eq!(selector_body["now"], "provider-a");
-        assert_eq!(selector_body["fixed"], "provider-a");
+        assert!(selector_body["fixed"].is_null());
         assert_eq!(runtime_tunnel.group_selected("selector").as_deref(), Some("provider-a"));
 
         runtime_tunnel
@@ -3390,7 +3848,7 @@ proxies:
         );
         let updated_selector_body: Value = serde_json::from_slice(&updated_selector.body).unwrap();
         assert_eq!(updated_selector_body["now"], "provider-b");
-        assert_eq!(updated_selector_body["fixed"], "provider-b");
+        assert!(updated_selector_body["fixed"].is_null());
     }
 
     #[test]
@@ -3506,6 +3964,122 @@ proxies:
     }
 
     #[test]
+    fn controller_http_proxy_provider_put_fetches_remote_proxies_with_dualstack_host_fallback() {
+        let temp = unique_temp_dir("mihomo-api-http-proxy-provider-dualstack");
+        std::fs::create_dir_all(&temp).unwrap();
+        let provider_path = temp.join("provider.yaml");
+        std::fs::write(
+            &provider_path,
+            r#"
+proxies:
+  - name: provider-a
+    type: direct
+"#,
+        )
+        .unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0_u8; 1024];
+            loop {
+                let read = stream.read(&mut buf).unwrap();
+                assert!(read > 0);
+                request.extend_from_slice(&buf[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            let request = String::from_utf8(request).unwrap();
+            assert!(request.starts_with("GET /provider.yaml HTTP/1.1\r\n"), "{request}");
+            let body = b"proxies:\n  - name: provider-a\n    type: direct\n  - name: provider-b\n    type: direct\n";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+            stream.write_all(body).unwrap();
+        });
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            &format!(
+                r#"
+secret: top-secret
+mode: global
+hosts:
+  dualstack.invalid:
+    - "::1"
+    - "127.0.0.1"
+dns:
+  enable: true
+  use-hosts: true
+  use-system-hosts: false
+proxy-providers:
+  provider1:
+    type: http
+    url: http://dualstack.invalid:{addr_port}/provider.yaml
+    path: provider.yaml
+proxy-groups:
+  - name: selector
+    type: select
+    use: [provider1]
+proxies:
+  - type: direct
+    name: local-a
+"#,
+                addr_port = addr.port(),
+            ),
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        runtime_tunnel.set_mode("global").unwrap();
+        runtime_tunnel
+            .set_group_selected("selector", "provider-a")
+            .unwrap();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(Arc::clone(&runtime_tunnel));
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/providers/proxies/provider1".into(),
+            headers: BTreeMap::from([("authorization".into(), "Bearer top-secret".into())]),
+            body: Vec::new(),
+        });
+        assert_eq!(
+            update.status_code,
+            204,
+            "{}",
+            String::from_utf8_lossy(&update.body)
+        );
+        worker.join().unwrap();
+
+        let provider = controller.handle_request(
+            &ApiHttpRequest::get("/providers/proxies/provider1")
+                .with_header("Authorization", "Bearer top-secret"),
+        );
+        let provider_body: Value = serde_json::from_slice(&provider.body).unwrap();
+        assert_eq!(provider_body["proxies"][0]["name"], "provider-a");
+        assert_eq!(provider_body["proxies"][1]["name"], "provider-b");
+        assert_eq!(runtime_tunnel.group_selected("selector").as_deref(), Some("provider-a"));
+        assert!(std::fs::read_to_string(&provider_path)
+            .unwrap()
+            .contains("provider-b"));
+    }
+
+    #[test]
     fn controller_rules_route_reports_runtime_extra_and_disable_updates_state() {
         let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
             r#"
@@ -3537,7 +4111,7 @@ proxies:
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let before_body: Value = serde_json::from_slice(&before.body).unwrap();
-        assert_eq!(before_body["rules"][0]["type"], "MATCH");
+        assert_eq!(before_body["rules"][0]["type"], "Match");
         assert_eq!(before_body["rules"][0]["extra"]["disabled"], false);
         assert_eq!(before_body["rules"][0]["extra"]["hitCount"], 0);
 
@@ -3663,7 +4237,7 @@ proxies:
         assert_eq!(body["Answer"][0]["data"], "1.2.3.4");
 
         let invalid = controller.handle_request(
-            &ApiHttpRequest::get("/dns/query?name=example.com&type=TXT")
+            &ApiHttpRequest::get("/dns/query?name=example.com&type=INVALID")
                 .with_header("Authorization", "Bearer top-secret"),
         );
         assert_eq!(invalid.status_code, 400);
@@ -4158,7 +4732,7 @@ proxies:
         stream.read_to_string(&mut response).unwrap();
 
         assert!(response.contains("HTTP/1.1 200 OK"));
-        assert!(response.contains("\"meta\":\"mihomo-rust\""));
+        assert!(response.contains("\"meta\":true"));
 
         server.shutdown();
     }
@@ -4197,7 +4771,7 @@ proxies:
         stream.read_to_string(&mut response).unwrap();
 
         assert!(response.contains("HTTP/1.1 200 OK"));
-        assert!(response.contains("\"meta\":\"mihomo-rust\""));
+        assert!(response.contains("\"meta\":true"));
 
         server.shutdown();
         let _ = fs::remove_file(socket_path);
@@ -4348,7 +4922,7 @@ proxies:
         stream.read_to_string(&mut response).unwrap();
 
         assert!(response.contains("HTTP/1.1 200 OK"));
-        assert!(response.contains("\"meta\":\"mihomo-rust\""));
+        assert!(response.contains("\"meta\":true"));
 
         server.shutdown();
         let _ = fs::remove_file(socket_path);
@@ -4361,7 +4935,7 @@ proxies:
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let temp = PathBuf::from(format!("/private/tmp/mh{nanos}"));
+        let temp = std::env::temp_dir().join(format!("mh{nanos}"));
         let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
             r#"
 secret: top-secret
@@ -4603,6 +5177,7 @@ proxies:
         let join = thread::spawn(|| {
             thread::sleep(Duration::from_millis(50));
             mihomo_core::push_log(mihomo_core::LogLevel::Error, "http-log-entry");
+            mihomo_core::push_log(mihomo_core::LogLevel::Error, "http-log-entry-2");
         });
 
         let (headers, chunks) = http_chunked_json_chunks(
@@ -4810,24 +5385,24 @@ proxies:
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let body: Value = serde_json::from_slice(&current.body).unwrap();
-        assert_eq!(body["type"], "select");
+        assert_eq!(body["type"], "Selector");
         assert_eq!(body["all"][0], "leaf-a");
         assert_eq!(body["all"][1], "leaf-b");
         assert_eq!(body["now"], "leaf-b");
-        assert_eq!(body["fixed"], "leaf-b");
+        assert!(body["fixed"].is_null());
 
         let group = controller.handle_request(
             &ApiHttpRequest::get("/group/selector")
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let group_body: Value = serde_json::from_slice(&group.body).unwrap();
-        assert_eq!(group_body["type"], "select");
+        assert_eq!(group_body["type"], "Selector");
         assert_eq!(group_body["all"][0], "leaf-a");
         assert_eq!(group_body["all"][1], "leaf-b");
         assert_eq!(group_body["now"], "leaf-b");
-        assert_eq!(group_body["fixed"], "leaf-b");
+        assert!(group_body["fixed"].is_null());
         assert_eq!(group_body["testUrl"], "");
-        assert_eq!(group_body["expectedStatus"], "*");
+        assert!(group_body["expectedStatus"].is_null());
     }
 
     #[test]
@@ -4889,7 +5464,7 @@ proxies:
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let body: Value = serde_json::from_slice(&current.body).unwrap();
-        assert_eq!(body["type"], "url-test");
+        assert_eq!(body["type"], "URLTest");
         assert_eq!(body["all"][0], "leaf-a");
         assert_eq!(body["all"][1], "leaf-b");
         assert_eq!(body["now"], "leaf-a");
@@ -4902,7 +5477,7 @@ proxies:
                 .with_header("Authorization", "Bearer top-secret"),
         );
         let group_body: Value = serde_json::from_slice(&group.body).unwrap();
-        assert_eq!(group_body["type"], "url-test");
+        assert_eq!(group_body["type"], "URLTest");
         assert_eq!(group_body["all"][0], "leaf-a");
         assert_eq!(group_body["all"][1], "leaf-b");
         assert_eq!(group_body["now"], "leaf-a");
@@ -4994,6 +5569,267 @@ proxies:
     }
 
     #[test]
+    fn controller_proxy_delay_route_updates_runtime_candidate_state() {
+        let temp = unique_temp_dir("mihomo-api-proxy-delay");
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0_u8; 1024];
+            loop {
+                let read = stream.read(&mut buf).unwrap();
+                assert!(read > 0);
+                request.extend_from_slice(&buf[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            let request = String::from_utf8(request).unwrap();
+            assert!(request.starts_with("GET /delay HTTP/1.1\r\n"), "{request}");
+            let response =
+                "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            &format!(
+                r#"
+secret: top-secret
+proxies:
+  - type: direct
+    name: edge-http
+"#,
+            ),
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(Arc::clone(&runtime_tunnel));
+
+        let response = controller.handle_request(
+            &ApiHttpRequest::get(&format!(
+                "/proxies/edge-http/delay?url=http%3A%2F%2F127.0.0.1%3A{}%2Fdelay&expected=204",
+                addr.port()
+            ))
+            .with_header("Authorization", "Bearer top-secret"),
+        );
+        assert_eq!(response.status_code, 200, "{}", String::from_utf8_lossy(&response.body));
+        let body: Value = serde_json::from_slice(&response.body).unwrap();
+        assert!(body["delay"].as_u64().unwrap() <= u64::from(u16::MAX), "{body}");
+        let proxy = controller.handle_request(
+            &ApiHttpRequest::get("/proxies/edge-http")
+                .with_header("Authorization", "Bearer top-secret"),
+        );
+        let proxy_body: Value = serde_json::from_slice(&proxy.body).unwrap();
+        assert_eq!(proxy_body["alive"], true);
+        assert!(proxy_body["history"].as_array().is_some_and(|entries| !entries.is_empty()));
+        assert!(proxy_body["extra"]
+            .as_object()
+            .is_some_and(|entries| !entries.is_empty()));
+        let resolved = runtime_tunnel
+            .selected_target_for_metadata(&mihomo_core::Metadata {
+                host: Some("example.com".into()),
+                special_proxy: "edge-http".into(),
+                dst_port: Some(80),
+                ..mihomo_core::Metadata::default()
+            })
+            .unwrap();
+        assert_eq!(resolved.1.leaf_name, "edge-http");
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn controller_provider_healthcheck_updates_provider_and_group_snapshots() {
+        let temp = unique_temp_dir("mihomo-api-provider-healthcheck");
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            for _ in 0..2 {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = Vec::new();
+                let mut buf = [0_u8; 1024];
+                loop {
+                    let read = stream.read(&mut buf).unwrap();
+                    assert!(read > 0);
+                    request.extend_from_slice(&buf[..read]);
+                    if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                        break;
+                    }
+                }
+                let request = String::from_utf8(request).unwrap();
+                assert!(request.starts_with("GET /delay HTTP/1.1\r\n"), "{request}");
+                let response =
+                    "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                stream.write_all(response.as_bytes()).unwrap();
+            }
+        });
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            &format!(
+                r#"
+secret: top-secret
+proxy-providers:
+  provider1:
+    type: inline
+    payload:
+      - name: node-a
+        type: direct
+      - name: node-b
+        type: direct
+    health-check:
+      enable: true
+      url: http://127.0.0.1:{port}/delay
+      interval: 300
+proxy-groups:
+  - name: auto
+    type: url-test
+    use: [provider1]
+"#,
+                port = addr.port(),
+            ),
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(Arc::clone(&runtime_tunnel));
+
+        let response = controller.handle_request(
+            &ApiHttpRequest::get(&format!(
+                "/providers/proxies/provider1/healthcheck?url=http%3A%2F%2F127.0.0.1%3A{}%2Fdelay&timeout=5000&expected=204",
+                addr.port()
+            ))
+            .with_header("Authorization", "Bearer top-secret"),
+        );
+        assert_eq!(response.status_code, 204, "{}", String::from_utf8_lossy(&response.body));
+
+        let deadline = std::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let provider = controller.handle_request(
+                &ApiHttpRequest::get("/providers/proxies/provider1")
+                    .with_header("Authorization", "Bearer top-secret"),
+            );
+            let provider_body: Value = serde_json::from_slice(&provider.body).unwrap();
+            let ready = provider_body["proxies"][0]["history"]
+                .as_array()
+                .is_some_and(|entries| !entries.is_empty());
+            if ready {
+                assert_eq!(provider_body["proxies"][0]["alive"], true);
+                assert!(provider_body["proxies"][0]["extra"]
+                    .as_object()
+                    .is_some_and(|entries| !entries.is_empty()));
+
+                let group = controller.handle_request(
+                    &ApiHttpRequest::get("/proxies/auto")
+                        .with_header("Authorization", "Bearer top-secret"),
+                );
+                let group_body: Value = serde_json::from_slice(&group.body).unwrap();
+                assert!(matches!(
+                    group_body["now"].as_str(),
+                    Some("node-a") | Some("node-b")
+                ));
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                panic!("provider healthcheck did not update provider snapshot in time");
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn controller_proxy_snapshot_exposes_last_healthcheck_error() {
+        let temp = unique_temp_dir("mihomo-api-proxy-healthcheck-error");
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0_u8; 1024];
+            loop {
+                let read = stream.read(&mut buf).unwrap();
+                assert!(read > 0);
+                request.extend_from_slice(&buf[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            stream
+                .write_all(
+                    b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                )
+                .unwrap();
+        });
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            "secret: top-secret\nproxies:\n  - type: direct\n    name: edge-http\n",
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(Arc::clone(&runtime_tunnel));
+
+        let _ = controller.handle_request(
+            &ApiHttpRequest::get(&format!(
+                "/proxies/edge-http/delay?url=http%3A%2F%2F127.0.0.1%3A{}%2Fdelay&expected=204&timeout=1000",
+                addr.port()
+            ))
+            .with_header("Authorization", "Bearer top-secret"),
+        );
+
+        let proxy = controller.handle_request(
+            &ApiHttpRequest::get("/proxies/edge-http")
+                .with_header("Authorization", "Bearer top-secret"),
+        );
+        let body: Value = serde_json::from_slice(&proxy.body).unwrap();
+        let extra = body["extra"].as_object().unwrap();
+        let first = extra.values().next().unwrap();
+        assert_eq!(first["alive"], false);
+        assert!(first["lastError"]
+            .as_str()
+            .is_some_and(|message| message.contains("unexpected http status")));
+        worker.join().unwrap();
+    }
+
+    #[test]
     fn controller_post_restart_emits_control_command() {
         let (control_tx, control_rx) = mpsc::channel();
         let controller = ApiController::from_document(&sample_document())
@@ -5009,13 +5845,324 @@ proxies:
             )]),
             body: Vec::new(),
         });
-        assert_eq!(response.status_code, 200);
-        let body: Value = serde_json::from_slice(&response.body).unwrap();
-        assert_eq!(body["status"], "ok");
+        assert_eq!(response.status_code, 204);
+        assert!(response.body.is_empty());
         assert_eq!(
             control_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
             ApiControlCommand::Restart
         );
+    }
+
+    #[test]
+    fn controller_rule_provider_put_emits_restart_when_top_level_tun_route_address_set_uses_provider() {
+        let temp = unique_temp_dir("mihomo-api-rule-provider-tun-route-restart");
+        std::fs::create_dir_all(&temp).unwrap();
+        let provider_path = temp.join("route-provider.txt");
+        std::fs::write(&provider_path, "1.1.1.0/24\n").unwrap();
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            r#"
+secret: top-secret
+tun:
+  enable: true
+  auto-route: true
+  auto-redirect: true
+  device: utun-test
+  route-address-set:
+    - route-set
+rule-providers:
+  route-set:
+    type: file
+    behavior: ipcidr
+    format: text
+    path: route-provider.txt
+proxies:
+  - type: direct
+    name: direct-a
+rules:
+  - MATCH,direct-a
+"#,
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let (control_tx, control_rx) = mpsc::channel();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(runtime_tunnel)
+            .with_control_tx(control_tx);
+
+        std::fs::write(&provider_path, "9.9.9.0/24\n").unwrap();
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/providers/rules/route-set".into(),
+            headers: BTreeMap::from([(
+                "authorization".into(),
+                "Bearer top-secret".into(),
+            )]),
+            body: Vec::new(),
+        });
+        assert_eq!(update.status_code, 204, "{}", String::from_utf8_lossy(&update.body));
+        assert_eq!(
+            control_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            ApiControlCommand::Restart
+        );
+    }
+
+    #[test]
+    fn controller_rule_provider_put_emits_restart_when_explicit_tun_listener_uses_provider() {
+        let temp = unique_temp_dir("mihomo-api-rule-provider-explicit-tun-restart");
+        std::fs::create_dir_all(&temp).unwrap();
+        let provider_path = temp.join("route-provider.txt");
+        std::fs::write(&provider_path, "1.1.1.0/24\n").unwrap();
+
+        let (document, provider_sources, registry) = mihomo_runtime::bootstrap_from_yaml(
+            r#"
+secret: top-secret
+listeners:
+  - type: tun
+    name: edge-tun
+    enable: true
+    auto-route: true
+    auto-redirect: true
+    device: utun-test
+    route-address-set:
+      - route-set
+rule-providers:
+  route-set:
+    type: file
+    behavior: ipcidr
+    format: text
+    path: route-provider.txt
+proxies:
+  - type: direct
+    name: direct-a
+rules:
+  - MATCH,direct-a
+"#,
+            &temp,
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions {
+                home_dir: Some(temp.to_string_lossy().into_owned()),
+                ..mihomo_config::BootOptions::default()
+            }
+            .resolve(&temp, &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources,
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let (control_tx, control_rx) = mpsc::channel();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(runtime_tunnel)
+            .with_control_tx(control_tx);
+
+        std::fs::write(&provider_path, "9.9.9.0/24\n").unwrap();
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/providers/rules/route-set".into(),
+            headers: BTreeMap::from([(
+                "authorization".into(),
+                "Bearer top-secret".into(),
+            )]),
+            body: Vec::new(),
+        });
+        assert_eq!(update.status_code, 204, "{}", String::from_utf8_lossy(&update.body));
+        assert_eq!(
+            control_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            ApiControlCommand::Restart
+        );
+    }
+
+    #[test]
+    fn controller_selecting_supported_tuic_outer_socks5_does_not_emit_restart() {
+        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+            r#"
+secret: top-secret
+proxy-groups:
+  - name: selector
+    type: select
+    proxies: [edge-tuic, DIRECT]
+proxies:
+  - type: direct
+    name: DIRECT
+  - type: socks5
+    name: outer-socks
+    server: 127.0.0.1
+    port: 1080
+    udp: true
+  - type: tuic
+    name: edge-tuic
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    password: secret
+    udp: true
+    sni: localhost
+    skip-cert-verify: true
+    dialer-proxy: outer-socks
+"#,
+            std::path::Path::new("/tmp"),
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions::default()
+                .resolve(std::path::Path::new("/tmp"), &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources: Default::default(),
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let (control_tx, control_rx) = mpsc::channel();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(runtime_tunnel)
+            .with_control_tx(control_tx);
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/proxies/selector".into(),
+            headers: BTreeMap::from([(
+                "authorization".into(),
+                "Bearer top-secret".into(),
+            )]),
+            body: br#"{"name":"edge-tuic"}"#.to_vec(),
+        });
+        assert_eq!(update.status_code, 204);
+        assert!(control_rx.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
+    fn controller_selecting_supported_wireguard_outer_socks5_does_not_emit_restart() {
+        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+            r#"
+secret: top-secret
+proxy-groups:
+  - name: selector
+    type: select
+    proxies: [edge-wg, DIRECT]
+proxies:
+  - type: direct
+    name: DIRECT
+  - type: socks5
+    name: outer-socks
+    server: 127.0.0.1
+    port: 1080
+    udp: true
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips: [0.0.0.0/0]
+    dialer-proxy: outer-socks
+"#,
+            std::path::Path::new("/tmp"),
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions::default()
+                .resolve(std::path::Path::new("/tmp"), &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources: Default::default(),
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let (control_tx, control_rx) = mpsc::channel();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(runtime_tunnel)
+            .with_control_tx(control_tx);
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/proxies/selector".into(),
+            headers: BTreeMap::from([(
+                "authorization".into(),
+                "Bearer top-secret".into(),
+            )]),
+            body: br#"{"name":"edge-wg"}"#.to_vec(),
+        });
+        assert_eq!(update.status_code, 204);
+        assert!(control_rx.recv_timeout(Duration::from_millis(200)).is_err());
+    }
+
+    #[test]
+    fn controller_selecting_supported_openvpn_udp_outer_socks5_does_not_emit_restart() {
+        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+            r#"
+secret: top-secret
+proxy-groups:
+  - name: selector
+    type: select
+    proxies: [edge-ovpn, DIRECT]
+proxies:
+  - type: direct
+    name: DIRECT
+  - type: socks5
+    name: outer-socks
+    server: 127.0.0.1
+    port: 1080
+    udp: true
+  - type: openvpn
+    name: edge-ovpn
+    server: 1.2.3.4
+    port: 1194
+    proto: udp
+    dev: tun
+    cipher: AES-128-GCM
+    auth: SHA256
+    username: demo
+    password: secret
+    ca: demo
+    tls-crypt: demo
+    dialer-proxy: outer-socks
+"#,
+            std::path::Path::new("/tmp"),
+        )
+        .unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions::default()
+                .resolve(std::path::Path::new("/tmp"), &mihomo_config::BootEnvironment::default()),
+            document,
+            provider_sources: Default::default(),
+            registry,
+        };
+        let runtime_tunnel = Arc::new(state.build_runtime_tunnel().unwrap());
+        let (control_tx, control_rx) = mpsc::channel();
+        let controller = ApiController::from_bootstrap(&state)
+            .unwrap()
+            .with_runtime_tunnel(runtime_tunnel)
+            .with_control_tx(control_tx);
+
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(),
+            target: "/proxies/selector".into(),
+            headers: BTreeMap::from([(
+                "authorization".into(),
+                "Bearer top-secret".into(),
+            )]),
+            body: br#"{"name":"edge-ovpn"}"#.to_vec(),
+        });
+        assert_eq!(update.status_code, 204);
+        assert!(control_rx.recv_timeout(Duration::from_millis(200)).is_err());
     }
 
     #[test]

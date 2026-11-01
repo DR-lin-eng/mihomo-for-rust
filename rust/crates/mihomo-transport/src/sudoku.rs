@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::io::{self, Cursor, Read, Write};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 
 use aes::Aes128;
@@ -271,6 +271,18 @@ pub(crate) fn open_udp_stream(
     Ok(Box::new(record))
 }
 
+pub(crate) fn prewarm_tables(
+    key: &str,
+    table_type: &str,
+    custom_table: &str,
+    custom_tables: &[String],
+) -> Result<(), TransportError> {
+    let seed = client_aead_seed(key)?;
+    let _ = build_client_table_candidates(&seed, table_type, custom_table, custom_tables)?;
+    let _ = build_server_table_candidates(&seed, table_type, custom_table, custom_tables)?;
+    Ok(())
+}
+
 pub(crate) fn open_multiplex_client_stream(
     mut stream: BoxedTcpStream,
     proxy: &TransportTarget,
@@ -372,15 +384,45 @@ pub(crate) fn read_udp_packet(
     stream: &mut dyn Read,
 ) -> io::Result<(SocketAddr, Vec<u8>)> {
     let mut header = [0_u8; 4];
-    stream.read_exact(&mut header)?;
+    read_exact_preserving_partial_frame(stream, &mut header)?;
     let address_len = binary_read_u16(&header[..2]) as usize;
     let payload_len = binary_read_u16(&header[2..]) as usize;
     let mut address = vec![0_u8; address_len];
-    stream.read_exact(&mut address)?;
+    read_exact_preserving_partial_frame(stream, &mut address)?;
     let destination = resolve_udp_address(&decode_address(&address)?)?;
     let mut payload = vec![0_u8; payload_len];
-    stream.read_exact(&mut payload)?;
+    read_exact_preserving_partial_frame(stream, &mut payload)?;
     Ok((destination, payload))
+}
+
+fn read_exact_preserving_partial_frame(
+    stream: &mut dyn Read,
+    buf: &mut [u8],
+) -> io::Result<()> {
+    let mut offset = 0;
+    while offset < buf.len() {
+        match stream.read(&mut buf[offset..]) {
+            Ok(0) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "sudoku udp packet truncated",
+                ))
+            }
+            Ok(read) => {
+                offset += read;
+            }
+            Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
+            Err(err)
+                if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) =>
+            {
+                if offset == 0 {
+                    return Err(err);
+                }
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    Ok(())
 }
 
 fn perform_client_handshake(
@@ -866,6 +908,17 @@ struct SudokuTables {
 
 impl SudokuTables {
     fn new(key: &str, table_type: &str, custom_table: &str) -> Result<Self, TransportError> {
+        static CACHE: OnceLock<Mutex<HashMap<(String, String, String), SudokuTables>>> =
+            OnceLock::new();
+        let cache_key = (
+            key.to_owned(),
+            table_type.to_owned(),
+            custom_table.to_owned(),
+        );
+        let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+        if let Some(cached) = cache.lock().unwrap().get(&cache_key).cloned() {
+            return Ok(cached);
+        }
         let mode = parse_ascii_mode(table_type)?;
         let uplink_pattern = custom_pattern_for_token(&mode.uplink, custom_table);
         let downlink_pattern = custom_pattern_for_token(&mode.downlink, custom_table);
@@ -883,7 +936,7 @@ impl SudokuTables {
                 &downlink_pattern,
             )?)
         };
-        Ok(Self {
+        let tables = Self {
             uplink,
             downlink,
             hint: table_hint_fingerprint(
@@ -893,7 +946,9 @@ impl SudokuTables {
                 &downlink_pattern,
             ),
             uplink_ascii: mode.uplink == ASCII_MODE_TOKEN_ASCII,
-        })
+        };
+        cache.lock().unwrap().insert(cache_key, tables.clone());
+        Ok(tables)
     }
 }
 
@@ -2465,11 +2520,9 @@ impl Read for SudokuRecordStream {
         }
 
         let mut length = [0_u8; 2];
-        let read = self.read_socket.read(&mut length[..1])?;
-        if read == 0 {
+        if !read_exact_allow_eof_before_first_byte(&mut *self.read_socket, &mut length)? {
             return Ok(0);
         }
-        self.read_socket.read_exact(&mut length[1..])?;
         let body_len = binary_read_u16(&length) as usize;
         if body_len < RECORD_HEADER_SIZE || body_len > MAX_FRAME_BODY_SIZE {
             return Err(io::Error::new(
@@ -2478,7 +2531,7 @@ impl Read for SudokuRecordStream {
             ));
         }
         let mut body = vec![0_u8; body_len];
-        self.read_socket.read_exact(&mut body)?;
+        read_exact_preserving_partial_frame(&mut *self.read_socket, &mut body)?;
         let header = &body[..RECORD_HEADER_SIZE];
         let ciphertext = &body[RECORD_HEADER_SIZE..];
         let epoch = binary_read_u32(&header[..4]);
@@ -2497,6 +2550,39 @@ impl Read for SudokuRecordStream {
         drain_pending_bytes(buf, &mut self.read_plaintext)
             .ok_or_else(|| io::Error::new(io::ErrorKind::UnexpectedEof, "empty sudoku record"))
     }
+}
+
+fn read_exact_allow_eof_before_first_byte(
+    stream: &mut dyn Read,
+    buf: &mut [u8],
+) -> io::Result<bool> {
+    let mut offset = 0;
+    while offset < buf.len() {
+        match stream.read(&mut buf[offset..]) {
+            Ok(0) => {
+                if offset == 0 {
+                    return Ok(false);
+                }
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "sudoku record truncated",
+                ));
+            }
+            Ok(read) => {
+                offset += read;
+            }
+            Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
+            Err(err)
+                if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) =>
+            {
+                if offset == 0 {
+                    return Err(err);
+                }
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    Ok(true)
 }
 
 impl Write for SudokuRecordStream {
@@ -3778,7 +3864,8 @@ mod tests {
         packet.extend_from_slice(b"dns!");
 
         let (target, payload) = read_udp_packet(&mut std::io::Cursor::new(packet)).unwrap();
-        assert_eq!(target, "127.0.0.1:5353".parse().unwrap());
+        assert_eq!(target.port(), 5353);
+        assert!(target.ip().is_loopback(), "expected loopback target, got {target}");
         assert_eq!(payload, b"dns!");
     }
 

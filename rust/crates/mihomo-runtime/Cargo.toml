@@ -7,11 +7,16 @@ repository.workspace = true
 
 [dependencies]
 base64 = "0.22"
+httpdate = "1"
+psl = "2"
+sha2 = "0.10"
 fancy-regex = "0.14"
+maxminddb = "0.24"
 mihomo-buf = { path = "../mihomo-buf" }
 mihomo-config = { path = "../mihomo-config" }
 mihomo-core = { path = "../mihomo-core" }
 mihomo-dns = { path = "../mihomo-dns" }
+mihomo-ebpf = { path = "../mihomo-ebpf" }
 mihomo-inbound = { path = "../mihomo-inbound" }
 mihomo-outbound = { path = "../mihomo-outbound" }
 mihomo-platform = { path = "../mihomo-platform" }
@@ -19,6 +24,8 @@ mihomo-rules = { path = "../mihomo-rules" }
 mihomo-transport = { path = "../mihomo-transport" }
 mihomo-tun = { path = "../mihomo-tun" }
 regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 serde_yaml = "0.9"
 ureq = "2"
 url = "2"

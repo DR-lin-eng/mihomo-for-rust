@@ -1,21 +1,35 @@
 use std::collections::BTreeMap;
 
 use mihomo_core::{BoxedTcpStream, Metadata};
-use mihomo_outbound::{OutboundDefinition, OutboundKind, ProxyBaseConfig};
+use mihomo_outbound::{OutboundDefinition, OutboundKind};
 use mihomo_transport::{
-    BasicAuth as TransportBasicAuth, SocketOptions as TransportSocketOptions,
     GrpcOptions as TransportGrpcOptions,
     Http2Options as TransportHttp2Options,
     HttpStreamOptions as TransportHttpStreamOptions,
-    TcpDialer, TcpTransportExecutor, TlsOptions as TransportTlsOptions,
+    OuterSocks5UdpPlan,
+    TcpDialer, TcpTransportExecutor,
     TransportAction, TransportError, TransportHop, TransportPlan, TransportPlanRunner,
-    TransportTarget, TrojanShadowsocksOptions as TransportTrojanShadowsocksOptions,
+    TransportTarget,
+    TrojanShadowsocksOptions as TransportTrojanShadowsocksOptions,
     WebsocketOptions as TransportWebsocketOptions,
     XHttpOptions as TransportXHttpOptions,
 };
 use serde_yaml::Value;
 
+use crate::execution_helpers::{
+    basic_auth, grpc_options, h2_options, http_options, nested_value_as_bool,
+    nested_value_as_string, nested_value_as_u64, resolve_padding_max,
+    resolve_padding_min, shadowsocks_plugin_mux,
+    shadowsocks_plugin_tls_options, shadowsocks_plugin_websocket_options, socket_options,
+    string_list, string_map, sudoku_http_mask_enabled, sudoku_http_mask_host,
+    sudoku_http_mask_mode, sudoku_http_mask_path_root, sudoku_http_mask_tls, tls_options,
+    transport_basic_auth, transport_socket_options, transport_tls_options,
+    transport_wireguard_peers, trojan_shadowsocks_options, value_as_bool,
+    value_as_bool_with_default, value_as_string, value_as_u16, value_as_u32, value_as_u64,
+    value_as_u8, websocket_options, wireguard_peer_specs, xhttp_options,
+};
 use crate::{resolve_proxy_path, CandidateState, ProxySource, ResolveError, RuntimeRegistry};
+use crate::support_helpers::{nested_map, nested_mapping_bool, nested_mapping_string};
 
 const DEFAULT_TROJAN_ALPN: &[&str] = &["h2", "http/1.1"];
 
@@ -92,6 +106,137 @@ pub struct AnyTlsConnectHopSpec {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HysteriaConnectHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub ports: String,
+    pub protocol: String,
+    pub auth: String,
+    pub auth_str: String,
+    pub obfs: String,
+    pub sni: String,
+    pub alpn: Vec<String>,
+    pub skip_cert_verify: bool,
+    pub up: String,
+    pub down: String,
+    pub up_speed: u32,
+    pub down_speed: u32,
+    pub disable_mtu_discovery: bool,
+    pub fast_open: bool,
+    pub hop_interval: u32,
+    pub tls: TlsOptions,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Hy2ConnectHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub password: String,
+    pub obfs: String,
+    pub obfs_password: String,
+    pub up_mbps: u32,
+    pub down_mbps: u32,
+    pub realm_enabled: bool,
+    pub realm_server_url: String,
+    pub realm_token: String,
+    pub realm_id: String,
+    pub realm_stun_servers: Vec<String>,
+    pub realm_sni: String,
+    pub realm_skip_cert_verify: bool,
+    pub realm_fingerprint: String,
+    pub realm_certificate: String,
+    pub realm_private_key: String,
+    pub realm_alpn: Vec<String>,
+    pub realm_proxy: String,
+    pub tls: TlsOptions,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TuicConnectHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub uuid: String,
+    pub password: String,
+    pub token: String,
+    pub udp: bool,
+    pub sni: String,
+    pub alpn: Vec<String>,
+    pub disable_sni: bool,
+    pub request_timeout_ms: u64,
+    pub heartbeat_interval_ms: u64,
+    pub congestion_controller: String,
+    pub max_open_streams: u32,
+    pub max_udp_relay_packet_size: u32,
+    pub tls: TlsOptions,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WireGuardPeerHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub public_key: String,
+    pub allowed_ips: Vec<String>,
+    pub persistent_keepalive: u16,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WireGuardConnectHopSpec {
+    pub private_key: String,
+    pub ip: String,
+    pub ipv6: String,
+    pub udp: bool,
+    pub mtu: usize,
+    pub workers: usize,
+    pub remote_dns_resolve: bool,
+    pub dns: Vec<String>,
+    pub peers: Vec<WireGuardPeerHopSpec>,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OpenVpnConnectHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub proto: String,
+    pub dev: String,
+    pub cipher: String,
+    pub auth: String,
+    pub ca: String,
+    pub cert: String,
+    pub key: String,
+    pub tls_crypt: String,
+    pub username: String,
+    pub password: String,
+    pub remote_dns_resolve: bool,
+    pub dns: Vec<String>,
+    pub udp: bool,
+    pub mtu: usize,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MasqueConnectHopSpec {
+    pub server: String,
+    pub port: u16,
+    pub private_key: String,
+    pub public_key: String,
+    pub ip: String,
+    pub ipv6: String,
+    pub uri: String,
+    pub sni: String,
+    pub udp: bool,
+    pub mtu: usize,
+    pub network: String,
+    pub remote_dns_resolve: bool,
+    pub dns: Vec<String>,
+    pub tls: TlsOptions,
+    pub socket: SocketOptions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ShadowSocksConnectHopSpec {
     pub server: String,
     pub port: u16,
@@ -141,7 +286,9 @@ pub struct TrojanConnectHopSpec {
     pub network: String,
     pub websocket: TransportWebsocketOptions,
     pub grpc: TransportGrpcOptions,
+    pub h2: TransportHttp2Options,
     pub http: TransportHttpStreamOptions,
+    pub xhttp: TransportXHttpOptions,
     pub alpn: Vec<String>,
     pub tls: TlsOptions,
     pub socket: SocketOptions,
@@ -166,6 +313,10 @@ pub struct VlessConnectHopSpec {
     pub port: u16,
     pub uuid: String,
     pub flow: String,
+    pub reality_public_key: String,
+    pub reality_short_id: String,
+    pub reality_support_x25519mlkem768: bool,
+    pub client_fingerprint: String,
     pub udp: bool,
     pub network: String,
     pub websocket: TransportWebsocketOptions,
@@ -263,6 +414,12 @@ pub enum ExecutionHopSpec {
     HttpConnect(HttpConnectHopSpec),
     Socks5Connect(Socks5ConnectHopSpec),
     AnyTls(AnyTlsConnectHopSpec),
+    Hysteria(HysteriaConnectHopSpec),
+    Hy2(Hy2ConnectHopSpec),
+    Tuic(TuicConnectHopSpec),
+    WireGuard(WireGuardConnectHopSpec),
+    OpenVpn(OpenVpnConnectHopSpec),
+    Masque(MasqueConnectHopSpec),
     ShadowSocks(ShadowSocksConnectHopSpec),
     Ssr(SsrConnectHopSpec),
     Snell(SnellConnectHopSpec),
@@ -366,18 +523,64 @@ pub fn materialize_transport_plan(
     metadata: &Metadata,
 ) -> Result<TransportPlan, ExecutionError> {
     let final_target = TransportTarget::from_metadata(metadata)?;
-    let hops = plan
-        .hops
-        .iter()
-        .enumerate()
-        .map(|(index, hop)| {
-            let downstream = downstream_target(&plan.hops, index, &final_target);
-            Ok(TransportHop {
-                name: hop.name.clone(),
-                action: transport_action(&hop.spec, downstream),
-            })
-        })
-        .collect::<Result<Vec<_>, ExecutionError>>()?;
+    if let Some((leaf_index, leaf_hop)) = plan.hops.iter().enumerate().next_back() {
+        if matches!(leaf_hop.spec, ExecutionHopSpec::WireGuard(_)) {
+            let mut action = transport_action(&leaf_hop.spec, final_target.clone());
+            if leaf_index > 0 {
+                let TransportAction::WireGuardConnect { outer_socks5, .. } = &mut action else {
+                    unreachable!("wireguard transport action shape changed unexpectedly");
+                };
+                *outer_socks5 = Some(build_outer_socks5_udp_plan(plan, leaf_index)?);
+            }
+            return Ok(TransportPlan {
+                requested: plan.requested.clone(),
+                selected_path: plan.selected_path.clone(),
+                leaf_name: plan.leaf_name.clone(),
+                hops: vec![TransportHop {
+                    name: leaf_hop.name.clone(),
+                    action,
+                }],
+            });
+        }
+        if let ExecutionHopSpec::OpenVpn(spec) = &leaf_hop.spec {
+            let mut action = transport_action(&leaf_hop.spec, final_target.clone());
+            if leaf_index > 0 && normalize_openvpn_leaf_proto(&spec.proto) == "udp" {
+                let TransportAction::OpenVpnConnect { outer_socks5, .. } = &mut action else {
+                    unreachable!("openvpn transport action shape changed unexpectedly");
+                };
+                *outer_socks5 = Some(build_outer_socks5_udp_plan(plan, leaf_index)?);
+                return Ok(TransportPlan {
+                    requested: plan.requested.clone(),
+                    selected_path: plan.selected_path.clone(),
+                    leaf_name: plan.leaf_name.clone(),
+                    hops: vec![TransportHop {
+                        name: leaf_hop.name.clone(),
+                        action,
+                    }],
+                });
+            }
+        }
+    }
+    let mut hops = Vec::new();
+    for (index, hop) in plan.hops.iter().enumerate() {
+        let downstream = downstream_target(&plan.hops, index, &final_target);
+        let mut action = transport_action(&hop.spec, downstream.clone());
+        if let (
+            ExecutionHopSpec::Hy2(spec),
+            TransportAction::Hy2Connect { realm_proxy_plan, .. },
+        ) = (&hop.spec, &mut action)
+        {
+            if hy2_realm_proxy_uses_named_proxy(&spec.realm_proxy) {
+                let nested =
+                    build_transport_plan_for_named_hy2_realm_proxy(plan, index, spec)?;
+                *realm_proxy_plan = Some(Box::new(nested));
+            }
+        }
+        hops.push(TransportHop {
+            name: hop.name.clone(),
+            action,
+        });
+    }
 
     Ok(TransportPlan {
         requested: plan.requested.clone(),
@@ -385,6 +588,118 @@ pub fn materialize_transport_plan(
         leaf_name: plan.leaf_name.clone(),
         hops,
     })
+}
+
+fn hy2_realm_proxy_uses_named_proxy(realm_proxy: &str) -> bool {
+    let value = realm_proxy.trim();
+    !value.is_empty() && !value.eq_ignore_ascii_case("DIRECT") && !value.contains("://")
+}
+
+fn build_transport_plan_for_named_hy2_realm_proxy(
+    plan: &ExecutionPlan,
+    hy2_index: usize,
+    spec: &Hy2ConnectHopSpec,
+) -> Result<TransportPlan, ExecutionError> {
+    if hy2_index == 0 {
+        return Err(ExecutionError::Transport(TransportError::InvalidPlan(
+            "hysteria2 realm proxy name requires at least one proxy hop".to_owned(),
+        )));
+    }
+    let target = realm_control_target(&spec.realm_server_url)?;
+
+    let mut nested = build_transport_plan_for_prefix(plan, hy2_index, &target)?;
+    nested.requested = spec.realm_proxy.clone();
+    nested.leaf_name = spec.realm_proxy.clone();
+    Ok(nested)
+}
+
+fn build_outer_socks5_udp_plan(
+    plan: &ExecutionPlan,
+    leaf_index: usize,
+) -> Result<OuterSocks5UdpPlan, ExecutionError> {
+    let outer_index = leaf_index.checked_sub(1).ok_or_else(|| {
+        ExecutionError::Transport(TransportError::InvalidPlan(
+            "outer socks5 udp plan requires at least one proxy hop".to_owned(),
+        ))
+    })?;
+    let outer_hop = plan.hops.get(outer_index).ok_or_else(|| {
+        ExecutionError::Transport(TransportError::InvalidPlan(
+            "outer socks5 udp hop is missing".to_owned(),
+        ))
+    })?;
+    let ExecutionHopSpec::Socks5Connect(spec) = &outer_hop.spec else {
+        return Err(ExecutionError::Transport(TransportError::InvalidPlan(
+            "wireguard outer udp plan currently requires an outer socks5 proxy".to_owned(),
+        )));
+    };
+    if !spec.udp {
+        return Err(ExecutionError::Transport(TransportError::InvalidPlan(
+            "wireguard outer udp plan requires socks5 udp support on the outer proxy".to_owned(),
+        )));
+    }
+    let prefix_plan = if outer_index == 0 {
+        None
+    } else {
+        Some(Box::new(build_transport_plan_for_prefix(
+            plan,
+            outer_index,
+            &TransportTarget::new(&spec.server, spec.port),
+        )?))
+    };
+    Ok(OuterSocks5UdpPlan {
+        proxy: TransportTarget::new(&spec.server, spec.port),
+        auth: transport_basic_auth(&spec.auth),
+        prefix_plan,
+    })
+}
+
+fn normalize_openvpn_leaf_proto(proto: &str) -> &'static str {
+    match proto.trim().to_ascii_lowercase().as_str() {
+        "" | "udp" | "udp4" => "udp",
+        "tcp" | "tcp-client" | "tcp4" | "tcp4-client" => "tcp",
+        _ => "other",
+    }
+}
+
+fn realm_control_target(server_url: &str) -> Result<TransportTarget, ExecutionError> {
+    let url = server_url.trim();
+    let (_, rest) = url.split_once("://").ok_or_else(|| {
+        ExecutionError::Transport(TransportError::InvalidPlan(format!(
+            "invalid hysteria2 realm server-url: {server_url}"
+        )))
+    })?;
+    let authority = rest.split('/').next().unwrap_or_default();
+    if authority.is_empty() {
+        return Err(ExecutionError::Transport(TransportError::InvalidPlan(format!(
+            "invalid hysteria2 realm server-url authority: {server_url}"
+        ))));
+    }
+    if let Some(stripped) = authority.strip_prefix('[') {
+        let (host, rest) = stripped.split_once(']').ok_or_else(|| {
+            ExecutionError::Transport(TransportError::InvalidPlan(format!(
+                "invalid hysteria2 realm ipv6 authority: {server_url}"
+            )))
+        })?;
+        let port = rest
+            .strip_prefix(':')
+            .and_then(|value| value.parse::<u16>().ok())
+            .unwrap_or_else(|| if url.starts_with("https://") { 443 } else { 80 });
+        return Ok(TransportTarget::new(host, port));
+    }
+    if let Some((host, port)) = authority.rsplit_once(':') {
+        if port.chars().all(|ch| ch.is_ascii_digit()) {
+            let port = port.parse::<u16>().map_err(|err| {
+                ExecutionError::Transport(TransportError::InvalidPlan(format!(
+                    "invalid hysteria2 realm server-url port {port:?}: {err}"
+                )))
+            })?;
+            return Ok(TransportTarget::new(host, port));
+        }
+    }
+    Ok(TransportTarget::new(
+        authority,
+        if url.starts_with("https://") { 443 } else { 80 },
+    ))
 }
 
 pub fn truncate_execution_plan(
@@ -413,6 +728,43 @@ pub fn build_transport_plan_from_execution_plan(
     metadata: &Metadata,
 ) -> Result<TransportPlan, ExecutionError> {
     materialize_transport_plan(plan, metadata)
+}
+
+pub fn build_transport_plan_for_prefix(
+    plan: &ExecutionPlan,
+    hop_count: usize,
+    target: &TransportTarget,
+) -> Result<TransportPlan, ExecutionError> {
+    if hop_count == 0 || hop_count > plan.hops.len() {
+        return Err(ExecutionError::Transport(TransportError::InvalidPlan(format!(
+            "invalid prefix transport plan hop_count={} total={}",
+            hop_count,
+            plan.hops.len()
+        ))));
+    }
+
+    let nested_hops = plan.hops[..hop_count]
+        .iter()
+        .enumerate()
+        .map(|(index, hop)| {
+            let downstream = if index + 1 == hop_count {
+                target.clone()
+            } else {
+                proxy_endpoint(&plan.hops[index + 1].spec).unwrap_or_else(|| target.clone())
+            };
+            TransportHop {
+                name: hop.name.clone(),
+                action: transport_action(&hop.spec, downstream),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    Ok(TransportPlan {
+        requested: plan.requested.clone(),
+        selected_path: plan.selected_path.iter().take(hop_count).cloned().collect(),
+        leaf_name: plan.hops[hop_count - 1].name.clone(),
+        hops: nested_hops,
+    })
 }
 
 pub fn run_transport_plan<R>(
@@ -470,7 +822,7 @@ fn build_execution_hop(
                 .get(name)
                 .cloned()
                 .ok_or_else(|| ExecutionError::MissingProxyDefinition(name.to_owned()))?;
-            spec_from_definition(definition)
+            build_execution_hop_spec(definition)
         }
     };
 
@@ -504,7 +856,7 @@ fn builtin_spec(name: &str) -> ExecutionHopSpec {
     }
 }
 
-fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
+pub fn build_execution_hop_spec(definition: OutboundDefinition) -> ExecutionHopSpec {
     match definition {
         OutboundDefinition::Direct(config) => ExecutionHopSpec::Direct(DirectHopSpec {
             socket: socket_options(&config.base),
@@ -543,6 +895,183 @@ fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
                 password: value_as_string(&config.extra, "password").unwrap_or_default(),
                 udp: value_as_bool(&config.extra, "udp"),
                 alpn: string_list(&config.extra, "alpn"),
+                tls,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::Hysteria(config) => {
+            let mut tls = tls_options(&config.extra, "sni");
+            tls.enabled = true;
+            if tls.sni.trim().is_empty() {
+                tls.sni = config.server.clone();
+            }
+            ExecutionHopSpec::Hysteria(HysteriaConnectHopSpec {
+                server: config.server,
+                port: config.port,
+                ports: value_as_string(&config.extra, "ports").unwrap_or_default(),
+                protocol: value_as_string(&config.extra, "protocol")
+                    .or_else(|| value_as_string(&config.extra, "obfs-protocol"))
+                    .unwrap_or_default(),
+                auth: value_as_string(&config.extra, "auth").unwrap_or_default(),
+                auth_str: value_as_string(&config.extra, "auth-str").unwrap_or_default(),
+                obfs: value_as_string(&config.extra, "obfs").unwrap_or_default(),
+                sni: tls.sni.clone(),
+                alpn: string_list(&config.extra, "alpn"),
+                skip_cert_verify: tls.skip_cert_verify,
+                up: value_as_string(&config.extra, "up").unwrap_or_default(),
+                down: value_as_string(&config.extra, "down").unwrap_or_default(),
+                up_speed: value_as_u32(&config.extra, "up-speed").unwrap_or_default(),
+                down_speed: value_as_u32(&config.extra, "down-speed").unwrap_or_default(),
+                disable_mtu_discovery: value_as_bool(&config.extra, "disable-mtu-discovery"),
+                fast_open: value_as_bool(&config.extra, "fast-open"),
+                hop_interval: value_as_u32(&config.extra, "hop-interval").unwrap_or_default(),
+                tls,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::Hysteria2(config) => {
+            let mut tls = tls_options(&config.extra, "sni");
+            tls.enabled = true;
+            if tls.sni.trim().is_empty() {
+                tls.sni = config.server.clone();
+            }
+            let realm = nested_map(&config.extra, "realm-opts");
+            ExecutionHopSpec::Hy2(Hy2ConnectHopSpec {
+                server: config.server,
+                port: config.port,
+                password: value_as_string(&config.extra, "password").unwrap_or_default(),
+                obfs: value_as_string(&config.extra, "obfs").unwrap_or_default(),
+                obfs_password: value_as_string(&config.extra, "obfs-password").unwrap_or_default(),
+                up_mbps: value_as_u32(&config.extra, "up").unwrap_or_default(),
+                down_mbps: value_as_u32(&config.extra, "down").unwrap_or_default(),
+                realm_enabled: nested_mapping_bool(realm, "enable"),
+                realm_server_url: nested_mapping_string(realm, "server-url"),
+                realm_token: nested_mapping_string(realm, "token"),
+                realm_id: nested_mapping_string(realm, "realm-id"),
+                realm_stun_servers: realm
+                    .and_then(|mapping| mapping.get(Value::String("stun-servers".to_owned())))
+                    .and_then(Value::as_sequence)
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .map(ToOwned::to_owned)
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default(),
+                realm_sni: nested_mapping_string(realm, "sni"),
+                realm_skip_cert_verify: nested_mapping_bool(realm, "skip-cert-verify"),
+                realm_fingerprint: nested_mapping_string(realm, "fingerprint"),
+                realm_certificate: nested_mapping_string(realm, "certificate"),
+                realm_private_key: nested_mapping_string(realm, "private-key"),
+                realm_alpn: realm
+                    .and_then(|mapping| mapping.get(Value::String("alpn".to_owned())))
+                    .and_then(Value::as_sequence)
+                    .map(|items| {
+                        items
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .map(ToOwned::to_owned)
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default(),
+                realm_proxy: nested_mapping_string(realm, "proxy"),
+                tls,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::Tuic(config) => {
+            let mut tls = tls_options(&config.extra, "sni");
+            tls.enabled = true;
+            if tls.sni.trim().is_empty() {
+                tls.sni = config.server.clone();
+            }
+            ExecutionHopSpec::Tuic(TuicConnectHopSpec {
+                server: config.server,
+                port: config.port,
+                uuid: value_as_string(&config.extra, "uuid").unwrap_or_default(),
+                password: value_as_string(&config.extra, "password").unwrap_or_default(),
+                token: value_as_string(&config.extra, "token").unwrap_or_default(),
+                udp: value_as_bool(&config.extra, "udp"),
+                sni: tls.sni.clone(),
+                alpn: string_list(&config.extra, "alpn"),
+                disable_sni: value_as_bool(&config.extra, "disable-sni"),
+                request_timeout_ms: value_as_u64(&config.extra, "request-timeout").unwrap_or(8_000),
+                heartbeat_interval_ms: value_as_u64(&config.extra, "heartbeat-interval").unwrap_or(10_000),
+                congestion_controller: value_as_string(&config.extra, "congestion-controller")
+                    .unwrap_or_default(),
+                max_open_streams: value_as_u32(&config.extra, "max-open-streams").unwrap_or(100),
+                max_udp_relay_packet_size: value_as_u32(&config.extra, "max-udp-relay-packet-size")
+                    .unwrap_or(1_252),
+                tls,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::WireGuard(config) => {
+            let peers = wireguard_peer_specs(&config);
+            ExecutionHopSpec::WireGuard(WireGuardConnectHopSpec {
+                private_key: config.private_key,
+                ip: config.ip,
+                ipv6: config.ipv6,
+                udp: value_as_bool_with_default(&config.extra, "udp", true),
+                mtu: value_as_u32(&config.extra, "mtu").unwrap_or(1420) as usize,
+                workers: value_as_u32(&config.extra, "workers").unwrap_or(0) as usize,
+                remote_dns_resolve: value_as_bool(&config.extra, "remote-dns-resolve"),
+                dns: string_list(&config.extra, "dns"),
+                peers,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::OpenVpn(config) => {
+            ExecutionHopSpec::OpenVpn(OpenVpnConnectHopSpec {
+                server: config.server,
+                port: config.port,
+                proto: value_as_string(&config.extra, "proto")
+                    .unwrap_or_else(|| "udp".to_owned()),
+                dev: value_as_string(&config.extra, "dev")
+                    .unwrap_or_else(|| "tun".to_owned()),
+                cipher: value_as_string(&config.extra, "cipher")
+                    .unwrap_or_else(|| "AES-128-GCM".to_owned()),
+                auth: value_as_string(&config.extra, "auth")
+                    .unwrap_or_else(|| "SHA256".to_owned()),
+                ca: value_as_string(&config.extra, "ca").unwrap_or_default(),
+                cert: value_as_string(&config.extra, "cert").unwrap_or_default(),
+                key: value_as_string(&config.extra, "key").unwrap_or_default(),
+                tls_crypt: value_as_string(&config.extra, "tls-crypt").unwrap_or_default(),
+                username: value_as_string(&config.extra, "username").unwrap_or_default(),
+                password: value_as_string(&config.extra, "password").unwrap_or_default(),
+                remote_dns_resolve: value_as_bool(&config.extra, "remote-dns-resolve"),
+                dns: string_list(&config.extra, "dns"),
+                udp: value_as_bool_with_default(&config.extra, "udp", true),
+                mtu: value_as_u32(&config.extra, "mtu").unwrap_or(1500) as usize,
+                socket: socket_options(&config.base),
+            })
+        }
+        OutboundDefinition::Masque(config) => {
+            let mut tls = tls_options(&config.extra, "sni");
+            tls.enabled = true;
+            if tls.sni.trim().is_empty() {
+                tls.sni = config.server.clone();
+            }
+            ExecutionHopSpec::Masque(MasqueConnectHopSpec {
+                server: config.server,
+                port: config.port,
+                private_key: value_as_string(&config.extra, "private-key").unwrap_or_default(),
+                public_key: value_as_string(&config.extra, "public-key").unwrap_or_default(),
+                ip: value_as_string(&config.extra, "ip").unwrap_or_default(),
+                ipv6: value_as_string(&config.extra, "ipv6").unwrap_or_default(),
+                uri: value_as_string(&config.extra, "uri")
+                    .unwrap_or_else(|| "https://cloudflareaccess.com".to_owned()),
+                sni: tls.sni.clone(),
+                udp: value_as_bool_with_default(&config.extra, "udp", true),
+                mtu: value_as_u32(&config.extra, "mtu").unwrap_or(1280) as usize,
+                network: value_as_string(&config.extra, "network").unwrap_or_default(),
+                remote_dns_resolve: value_as_bool(&config.extra, "remote-dns-resolve"),
+                dns: string_list(&config.extra, "dns"),
                 tls,
                 socket: socket_options(&config.base),
             })
@@ -610,7 +1139,9 @@ fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
                 network: value_as_string(&config.extra, "network").unwrap_or_default(),
                 websocket: websocket_options(&config.extra),
                 grpc: grpc_options(&config.extra),
+                h2: h2_options(&config.extra, &default_host),
                 http: http_options(&config.extra, &default_host),
+                xhttp: xhttp_options(&config.extra, &default_host),
                 alpn: string_list(&config.extra, "alpn"),
                 tls,
                 socket: socket_options(&config.base),
@@ -635,16 +1166,42 @@ fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
             })
         }
         OutboundDefinition::Vless(config) => {
-            let mut tls = tls_options(&config.extra, "sni");
+            // Go reads `servername` for vless; also accept `server-name`.
+            let mut tls = tls_options(&config.extra, "server-name");
             if tls.enabled && tls.sni.trim().is_empty() {
                 tls.sni = config.server.clone();
             }
+            if !config.extra.contains_key("reality-opts")
+                && tls.enabled
+                && tls.sni.trim().is_empty()
+            {
+                tls.sni = value_as_string(&config.extra, "servername").unwrap_or_default();
+            }
             let default_host = config.server.clone();
+            let flow = value_as_string(&config.extra, "flow").unwrap_or_default();
+            let packet_addr = value_as_bool(&config.extra, "packet-addr")
+                || matches!(value_as_string(&config.extra, "packet-encoding").as_deref(), Some("packetaddr" | "packet"));
+            // Vision UDP uses XUDP by default, as in the Go client. sing-box
+            // rejects the ordinary UDP command when the account requires flow.
+            let xudp = value_as_bool(&config.extra, "xudp")
+                || (flow == "xtls-rprx-vision" && !packet_addr);
             ExecutionHopSpec::Vless(VlessConnectHopSpec {
                 server: config.server,
                 port: config.port,
                 uuid: value_as_string(&config.extra, "uuid").unwrap_or_default(),
-                flow: value_as_string(&config.extra, "flow").unwrap_or_default(),
+                flow,
+                reality_public_key: nested_value_as_string(&config.extra, "reality-opts", "public-key")
+                    .unwrap_or_default(),
+                reality_short_id: nested_value_as_string(&config.extra, "reality-opts", "short-id")
+                    .or_else(|| nested_value_as_u64(&config.extra, "reality-opts", "short-id").map(|value| value.to_string()))
+                    .unwrap_or_default(),
+                reality_support_x25519mlkem768: nested_value_as_bool(
+                    &config.extra,
+                    "reality-opts",
+                    "support-x25519mlkem768",
+                ),
+                client_fingerprint: value_as_string(&config.extra, "client-fingerprint")
+                    .unwrap_or_default(),
                 udp: value_as_bool(&config.extra, "udp"),
                 network: value_as_string(&config.extra, "network").unwrap_or_default(),
                 websocket: websocket_options(&config.extra),
@@ -656,8 +1213,8 @@ fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
                     &value_as_string(&config.extra, "servername").unwrap_or(default_host),
                 ),
                 encryption: value_as_string(&config.extra, "encryption").unwrap_or_default(),
-                packet_addr: value_as_bool(&config.extra, "packet-addr"),
-                xudp: value_as_bool(&config.extra, "xudp"),
+                packet_addr,
+                xudp,
                 tls,
                 alpn: string_list(&config.extra, "alpn"),
                 socket: socket_options(&config.base),
@@ -764,67 +1321,193 @@ fn spec_from_definition(definition: OutboundDefinition) -> ExecutionHopSpec {
     }
 }
 
-fn socket_options(base: &ProxyBaseConfig) -> SocketOptions {
-    SocketOptions {
-        tfo: base.tfo,
-        mptcp: base.mptcp,
-        interface_name: base.interface_name.clone(),
-        routing_mark: base.routing_mark,
-        ip_version: base.ip_version.clone(),
-        smux_enabled: base.smux.enabled,
+pub fn execution_hop_udp_gap(spec: &ExecutionHopSpec) -> Option<String> {
+    match spec {
+        ExecutionHopSpec::Direct(_)
+        | ExecutionHopSpec::Dns(_)
+        | ExecutionHopSpec::ShadowSocks(_)
+        | ExecutionHopSpec::Hysteria(_)
+        | ExecutionHopSpec::Hy2(_)
+        | ExecutionHopSpec::GostRelay(_)
+        | ExecutionHopSpec::Sudoku(_) => None,
+        ExecutionHopSpec::Socks5Connect(spec) if spec.udp => None,
+        ExecutionHopSpec::Socks5Connect(_) => Some("selected socks5 outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::Ssr(spec)
+            if spec.udp
+                && (spec.cipher.trim().is_empty()
+                    || spec.cipher == "dummy"
+                    || spec.cipher == "none"
+                    || spec.cipher == "aes-128-cfb"
+                    || spec.cipher == "aes-192-cfb"
+                    || spec.cipher == "aes-256-cfb")
+                && (spec.obfs.trim().is_empty()
+                    || spec.obfs == "plain"
+                    || spec.obfs == "http_simple"
+                    || spec.obfs == "http_post")
+                && (spec.protocol.trim().is_empty() || spec.protocol == "origin")
+                && (spec.obfs_param.trim().is_empty()
+                    || spec.obfs == "plain"
+                    || spec.obfs == "http_simple"
+                    || spec.obfs == "http_post")
+                && (spec.protocol_param.trim().is_empty() || spec.protocol == "origin") =>
+        {
+            None
+        }
+        ExecutionHopSpec::Ssr(spec) if !spec.udp => Some("selected ssr outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::Ssr(spec) if !spec.cipher.trim().is_empty() && spec.cipher != "dummy" && spec.cipher != "none" => {
+            Some(format!("selected ssr cipher is not implemented for udp: {}", spec.cipher))
+        }
+        ExecutionHopSpec::Ssr(spec) if !spec.obfs.trim().is_empty() && spec.obfs != "plain" => {
+            Some(format!("selected ssr obfs is not implemented for udp: {}", spec.obfs))
+        }
+        ExecutionHopSpec::Ssr(spec)
+            if !spec.obfs_param.trim().is_empty()
+                && spec.obfs != "plain"
+                && spec.obfs != "http_simple"
+                && spec.obfs != "http_post" =>
+        {
+            Some("selected ssr obfs-param is not implemented for udp".to_owned())
+        }
+        ExecutionHopSpec::Ssr(spec)
+            if !spec.protocol.trim().is_empty() && spec.protocol != "origin" =>
+        {
+            Some(format!("selected ssr protocol is not implemented for udp: {}", spec.protocol))
+        }
+        ExecutionHopSpec::Ssr(spec)
+            if !spec.protocol_param.trim().is_empty() && spec.protocol != "origin" =>
+        {
+            Some("selected ssr protocol-param is not implemented for udp".to_owned())
+        }
+        ExecutionHopSpec::AnyTls(spec) if spec.udp => None,
+        ExecutionHopSpec::AnyTls(_) => Some("selected anytls outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::Tuic(spec) if spec.udp => None,
+        ExecutionHopSpec::Tuic(_) => Some("selected tuic outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::WireGuard(spec) if spec.udp => None,
+        ExecutionHopSpec::WireGuard(_) => Some("selected wireguard outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::OpenVpn(spec) if spec.udp => None,
+        ExecutionHopSpec::OpenVpn(_) => Some("selected openvpn outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::Masque(spec)
+            if spec.udp
+                && spec.network == "h2"
+                && (!spec.remote_dns_resolve || !spec.dns.is_empty()) =>
+        {
+            None
+        }
+        ExecutionHopSpec::Masque(spec) if !spec.udp => {
+            Some("selected masque outbound does not enable udp".to_owned())
+        }
+        ExecutionHopSpec::Masque(spec) if spec.network != "h2" =>
+        {
+            Some(format!(
+                "selected masque outbound network is not implemented for udp: {}",
+                if spec.network.trim().is_empty() {
+                    "<default>"
+                } else {
+                    spec.network.as_str()
+                }
+            ))
+        }
+        ExecutionHopSpec::Masque(spec) if spec.remote_dns_resolve && spec.dns.is_empty() => {
+            Some(
+                "selected masque outbound remote dns resolution requires explicit dns servers for udp"
+                    .to_owned(),
+            )
+        }
+        ExecutionHopSpec::Masque(_) => None,
+        ExecutionHopSpec::Snell(spec)
+            if spec.version >= 3
+                && (spec.obfs_mode.trim().is_empty()
+                    || spec.obfs_mode == "tls"
+                    || spec.obfs_mode == "http") =>
+        {
+            None
+        }
+        ExecutionHopSpec::Snell(spec) if spec.version < 3 => {
+            Some(format!("selected snell outbound version {} does not support udp", spec.version))
+        }
+        ExecutionHopSpec::Snell(spec) => {
+            Some(format!("selected snell outbound obfs is not implemented for udp: {}", spec.obfs_mode))
+        }
+        ExecutionHopSpec::Trojan(spec)
+            if spec.udp
+                && (spec.network.trim().is_empty()
+                    || spec.network == "tcp"
+                    || spec.network == "ws"
+                    || spec.network == "http"
+                    || spec.network == "grpc"
+                    || spec.network == "h2"
+                    || spec.network == "xhttp") =>
+        {
+            None
+        }
+        ExecutionHopSpec::Trojan(spec) if !spec.udp => {
+            Some("selected trojan outbound does not enable udp".to_owned())
+        }
+        ExecutionHopSpec::Trojan(spec) => {
+            Some(format!("selected trojan outbound network is not implemented for udp: {}", spec.network))
+        }
+        ExecutionHopSpec::TrustTunnel(spec) if spec.udp => None,
+        ExecutionHopSpec::TrustTunnel(_) => Some("selected trusttunnel outbound does not enable udp".to_owned()),
+        ExecutionHopSpec::Vless(spec)
+            if spec.udp
+                && (spec.network.trim().is_empty()
+                    || spec.network == "tcp"
+                    || spec.network == "grpc"
+                    || spec.network == "h2"
+                    || spec.network == "http"
+                    || spec.network == "xhttp"
+                    || spec.network == "ws")
+                && (spec.flow.trim().is_empty()
+                    || (spec.flow == "xtls-rprx-vision"
+                        && spec.tls.enabled
+                        && (spec.network.is_empty() || spec.network == "tcp")))
+                && (spec.encryption.trim().is_empty() || spec.encryption == "none") =>
+        {
+            None
+        }
+        ExecutionHopSpec::Vless(spec) if !spec.udp => {
+            Some("selected vless outbound does not enable udp".to_owned())
+        }
+        ExecutionHopSpec::Vless(spec) if !spec.flow.trim().is_empty() => {
+            Some(format!("selected vless outbound flow is not implemented for udp: {}", spec.flow))
+        }
+        ExecutionHopSpec::Vless(spec)
+            if !spec.encryption.trim().is_empty() && spec.encryption != "none" =>
+        {
+            Some(format!("selected vless encryption is not implemented for udp: {}", spec.encryption))
+        }
+        ExecutionHopSpec::Vless(spec) => {
+            Some(format!("selected vless outbound network is not implemented for udp: {}", spec.network))
+        }
+        ExecutionHopSpec::Vmess(spec)
+            if spec.udp
+                && (spec.network.trim().is_empty()
+                    || spec.network == "tcp"
+                    || spec.network == "grpc"
+                    || spec.network == "h2"
+                    || spec.network == "http"
+                    || spec.network == "xhttp"
+                    || spec.network == "ws") =>
+        {
+            None
+        }
+        ExecutionHopSpec::Vmess(spec) if !spec.udp => {
+            Some("selected vmess outbound does not enable udp".to_owned())
+        }
+        ExecutionHopSpec::Vmess(spec) => {
+            Some(format!("selected vmess outbound network is not implemented for udp: {}", spec.network))
+        }
+        other => Some(format!("udp outbound is not implemented for {other:?}")),
     }
 }
 
-fn transport_socket_options(socket: &SocketOptions) -> TransportSocketOptions {
-    TransportSocketOptions {
-        tfo: socket.tfo,
-        mptcp: socket.mptcp,
-        interface_name: socket.interface_name.clone(),
-        routing_mark: socket.routing_mark,
-        ip_version: socket.ip_version.clone(),
-        smux_enabled: socket.smux_enabled,
-    }
+pub fn outbound_udp_support_gap(definition: &OutboundDefinition) -> Option<String> {
+    let spec = build_execution_hop_spec(definition.clone());
+    execution_hop_udp_gap(&spec)
 }
 
-fn tls_options(extra: &BTreeMap<String, Value>, sni_key: &str) -> TlsOptions {
-    TlsOptions {
-        enabled: value_as_bool(extra, "tls"),
-        sni: value_as_string(extra, sni_key)
-            .or_else(|| value_as_string(extra, "servername"))
-            .unwrap_or_default(),
-        skip_cert_verify: value_as_bool(extra, "skip-cert-verify"),
-        fingerprint: value_as_string(extra, "fingerprint").unwrap_or_default(),
-        certificate: value_as_string(extra, "certificate").unwrap_or_default(),
-        private_key: value_as_string(extra, "private-key").unwrap_or_default(),
-    }
-}
-
-fn transport_tls_options(tls: &TlsOptions) -> TransportTlsOptions {
-    TransportTlsOptions {
-        enabled: tls.enabled,
-        sni: tls.sni.clone(),
-        skip_cert_verify: tls.skip_cert_verify,
-        fingerprint: tls.fingerprint.clone(),
-        certificate: tls.certificate.clone(),
-        private_key: tls.private_key.clone(),
-    }
-}
-
-fn basic_auth(
-    extra: &BTreeMap<String, Value>,
-    user_key: &str,
-    pass_key: &str,
-) -> Option<BasicAuth> {
-    let username = value_as_string(extra, user_key)?;
-    let password = value_as_string(extra, pass_key).unwrap_or_default();
-    Some(BasicAuth { username, password })
-}
-
-fn transport_basic_auth(auth: &Option<BasicAuth>) -> Option<TransportBasicAuth> {
-    auth.as_ref().map(|auth| TransportBasicAuth {
-        username: auth.username.clone(),
-        password: auth.password.clone(),
-    })
+pub fn outbound_supports_udp(definition: &OutboundDefinition) -> bool {
+    outbound_udp_support_gap(definition).is_none()
 }
 
 fn downstream_target(
@@ -843,6 +1526,15 @@ fn proxy_endpoint(spec: &ExecutionHopSpec) -> Option<TransportTarget> {
         ExecutionHopSpec::HttpConnect(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
         ExecutionHopSpec::Socks5Connect(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
         ExecutionHopSpec::AnyTls(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
+        ExecutionHopSpec::Hysteria(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
+        ExecutionHopSpec::Hy2(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
+        ExecutionHopSpec::Tuic(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
+        ExecutionHopSpec::WireGuard(spec) => spec
+            .peers
+            .first()
+            .map(|peer| TransportTarget::new(&peer.server, peer.port)),
+        ExecutionHopSpec::OpenVpn(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
+        ExecutionHopSpec::Masque(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
         ExecutionHopSpec::ShadowSocks(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
         ExecutionHopSpec::Ssr(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
         ExecutionHopSpec::Snell(spec) => Some(TransportTarget::new(&spec.server, spec.port)),
@@ -899,6 +1591,140 @@ fn transport_action(spec: &ExecutionHopSpec, target: TransportTarget) -> Transpo
             socket: transport_socket_options(&spec.socket),
             target,
         },
+        ExecutionHopSpec::Hysteria(spec) => TransportAction::HysteriaConnect {
+            proxy: TransportTarget::new(&spec.server, spec.port),
+            ports: spec.ports.clone(),
+            protocol: spec.protocol.clone(),
+            auth: spec.auth.clone(),
+            auth_str: spec.auth_str.clone(),
+            obfs: spec.obfs.clone(),
+            sni: spec.sni.clone(),
+            alpn: if spec.alpn.is_empty() {
+                vec!["hysteria".to_owned()]
+            } else {
+                spec.alpn.clone()
+            },
+            up: spec.up.clone(),
+            down: spec.down.clone(),
+            up_speed: spec.up_speed,
+            down_speed: spec.down_speed,
+            disable_mtu_discovery: spec.disable_mtu_discovery,
+            fast_open: spec.fast_open,
+            hop_interval: spec.hop_interval,
+            skip_cert_verify: spec.skip_cert_verify,
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
+        ExecutionHopSpec::Hy2(spec) => TransportAction::Hy2Connect {
+            proxy: TransportTarget::new(&spec.server, spec.port),
+            password: spec.password.clone(),
+            sni: spec.tls.sni.clone(),
+            certificate: spec.tls.certificate.clone(),
+            private_key: spec.tls.private_key.clone(),
+            obfs: spec.obfs.clone(),
+            obfs_password: spec.obfs_password.clone(),
+            realm_enabled: spec.realm_enabled,
+            realm_server_url: spec.realm_server_url.clone(),
+            realm_token: spec.realm_token.clone(),
+            realm_id: spec.realm_id.clone(),
+            realm_stun_servers: spec.realm_stun_servers.clone(),
+            realm_sni: spec.realm_sni.clone(),
+            realm_skip_cert_verify: spec.realm_skip_cert_verify,
+            realm_fingerprint: spec.realm_fingerprint.clone(),
+            realm_certificate: spec.realm_certificate.clone(),
+            realm_private_key: spec.realm_private_key.clone(),
+            realm_alpn: spec.realm_alpn.clone(),
+            realm_proxy: spec.realm_proxy.clone(),
+            realm_proxy_plan: None,
+            skip_cert_verify: spec.tls.skip_cert_verify,
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
+        ExecutionHopSpec::Tuic(spec) => TransportAction::TuicConnect {
+            proxy: TransportTarget::new(&spec.server, spec.port),
+            uuid: spec.uuid.clone(),
+            password: spec.password.clone(),
+            token: spec.token.clone(),
+            udp: spec.udp,
+            sni: spec.sni.clone(),
+            certificate: spec.tls.certificate.clone(),
+            private_key: spec.tls.private_key.clone(),
+            alpn: if spec.alpn.is_empty() {
+                vec!["h3".to_owned()]
+            } else {
+                spec.alpn.clone()
+            },
+            disable_sni: spec.disable_sni,
+            request_timeout_ms: spec.request_timeout_ms,
+            heartbeat_interval_ms: spec.heartbeat_interval_ms,
+            congestion_controller: spec.congestion_controller.clone(),
+            max_open_streams: spec.max_open_streams,
+            max_udp_relay_packet_size: spec.max_udp_relay_packet_size,
+            tls: transport_tls_options(&spec.tls),
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
+        ExecutionHopSpec::WireGuard(spec) => TransportAction::WireGuardConnect {
+            proxy: TransportTarget::new(
+                spec.peers
+                    .first()
+                    .map(|peer| peer.server.as_str())
+                    .unwrap_or_default(),
+                spec.peers.first().map(|peer| peer.port).unwrap_or(0),
+            ),
+            private_key: spec.private_key.clone(),
+            ip: spec.ip.clone(),
+            ipv6: spec.ipv6.clone(),
+            workers: spec.workers,
+            tunnel_dns: mihomo_transport::TunnelDnsOptions {
+                remote_dns_resolve: spec.remote_dns_resolve,
+                dns: spec.dns.clone(),
+            },
+            peers: transport_wireguard_peers(&spec.peers),
+            outer_socks5: None,
+            mtu: spec.mtu,
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
+        ExecutionHopSpec::OpenVpn(spec) => TransportAction::OpenVpnConnect {
+            proxy: TransportTarget::new(&spec.server, spec.port),
+            proto: spec.proto.clone(),
+            dev: spec.dev.clone(),
+            cipher: spec.cipher.clone(),
+            auth: spec.auth.clone(),
+            ca: spec.ca.clone(),
+            cert: spec.cert.clone(),
+            key: spec.key.clone(),
+            tls_crypt: spec.tls_crypt.clone(),
+            username: spec.username.clone(),
+            password: spec.password.clone(),
+            tunnel_dns: mihomo_transport::TunnelDnsOptions {
+                remote_dns_resolve: spec.remote_dns_resolve,
+                dns: spec.dns.clone(),
+            },
+            outer_socks5: None,
+            mtu: spec.mtu,
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
+        ExecutionHopSpec::Masque(spec) => TransportAction::MasqueConnect {
+            proxy: TransportTarget::new(&spec.server, spec.port),
+            options: mihomo_transport::MasqueConnectOptions {
+                private_key: spec.private_key.clone(),
+                public_key: spec.public_key.clone(),
+                ip: spec.ip.clone(),
+                ipv6: spec.ipv6.clone(),
+                uri: spec.uri.clone(),
+                mtu: spec.mtu,
+                network: spec.network.clone(),
+                remote_dns_resolve: spec.remote_dns_resolve,
+                dns: spec.dns.clone(),
+            },
+            tls: transport_tls_options(&spec.tls),
+            outer_socks5: None,
+            socket: transport_socket_options(&spec.socket),
+            target,
+        },
         ExecutionHopSpec::ShadowSocks(spec) => TransportAction::ShadowsocksConnect {
             proxy: TransportTarget::new(&spec.server, spec.port),
             cipher: spec.cipher.clone(),
@@ -940,7 +1766,9 @@ fn transport_action(spec: &ExecutionHopSpec, target: TransportTarget) -> Transpo
             network: spec.network.clone(),
             websocket: spec.websocket.clone(),
             grpc: spec.grpc.clone(),
+            h2: spec.h2.clone(),
             http: spec.http.clone(),
+            xhttp: spec.xhttp.clone(),
             tls: transport_tls_options(&spec.tls),
             alpn: if spec.alpn.is_empty() {
                 DEFAULT_TROJAN_ALPN
@@ -961,7 +1789,7 @@ fn transport_action(spec: &ExecutionHopSpec, target: TransportTarget) -> Transpo
             quic: spec.quic,
             tls: transport_tls_options(&spec.tls),
             alpn: if spec.alpn.is_empty() {
-                vec!["h2".to_owned()]
+                vec![if spec.quic { "h3" } else { "h2" }.to_owned()]
             } else {
                 spec.alpn.clone()
             },
@@ -972,6 +1800,10 @@ fn transport_action(spec: &ExecutionHopSpec, target: TransportTarget) -> Transpo
             proxy: TransportTarget::new(&spec.server, spec.port),
             uuid: spec.uuid.clone(),
             flow: spec.flow.clone(),
+            reality_public_key: spec.reality_public_key.clone(),
+            reality_short_id: spec.reality_short_id.clone(),
+            reality_support_x25519mlkem768: spec.reality_support_x25519mlkem768,
+            client_fingerprint: spec.client_fingerprint.clone(),
             udp: spec.udp,
             network: spec.network.clone(),
             websocket: spec.websocket.clone(),
@@ -1055,666 +1887,6 @@ fn transport_action(spec: &ExecutionHopSpec, target: TransportTarget) -> Transpo
     }
 }
 
-fn string_map(extra: &BTreeMap<String, Value>, key: &str) -> BTreeMap<String, String> {
-    let Some(value) = extra.get(key) else {
-        return BTreeMap::new();
-    };
-    let Some(map) = value.as_mapping() else {
-        return BTreeMap::new();
-    };
-    map.iter()
-        .filter_map(|(key, value)| {
-            let key = key.as_str()?.to_owned();
-            let value = value.as_str().map(|text| text.to_owned()).or_else(|| {
-                value.as_sequence().and_then(|sequence| {
-                    sequence
-                        .first()
-                        .and_then(|first| first.as_str())
-                        .map(|text| text.to_owned())
-                })
-            })?;
-            Some((key, value))
-        })
-        .collect()
-}
-
-fn nested_string_map(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> BTreeMap<String, String> {
-    let Some(value) = extra.get(outer_key) else {
-        return BTreeMap::new();
-    };
-    let Some(map) = value.as_mapping() else {
-        return BTreeMap::new();
-    };
-    let Some(value) = map.get(Value::String(inner_key.to_owned())) else {
-        return BTreeMap::new();
-    };
-    let Some(inner) = value.as_mapping() else {
-        return BTreeMap::new();
-    };
-    inner.iter()
-        .filter_map(|(key, value)| Some((key.as_str()?.to_owned(), value.as_str()?.to_owned())))
-        .collect()
-}
-
-fn value_as_string(extra: &BTreeMap<String, Value>, key: &str) -> Option<String> {
-    extra.get(key).and_then(|value| value.as_str()).map(ToOwned::to_owned)
-}
-
-fn string_list(extra: &BTreeMap<String, Value>, key: &str) -> Vec<String> {
-    extra
-        .get(key)
-        .and_then(|value| value.as_sequence())
-        .map(|sequence| {
-            sequence
-                .iter()
-                .filter_map(|value| value.as_str().map(ToOwned::to_owned))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn value_as_bool(extra: &BTreeMap<String, Value>, key: &str) -> bool {
-    extra.get(key).and_then(|value| value.as_bool()).unwrap_or(false)
-}
-
-fn value_as_bool_with_default(extra: &BTreeMap<String, Value>, key: &str, default: bool) -> bool {
-    extra.get(key).and_then(|value| value.as_bool()).unwrap_or(default)
-}
-
-fn nested_optional_bool(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> Option<bool> {
-    let value = extra.get(outer_key)?;
-    let map = value.as_mapping()?;
-    map.get(Value::String(inner_key.to_owned()))
-        .and_then(|value| value.as_bool())
-}
-
-fn sudoku_http_mask_enabled(extra: &BTreeMap<String, Value>) -> bool {
-    if extra.contains_key("http-mask") {
-        return value_as_bool_with_default(extra, "http-mask", true);
-    }
-    if extra.contains_key("httpmask") {
-        return !nested_optional_bool(extra, "httpmask", "disable").unwrap_or(false);
-    }
-    false
-}
-
-fn sudoku_http_mask_mode(extra: &BTreeMap<String, Value>) -> Option<String> {
-    value_as_string(extra, "http-mask-mode")
-        .or_else(|| nested_value_as_string(extra, "httpmask", "mode"))
-}
-
-fn sudoku_http_mask_tls(extra: &BTreeMap<String, Value>) -> bool {
-    if extra.contains_key("http-mask-tls") {
-        return value_as_bool(extra, "http-mask-tls");
-    }
-    nested_optional_bool(extra, "httpmask", "tls").unwrap_or(false)
-}
-
-fn sudoku_http_mask_host(extra: &BTreeMap<String, Value>) -> Option<String> {
-    value_as_string(extra, "http-mask-host")
-        .or_else(|| nested_value_as_string(extra, "httpmask", "host"))
-}
-
-fn sudoku_http_mask_path_root(extra: &BTreeMap<String, Value>) -> Option<String> {
-    value_as_string(extra, "path-root")
-        .or_else(|| nested_value_as_string(extra, "httpmask", "path-root"))
-}
-
-fn value_as_i32(extra: &BTreeMap<String, Value>, key: &str) -> Option<i32> {
-    extra
-        .get(key)
-        .and_then(|value| value.as_i64())
-        .and_then(|value| i32::try_from(value).ok())
-}
-
-fn value_as_u16(extra: &BTreeMap<String, Value>, key: &str) -> Option<u16> {
-    extra
-        .get(key)
-        .and_then(|value| value.as_u64())
-        .and_then(|value| u16::try_from(value).ok())
-}
-
-fn resolve_padding_min(extra: &BTreeMap<String, Value>, default_min: i32, default_max: i32) -> i32 {
-    let mut min = value_as_i32(extra, "padding-min").unwrap_or(default_min);
-    let max = value_as_i32(extra, "padding-max").unwrap_or(default_max);
-    if !extra.contains_key("padding-min") && extra.contains_key("padding-max") && max < min {
-        min = max;
-    }
-    min
-}
-
-fn resolve_padding_max(extra: &BTreeMap<String, Value>, default_min: i32, default_max: i32) -> i32 {
-    let min = value_as_i32(extra, "padding-min").unwrap_or(default_min);
-    let mut max = value_as_i32(extra, "padding-max").unwrap_or(default_max);
-    if !extra.contains_key("padding-max") && extra.contains_key("padding-min") && max < min {
-        max = min;
-    }
-    max
-}
-
-fn value_as_u8(extra: &BTreeMap<String, Value>, key: &str) -> Option<u8> {
-    extra
-        .get(key)
-        .and_then(|value| value.as_u64())
-        .and_then(|value| u8::try_from(value).ok())
-}
-
-fn nested_value_as_string(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> Option<String> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_str())
-        .map(ToOwned::to_owned)
-}
-
-fn nested_value_as_bool(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> bool {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false)
-}
-
-fn nested_value_as_bool_with_default(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-    default: bool,
-) -> bool {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_bool())
-        .unwrap_or(default)
-}
-
-fn nested_value_as_i32(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> Option<i32> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_i64())
-        .and_then(|value| i32::try_from(value).ok())
-}
-
-fn websocket_options(extra: &BTreeMap<String, Value>) -> TransportWebsocketOptions {
-    TransportWebsocketOptions {
-        path: nested_value_as_string(extra, "ws-opts", "path").unwrap_or_default(),
-        headers: nested_string_map(extra, "ws-opts", "headers"),
-        max_early_data: nested_value_as_i32(extra, "ws-opts", "max-early-data").unwrap_or(0),
-        early_data_header_name: nested_value_as_string(
-            extra,
-            "ws-opts",
-            "early-data-header-name",
-        )
-        .unwrap_or_default(),
-        v2ray_http_upgrade: nested_value_as_bool(extra, "ws-opts", "v2ray-http-upgrade"),
-        v2ray_http_upgrade_fast_open: nested_value_as_bool(
-            extra,
-            "ws-opts",
-            "v2ray-http-upgrade-fast-open",
-        ),
-    }
-}
-
-fn shadowsocks_plugin_websocket_options(
-    plugin: &str,
-    extra: &BTreeMap<String, Value>,
-) -> TransportWebsocketOptions {
-    let plugin = plugin.trim().to_ascii_lowercase();
-    if plugin != "v2ray-plugin" && plugin != "gost-plugin" {
-        return TransportWebsocketOptions::default();
-    }
-    let mut headers = nested_string_map(extra, "plugin-opts", "headers");
-    let plugin_host = nested_value_as_string(extra, "plugin-opts", "host")
-        .unwrap_or_else(|| "bing.com".to_owned());
-    if !plugin_host.trim().is_empty()
-        && !headers
-            .keys()
-            .any(|name| name.eq_ignore_ascii_case("host"))
-    {
-        headers.insert("Host".to_owned(), plugin_host);
-    }
-    TransportWebsocketOptions {
-        path: nested_value_as_string(extra, "plugin-opts", "path").unwrap_or_default(),
-        headers,
-        max_early_data: 0,
-        early_data_header_name: String::new(),
-        v2ray_http_upgrade: nested_value_as_bool(extra, "plugin-opts", "v2ray-http-upgrade"),
-        v2ray_http_upgrade_fast_open: nested_value_as_bool(
-            extra,
-            "plugin-opts",
-            "v2ray-http-upgrade-fast-open",
-        ),
-    }
-}
-
-fn shadowsocks_plugin_tls_options(plugin: &str, extra: &BTreeMap<String, Value>) -> TlsOptions {
-    let plugin = plugin.trim().to_ascii_lowercase();
-    if plugin != "v2ray-plugin" && plugin != "gost-plugin" {
-        return TlsOptions {
-            enabled: false,
-            sni: String::new(),
-            skip_cert_verify: false,
-            fingerprint: String::new(),
-            certificate: String::new(),
-            private_key: String::new(),
-        };
-    }
-    let enabled = nested_value_as_bool(extra, "plugin-opts", "tls");
-    let mut sni = String::new();
-    if enabled {
-        sni = nested_string_map(extra, "plugin-opts", "headers")
-            .into_iter()
-            .find(|(name, value)| name.eq_ignore_ascii_case("host") && !value.trim().is_empty())
-            .map(|(_, value)| value)
-            .unwrap_or_else(|| {
-                nested_value_as_string(extra, "plugin-opts", "host")
-                    .unwrap_or_else(|| "bing.com".to_owned())
-            });
-    }
-    TlsOptions {
-        enabled,
-        sni,
-        skip_cert_verify: nested_value_as_bool(extra, "plugin-opts", "skip-cert-verify"),
-        fingerprint: nested_value_as_string(extra, "plugin-opts", "fingerprint")
-            .unwrap_or_default(),
-        certificate: nested_value_as_string(extra, "plugin-opts", "certificate")
-            .unwrap_or_default(),
-        private_key: nested_value_as_string(extra, "plugin-opts", "private-key")
-            .unwrap_or_default(),
-    }
-}
-
-fn shadowsocks_plugin_mux(plugin: &str, extra: &BTreeMap<String, Value>) -> bool {
-    let plugin = plugin.trim().to_ascii_lowercase();
-    if plugin != "v2ray-plugin" && plugin != "gost-plugin" {
-        return false;
-    }
-    nested_value_as_bool_with_default(extra, "plugin-opts", "mux", true)
-}
-
-fn nested_string_list(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> Vec<String> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_sequence())
-        .map(|sequence| {
-            sequence
-                .iter()
-                .filter_map(|value| value.as_str().map(ToOwned::to_owned))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn nested_string_map_list(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    inner_key: &str,
-) -> BTreeMap<String, Vec<String>> {
-    let Some(value) = extra.get(outer_key) else {
-        return BTreeMap::new();
-    };
-    let Some(map) = value.as_mapping() else {
-        return BTreeMap::new();
-    };
-    let Some(value) = map.get(Value::String(inner_key.to_owned())) else {
-        return BTreeMap::new();
-    };
-    let Some(inner) = value.as_mapping() else {
-        return BTreeMap::new();
-    };
-    inner.iter()
-        .filter_map(|(key, value)| {
-            let key = key.as_str()?.to_owned();
-            let values = if let Some(text) = value.as_str() {
-                vec![text.to_owned()]
-            } else {
-                value
-                    .as_sequence()
-                    .map(|sequence| {
-                        sequence
-                            .iter()
-                            .filter_map(|value| value.as_str().map(ToOwned::to_owned))
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-            };
-            Some((key, values))
-        })
-        .collect()
-}
-
-fn http_options(extra: &BTreeMap<String, Value>, default_host: &str) -> TransportHttpStreamOptions {
-    let host = nested_string_list(extra, "http-opts", "host");
-    let mut path = nested_string_list(extra, "http-opts", "path");
-    if path.is_empty() {
-        if let Some(single_path) = nested_value_as_string(extra, "http-opts", "path") {
-            path.push(single_path);
-        }
-    }
-    TransportHttpStreamOptions {
-        method: nested_value_as_string(extra, "http-opts", "method").unwrap_or_default(),
-        host: if host.is_empty() {
-            vec![default_host.to_owned()]
-        } else {
-            host
-        },
-        path,
-        headers: nested_string_map_list(extra, "http-opts", "headers"),
-    }
-}
-
-fn h2_options(extra: &BTreeMap<String, Value>, default_host: &str) -> TransportHttp2Options {
-    let mut host = nested_string_list(extra, "h2-opts", "host");
-    if host.is_empty() {
-        if let Some(single_host) = nested_value_as_string(extra, "h2-opts", "host") {
-            host.push(single_host);
-        }
-    }
-    TransportHttp2Options {
-        host: if host.is_empty() {
-            vec![default_host.to_owned()]
-        } else {
-            host
-        },
-        path: nested_value_as_string(extra, "h2-opts", "path").unwrap_or_default(),
-    }
-}
-
-fn grpc_options(extra: &BTreeMap<String, Value>) -> TransportGrpcOptions {
-    TransportGrpcOptions {
-        service_name: nested_value_as_string(extra, "grpc-opts", "grpc-service-name")
-            .unwrap_or_default(),
-        user_agent: nested_value_as_string(extra, "grpc-opts", "grpc-user-agent")
-            .unwrap_or_default(),
-        ping_interval: nested_value_as_i32(extra, "grpc-opts", "ping-interval").unwrap_or(0),
-        max_connections: nested_value_as_i32(extra, "grpc-opts", "max-connections")
-            .unwrap_or(0),
-        min_streams: nested_value_as_i32(extra, "grpc-opts", "min-streams").unwrap_or(0),
-        max_streams: nested_value_as_i32(extra, "grpc-opts", "max-streams").unwrap_or(0),
-    }
-}
-
-fn trojan_shadowsocks_options(
-    extra: &BTreeMap<String, Value>,
-) -> TransportTrojanShadowsocksOptions {
-    TransportTrojanShadowsocksOptions {
-        enabled: nested_value_as_bool(extra, "ss-opts", "enabled"),
-        method: nested_value_as_string(extra, "ss-opts", "method").unwrap_or_default(),
-        password: nested_value_as_string(extra, "ss-opts", "password").unwrap_or_default(),
-    }
-}
-
-fn xhttp_options(extra: &BTreeMap<String, Value>, default_host: &str) -> TransportXHttpOptions {
-    TransportXHttpOptions {
-        host: nested_value_as_string(extra, "xhttp-opts", "host")
-            .unwrap_or_else(|| default_host.to_owned()),
-        path: nested_value_as_string(extra, "xhttp-opts", "path").unwrap_or_default(),
-        mode: nested_value_as_string(extra, "xhttp-opts", "mode").unwrap_or_default(),
-        headers: nested_string_map(extra, "xhttp-opts", "headers"),
-        uplink_http_method: nested_value_as_string(extra, "xhttp-opts", "uplink-http-method")
-            .unwrap_or_default(),
-        session_placement: nested_value_as_string(extra, "xhttp-opts", "session-placement")
-            .unwrap_or_default(),
-        session_key: nested_value_as_string(extra, "xhttp-opts", "session-key")
-            .unwrap_or_default(),
-        seq_placement: nested_value_as_string(extra, "xhttp-opts", "seq-placement")
-            .unwrap_or_default(),
-        seq_key: nested_value_as_string(extra, "xhttp-opts", "seq-key").unwrap_or_default(),
-        uplink_data_placement: nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "uplink-data-placement",
-        )
-        .unwrap_or_default(),
-        uplink_data_key: nested_value_as_string(extra, "xhttp-opts", "uplink-data-key")
-            .unwrap_or_default(),
-        uplink_chunk_size: nested_value_as_string(extra, "xhttp-opts", "uplink-chunk-size")
-            .unwrap_or_default(),
-        sc_max_each_post_bytes: nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "sc-max-each-post-bytes",
-        )
-        .unwrap_or_default(),
-        sc_min_posts_interval_ms: nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "sc-min-posts-interval-ms",
-        )
-        .unwrap_or_default(),
-        no_grpc_header: nested_value_as_bool(extra, "xhttp-opts", "no-grpc-header"),
-        xpadding_bytes: nested_value_as_string(extra, "xhttp-opts", "x-padding-bytes")
-            .unwrap_or_default(),
-        xpadding_obfs_mode: nested_value_as_bool(extra, "xhttp-opts", "x-padding-obfs-mode"),
-        xpadding_key: nested_value_as_string(extra, "xhttp-opts", "x-padding-key")
-            .unwrap_or_default(),
-        xpadding_header: nested_value_as_string(extra, "xhttp-opts", "x-padding-header")
-            .unwrap_or_default(),
-        xpadding_placement: nested_value_as_string(extra, "xhttp-opts", "x-padding-placement")
-            .unwrap_or_default(),
-        xpadding_method: nested_value_as_string(extra, "xhttp-opts", "x-padding-method")
-            .unwrap_or_default(),
-        has_reuse_settings: nested_value_exists(extra, "xhttp-opts", "reuse-settings"),
-        has_download_settings: nested_value_exists(extra, "xhttp-opts", "download-settings"),
-        download_host: doubly_nested_value_as_string(extra, "xhttp-opts", "download-settings", "host")
-            .unwrap_or_default(),
-        download_path: doubly_nested_value_as_string(extra, "xhttp-opts", "download-settings", "path")
-            .unwrap_or_default(),
-        download_headers: doubly_nested_string_map(extra, "xhttp-opts", "download-settings", "headers"),
-        download_server: doubly_nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "server",
-        )
-        .unwrap_or_default(),
-        download_port: doubly_nested_value_as_u16(extra, "xhttp-opts", "download-settings", "port")
-            .unwrap_or(0),
-        has_download_port: doubly_nested_value_exists(extra, "xhttp-opts", "download-settings", "port"),
-        download_tls: doubly_nested_value_as_bool(extra, "xhttp-opts", "download-settings", "tls")
-            .unwrap_or(false),
-        has_download_tls: doubly_nested_value_exists(extra, "xhttp-opts", "download-settings", "tls"),
-        download_sni: doubly_nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "servername",
-        )
-        .unwrap_or_default(),
-        download_skip_cert_verify: doubly_nested_value_as_bool(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "skip-cert-verify",
-        )
-        .unwrap_or(false),
-        has_download_skip_cert_verify: doubly_nested_value_exists(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "skip-cert-verify",
-        ),
-        download_alpn: doubly_nested_string_list(extra, "xhttp-opts", "download-settings", "alpn"),
-        download_fingerprint: doubly_nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "fingerprint",
-        )
-        .unwrap_or_default(),
-        download_certificate: doubly_nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "certificate",
-        )
-        .unwrap_or_default(),
-        download_private_key: doubly_nested_value_as_string(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "private-key",
-        )
-        .unwrap_or_default(),
-        has_download_reuse_settings: doubly_nested_value_exists(
-            extra,
-            "xhttp-opts",
-            "download-settings",
-            "reuse-settings",
-        ),
-        has_download_transport_overrides: [
-            "ech-opts",
-            "reality-opts",
-            "client-fingerprint",
-        ]
-        .iter()
-        .any(|key| doubly_nested_value_exists(extra, "xhttp-opts", "download-settings", key)),
-    }
-}
-
-fn nested_value_exists(extra: &BTreeMap<String, Value>, outer_key: &str, inner_key: &str) -> bool {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .is_some_and(|mapping| mapping.contains_key(Value::String(inner_key.to_owned())))
-}
-
-fn doubly_nested_value_as_string(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> Option<String> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_str().map(ToOwned::to_owned))
-}
-
-fn doubly_nested_value_as_u16(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> Option<u16> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_i64())
-        .and_then(|value| u16::try_from(value).ok())
-}
-
-fn doubly_nested_value_as_bool(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> Option<bool> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_bool())
-}
-
-fn doubly_nested_string_map(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> BTreeMap<String, String> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .map(|mapping| {
-            mapping
-                .iter()
-                .filter_map(|(key, value)| {
-                    Some((key.as_str()?.to_owned(), value.as_str()?.to_owned()))
-                })
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn doubly_nested_string_list(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> Vec<String> {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(inner_key.to_owned())))
-        .and_then(|value| value.as_sequence())
-        .map(|sequence| {
-            sequence
-                .iter()
-                .filter_map(|value| value.as_str().map(ToOwned::to_owned))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-fn doubly_nested_value_exists(
-    extra: &BTreeMap<String, Value>,
-    outer_key: &str,
-    middle_key: &str,
-    inner_key: &str,
-) -> bool {
-    extra
-        .get(outer_key)
-        .and_then(|value| value.as_mapping())
-        .and_then(|mapping| mapping.get(Value::String(middle_key.to_owned())))
-        .and_then(|value| value.as_mapping())
-        .is_some_and(|mapping| mapping.contains_key(Value::String(inner_key.to_owned())))
-}
 
 #[cfg(test)]
 mod tests {
@@ -1730,7 +1902,9 @@ mod tests {
     };
 
     use super::{build_execution_plan, build_transport_plan, connect_target, ExecutionHopSpec};
-    use crate::{build_runtime_registry, CandidateState};
+    use crate::{
+        build_runtime_registry, outbound_supports_udp, outbound_udp_support_gap, CandidateState,
+    };
 
     #[derive(Default)]
     struct ScriptedState {
@@ -2093,6 +2267,63 @@ proxies:
             }
             _ => panic!("expected ssr hop"),
         }
+    }
+
+    #[test]
+    fn outbound_udp_support_gap_allows_ssr_http_obfs_with_obfs_param() {
+        for (obfs, cipher) in [("http_simple", "dummy"), ("http_post", "aes-128-cfb")] {
+            let definition = parse_runtime_config_document(
+                &format!(
+                    r#"
+proxies:
+  - type: ssr
+    name: edge-ssr
+    server: ssr.example.com
+    port: 8389
+    cipher: {cipher}
+    password: secret
+    protocol: origin
+    obfs: {obfs}
+    obfs-param: obfs.example.com
+    udp: true
+"#
+                ),
+            )
+            .unwrap()
+            .proxies
+            .into_iter()
+            .next()
+            .unwrap();
+            assert_eq!(outbound_udp_support_gap(&definition), None, "{obfs}");
+            assert!(outbound_supports_udp(&definition), "{obfs}");
+        }
+    }
+
+    #[test]
+    fn outbound_udp_support_gap_allows_ssr_origin_plain_with_ignored_params() {
+        let definition = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: ssr
+    name: edge-ssr
+    server: ssr.example.com
+    port: 8389
+    cipher: dummy
+    password: secret
+    protocol: origin
+    protocol-param: ignored-user
+    obfs: plain
+    obfs-param: ignored-host
+    udp: true
+"#,
+        )
+        .unwrap()
+        .proxies
+        .into_iter()
+        .next()
+        .unwrap();
+        assert_eq!(outbound_udp_support_gap(&definition), None);
+        assert!(outbound_supports_udp(&definition));
     }
 
     #[test]
@@ -2670,6 +2901,62 @@ proxies:
                 assert_eq!(spec.alpn, vec!["h2".to_owned(), "http/1.1".to_owned()]);
                 assert_eq!(spec.h2.host, vec!["vless.example.com".to_owned()]);
                 assert!(spec.h2.path.is_empty());
+                assert!(spec.reality_public_key.is_empty());
+                assert!(spec.reality_short_id.is_empty());
+                assert!(!spec.reality_support_x25519mlkem768);
+                assert!(spec.client_fingerprint.is_empty());
+            }
+            _ => panic!("expected vless hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_vision_udp_defaults_to_xudp_and_preserves_packetaddr_choice() {
+        for (extra, expected_xudp, expected_packetaddr) in [
+            ("", true, false),
+            ("    packet-addr: true\n", false, true),
+            ("    packet-encoding: packetaddr\n", false, true),
+        ] {
+            let document = parse_runtime_config_document(&format!(
+                "proxies:\n  - type: vless\n    name: vision\n    server: 127.0.0.1\n    port: 443\n    uuid: b831381d-6324-4d53-ad4f-8cda48b30811\n    tls: true\n    udp: true\n    flow: xtls-rprx-vision\n{extra}"
+            )).unwrap();
+            let mut registry = build_runtime_registry(&document).unwrap();
+            let plan = build_execution_plan(&mut registry, "vision", None, &BTreeMap::new()).unwrap();
+            let ExecutionHopSpec::Vless(spec) = &plan.hops[0].spec else { panic!("expected VLESS"); };
+            assert_eq!(spec.xudp, expected_xudp);
+            assert_eq!(spec.packet_addr, expected_packetaddr);
+        }
+    }
+
+    #[test]
+    fn execution_plan_preserves_vless_reality_and_client_fingerprint_fields() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: vless-hop
+    server: vless.example.com
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: abcdef
+      short-id: 1234
+      support-x25519mlkem768: true
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "vless-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Vless(spec) => {
+                assert_eq!(spec.flow, "xtls-rprx-vision");
+                assert_eq!(spec.reality_public_key, "abcdef");
+                assert_eq!(spec.reality_short_id, "1234");
+                assert!(spec.reality_support_x25519mlkem768);
+                assert_eq!(spec.client_fingerprint, "chrome");
             }
             _ => panic!("expected vless hop"),
         }
@@ -3061,6 +3348,393 @@ proxies:
     }
 
     #[test]
+    fn execution_plan_materializes_plain_hysteria2_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2-hop
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    sni: edge.example
+    skip-cert-verify: true
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "hy2-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Hy2(spec) => {
+                assert_eq!(spec.server, "1.2.3.4");
+                assert_eq!(spec.port, 443);
+                assert_eq!(spec.password, "secret");
+                assert_eq!(spec.tls.sni, "edge.example");
+                assert!(spec.tls.skip_cert_verify);
+                assert!(spec.obfs.is_empty());
+            }
+            _ => panic!("expected hysteria2 hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_plain_hysteria_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria
+    name: hy-hop
+    server: 1.2.3.4
+    port: 443
+    auth-str: secret
+    sni: edge.example
+    skip-cert-verify: true
+    up: 10 Mbps
+    down: 50 Mbps
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "hy-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Hysteria(spec) => {
+                assert_eq!(spec.server, "1.2.3.4");
+                assert_eq!(spec.port, 443);
+                assert_eq!(spec.auth_str, "secret");
+                assert_eq!(spec.tls.sni, "edge.example");
+                assert!(spec.tls.skip_cert_verify);
+                assert_eq!(spec.up, "10 Mbps");
+                assert_eq!(spec.down, "50 Mbps");
+            }
+            _ => panic!("expected hysteria hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_plain_tuic_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: tuic
+    name: tuic-hop
+    server: 1.2.3.4
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    password: secret
+    sni: edge.example
+    skip-cert-verify: true
+    alpn: [h3]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "tuic-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Tuic(spec) => {
+                assert_eq!(spec.server, "1.2.3.4");
+                assert_eq!(spec.port, 443);
+                assert_eq!(spec.uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+                assert_eq!(spec.password, "secret");
+                assert_eq!(spec.sni, "edge.example");
+                assert!(spec.tls.skip_cert_verify);
+                assert_eq!(spec.alpn, vec!["h3".to_owned()]);
+                assert!(!spec.udp);
+                assert!(spec.token.is_empty());
+            }
+            _ => panic!("expected tuic hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_wireguard_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips:
+      - 0.0.0.0/0
+    persistent-keepalive: 15
+    mtu: 1380
+    workers: 4
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "edge-wg", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::WireGuard(spec) => {
+                assert_eq!(spec.ip, "10.0.0.2/32");
+                assert!(spec.udp);
+                assert_eq!(spec.peers.len(), 1);
+                assert_eq!(spec.peers[0].server, "1.2.3.4");
+                assert_eq!(spec.peers[0].port, 51820);
+                assert_eq!(spec.peers[0].allowed_ips, vec!["0.0.0.0/0"]);
+                assert_eq!(spec.peers[0].persistent_keepalive, 15);
+                assert_eq!(spec.mtu, 1380);
+                assert_eq!(spec.workers, 4);
+            }
+            _ => panic!("expected wireguard hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_wireguard_multi_peer_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    ip: 10.0.0.2/32
+    peers:
+      - server: 1.2.3.4
+        port: 51820
+        public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+        allowed-ips: [0.0.0.0/0]
+        persistent-keepalive: 15
+      - server: 5.6.7.8
+        port: 51821
+        public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+        allowed-ips: [10.0.0.0/8]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "edge-wg", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::WireGuard(spec) => {
+                assert_eq!(spec.ip, "10.0.0.2/32");
+                assert!(spec.udp);
+                assert_eq!(spec.peers.len(), 2);
+                assert_eq!(spec.peers[0].server, "1.2.3.4");
+                assert_eq!(spec.peers[0].port, 51820);
+                assert_eq!(spec.peers[0].allowed_ips, vec!["0.0.0.0/0"]);
+                assert_eq!(spec.peers[0].persistent_keepalive, 15);
+                assert_eq!(spec.peers[1].server, "5.6.7.8");
+                assert_eq!(spec.peers[1].port, 51821);
+                assert_eq!(spec.peers[1].allowed_ips, vec!["10.0.0.0/8"]);
+                assert_eq!(spec.peers[1].persistent_keepalive, 0);
+            }
+            _ => panic!("expected wireguard hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_openvpn_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: openvpn
+    name: edge-ovpn
+    server: 1.2.3.4
+    port: 1194
+    proto: udp
+    dev: tun
+    cipher: AES-128-GCM
+    auth: SHA256
+    ca: |
+      -----BEGIN CERTIFICATE-----
+      MIIBhTCCASugAwIBAgIUJfQ1G3QW9W5JmM6z7Q9M9Q0Y0KowCgYIKoZIzj0EAwIw
+      EzERMA8GA1UEAwwIb3Zwbi10ZXN0MB4XDTI2MDEwMTAwMDAwMFoXDTM2MDEwMTAw
+      MDAwMFowEzERMA8GA1UEAwwIb3Zwbi10ZXN0MFkwEwYHKoZIzj0CAQYIKoZIzj0D
+      AQcDQgAEw2P9GQHk8r2m2mG4Xv8Jw6fD3F2rM4bJ2GQzj1f5aH3m3M5Q0n+uC2oVv
+      lB3w0dQ4G9F1sY4E6oQhXg4nW8v+9qNTMFEwHQYDVR0OBBYEFDs6x9h1gY0fD7kL
+      8K1kzv6dY8hGMB8GA1UdIwQYMBaAFDs6x9h1gY0fD7kL8K1kzv6dY8hGMA8GA1Ud
+      EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAKZ9ZpD5jN7s3QXcY5z9V4sL
+      pG7bXz1wGx9K2V8nM2mTAiA4r0v9dZ7g6Y8Eo4Jt2kP7Z8M6dX1qZ3cN5uV1bH6g
+      -----END CERTIFICATE-----
+    tls-crypt: |
+      -----BEGIN OpenVPN Static key V1-----
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      -----END OpenVPN Static key V1-----
+    username: demo
+    password: secret
+    mtu: 1500
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "edge-ovpn", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::OpenVpn(spec) => {
+                assert_eq!(spec.server, "1.2.3.4");
+                assert_eq!(spec.port, 1194);
+                assert_eq!(spec.proto, "udp");
+                assert_eq!(spec.dev, "tun");
+                assert_eq!(spec.cipher, "AES-128-GCM");
+                assert_eq!(spec.auth, "SHA256");
+                assert!(spec.ca.contains("BEGIN CERTIFICATE"));
+                assert!(spec.tls_crypt.contains("BEGIN OpenVPN Static key V1"));
+                assert_eq!(spec.username, "demo");
+                assert_eq!(spec.password, "secret");
+                assert_eq!(spec.mtu, 1500);
+            }
+            _ => panic!("expected openvpn hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_masque_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: masque
+    name: edge-masque
+    server: masque.example.com
+    port: 443
+    private-key: key
+    public-key: pub
+    ip: 10.10.0.2/32
+    network: h2
+    mtu: 1300
+    sni: edge.example.com
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan =
+            build_execution_plan(&mut registry, "edge-masque", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Masque(spec) => {
+                assert_eq!(spec.server, "masque.example.com");
+                assert_eq!(spec.port, 443);
+                assert_eq!(spec.private_key, "key");
+                assert_eq!(spec.public_key, "pub");
+                assert_eq!(spec.ip, "10.10.0.2/32");
+                assert_eq!(spec.network, "h2");
+                assert_eq!(spec.mtu, 1300);
+                assert_eq!(spec.sni, "edge.example.com");
+                assert!(spec.udp);
+            }
+            other => panic!("expected masque hop, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_materializes_tuic_v4_token_outbound() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: tuic
+    name: tuic-hop
+    server: 1.2.3.4
+    port: 443
+    token: secret
+    alpn: [h3]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "tuic-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Tuic(spec) => {
+                assert_eq!(spec.server, "1.2.3.4");
+                assert_eq!(spec.port, 443);
+                assert_eq!(spec.token, "secret");
+                assert!(spec.uuid.is_empty());
+                assert!(spec.password.is_empty());
+                assert!(!spec.udp);
+            }
+            _ => panic!("expected tuic hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_preserves_hysteria2_obfs_fields_for_runtime_gating() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2-hop
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    obfs: salamander
+    obfs-password: hidden
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "hy2-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Hy2(spec) => {
+                assert_eq!(spec.obfs, "salamander");
+                assert_eq!(spec.obfs_password, "hidden");
+            }
+            _ => panic!("expected hysteria2 hop"),
+        }
+    }
+
+    #[test]
+    fn execution_plan_preserves_hysteria2_realm_opts_fields() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: hy2-hop
+    server: 1.2.3.4
+    port: 443
+    password: secret
+    realm-opts:
+      enable: true
+      server-url: https://realm.example.com
+      token: public
+      realm-id: my-cabin-1f3a8c2e9b
+      stun-servers:
+        - stun.nextcloud.com:3478
+      sni: realm-sni.example.com
+      skip-cert-verify: true
+      fingerprint: sha256:demo
+      certificate: cert-pem
+      private-key: key-pem
+      alpn: [h2, http/1.1]
+      proxy: DIRECT
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let plan = build_execution_plan(&mut registry, "hy2-hop", None, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].spec {
+            ExecutionHopSpec::Hy2(spec) => {
+                assert!(spec.realm_enabled);
+                assert_eq!(spec.realm_server_url, "https://realm.example.com");
+                assert_eq!(spec.realm_token, "public");
+                assert_eq!(spec.realm_id, "my-cabin-1f3a8c2e9b");
+                assert_eq!(spec.realm_stun_servers, vec!["stun.nextcloud.com:3478"]);
+                assert_eq!(spec.realm_sni, "realm-sni.example.com");
+                assert!(spec.realm_skip_cert_verify);
+                assert_eq!(spec.realm_fingerprint, "sha256:demo");
+                assert_eq!(spec.realm_certificate, "cert-pem");
+                assert_eq!(spec.realm_private_key, "key-pem");
+                assert_eq!(spec.realm_alpn, vec!["h2".to_owned(), "http/1.1".to_owned()]);
+                assert_eq!(spec.realm_proxy, "DIRECT");
+            }
+            _ => panic!("expected hysteria2 hop"),
+        }
+    }
+
+    #[test]
     fn transport_plan_routes_outer_proxy_to_next_hop_endpoint() {
         let document = parse_runtime_config_document(
             r#"
@@ -3437,6 +4111,94 @@ proxies:
     }
 
     #[test]
+    fn transport_plan_materializes_trojan_h2_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: trojan
+    name: edge-trojan
+    server: trojan.example.com
+    port: 443
+    password: secret
+    network: h2
+    skip-cert-verify: true
+    h2-opts:
+      host: [localhost]
+      path: /trh2
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(8443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-trojan", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::TrojanConnect {
+                network,
+                h2,
+                target,
+                ..
+            } => {
+                assert_eq!(network, "h2");
+                assert_eq!(h2.host, vec!["localhost".to_owned()]);
+                assert_eq!(h2.path, "/trh2");
+                assert_eq!(target.authority(), "final.example.com:8443");
+            }
+            _ => panic!("expected trojan transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_trojan_xhttp_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: trojan
+    name: edge-trojan
+    server: trojan.example.com
+    port: 443
+    password: secret
+    network: xhttp
+    skip-cert-verify: true
+    xhttp-opts:
+      host: localhost
+      path: /trx
+      mode: stream-one
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(8443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-trojan", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::TrojanConnect {
+                network,
+                xhttp,
+                target,
+                ..
+            } => {
+                assert_eq!(network, "xhttp");
+                assert_eq!(xhttp.host, "localhost");
+                assert_eq!(xhttp.path, "/trx");
+                assert_eq!(xhttp.mode, "stream-one");
+                assert_eq!(target.authority(), "final.example.com:8443");
+            }
+            _ => panic!("expected trojan transport action"),
+        }
+    }
+
+    #[test]
     fn transport_plan_materializes_trusttunnel_hop() {
         let document = parse_runtime_config_document(
             r#"
@@ -3478,6 +4240,55 @@ proxies:
                 assert!(*udp);
                 assert!(!quic);
                 assert_eq!(alpn, &vec!["h2".to_owned()]);
+                assert_eq!(target.authority(), "final.example.com:8443");
+            }
+            _ => panic!("expected trusttunnel transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_trusttunnel_quic_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: trusttunnel
+    name: edge-trust
+    server: trust.example.com
+    port: 443
+    username: alice
+    password: secret
+    udp: true
+    quic: true
+    sni: edge.example.com
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(8443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-trust", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::TrustTunnelConnect {
+                proxy,
+                username,
+                password,
+                udp,
+                quic,
+                alpn,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "trust.example.com:443");
+                assert_eq!(username, "alice");
+                assert_eq!(password, "secret");
+                assert!(*udp);
+                assert!(*quic);
+                assert_eq!(alpn, &vec!["h3".to_owned()]);
                 assert_eq!(target.authority(), "final.example.com:8443");
             }
             _ => panic!("expected trusttunnel transport action"),
@@ -3529,6 +4340,638 @@ proxies:
     }
 
     #[test]
+    fn transport_plan_materializes_tuic_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: tuic
+    name: edge-tuic
+    server: tuic.example.com
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    password: secret
+    sni: edge.example.com
+    skip-cert-verify: true
+    alpn: [h3]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(8443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-tuic", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::TuicConnect {
+                proxy,
+                uuid,
+                password,
+                sni,
+                udp,
+                alpn,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "tuic.example.com:443");
+                assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+                assert_eq!(password, "secret");
+                assert_eq!(sni, "edge.example.com");
+                assert!(!udp);
+                assert_eq!(alpn, &vec!["h3".to_owned()]);
+                assert_eq!(target.authority(), "final.example.com:8443");
+            }
+            _ => panic!("expected tuic transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_wireguard_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips:
+      - 0.0.0.0/0
+    persistent-keepalive: 15
+    mtu: 1380
+    workers: 4
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-wg", &metadata, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].action {
+            TransportAction::WireGuardConnect {
+                proxy,
+                ip,
+                workers,
+                peers,
+                mtu,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "1.2.3.4:51820");
+                assert_eq!(ip, "10.0.0.2/32");
+                assert_eq!(*workers, 4);
+                assert_eq!(peers.len(), 1);
+                assert_eq!(peers[0].allowed_ips, vec!["0.0.0.0/0"]);
+                assert_eq!(peers[0].persistent_keepalive, 15);
+                assert_eq!(*mtu, 1380);
+                assert_eq!(target.authority(), "final.example.com:443");
+            }
+            _ => panic!("expected wireguard transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_wireguard_remote_dns_options() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips: [0.0.0.0/0]
+    remote-dns-resolve: true
+    dns: [udp://1.1.1.1]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-wg", &metadata, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].action {
+            TransportAction::WireGuardConnect { tunnel_dns, .. } => {
+                assert!(tunnel_dns.remote_dns_resolve);
+                assert_eq!(tunnel_dns.dns, vec!["udp://1.1.1.1".to_owned()]);
+            }
+            _ => panic!("expected wireguard transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_wireguard_multi_peer_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    ip: 10.0.0.2/32
+    peers:
+      - server: 1.2.3.4
+        port: 51820
+        public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+        allowed-ips: [0.0.0.0/0]
+        persistent-keepalive: 15
+      - server: 5.6.7.8
+        port: 51821
+        public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+        allowed-ips: [10.0.0.0/8]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-wg", &metadata, &BTreeMap::new()).unwrap();
+        match &plan.hops[0].action {
+            TransportAction::WireGuardConnect {
+                proxy,
+                ip,
+                peers,
+                mtu,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "1.2.3.4:51820");
+                assert_eq!(ip, "10.0.0.2/32");
+                assert_eq!(peers.len(), 2);
+                assert_eq!(peers[0].server, "1.2.3.4");
+                assert_eq!(peers[0].port, 51820);
+                assert_eq!(peers[0].allowed_ips, vec!["0.0.0.0/0"]);
+                assert_eq!(peers[0].persistent_keepalive, 15);
+                assert_eq!(peers[1].server, "5.6.7.8");
+                assert_eq!(peers[1].port, 51821);
+                assert_eq!(peers[1].allowed_ips, vec!["10.0.0.0/8"]);
+                assert_eq!(peers[1].persistent_keepalive, 0);
+                assert_eq!(*mtu, 1420);
+                assert_eq!(target.authority(), "final.example.com:443");
+            }
+            _ => panic!("expected wireguard transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_wireguard_outer_socks5_udp_subplan() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: wireguard
+    name: edge-wg
+    server: 1.2.3.4
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktMzItYnl0ZXMtcHJpdmF0ZS1rZXk=
+    public-key: cHVibGljLWtleS0zMi1ieXRlcy1wdWJsaWMta2V5LQ==
+    ip: 10.0.0.2/32
+    allowed-ips:
+      - 0.0.0.0/0
+    dialer-proxy: outer-socks
+  - type: socks5
+    name: outer-socks
+    server: outer.example.com
+    port: 1080
+    udp: true
+    username: demo
+    password: secret
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-wg", &metadata, &BTreeMap::new()).unwrap();
+        assert_eq!(plan.hops.len(), 1);
+        match &plan.hops[0].action {
+            TransportAction::WireGuardConnect {
+                proxy,
+                outer_socks5,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "1.2.3.4:51820");
+                assert_eq!(target.authority(), "final.example.com:443");
+                let outer = outer_socks5.as_ref().expect("expected wireguard outer socks5 plan");
+                assert_eq!(outer.proxy.authority(), "outer.example.com:1080");
+                let auth = outer.auth.as_ref().expect("expected socks5 auth");
+                assert_eq!(auth.username, "demo");
+                assert_eq!(auth.password, "secret");
+                assert!(outer.prefix_plan.is_none());
+            }
+            other => panic!("expected wireguard transport action, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_openvpn_connect_action() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: openvpn
+    name: edge-ovpn
+    server: 1.2.3.4
+    port: 1194
+    proto: udp
+    dev: tun
+    cipher: AES-128-GCM
+    auth: SHA256
+    ca: |
+      -----BEGIN CERTIFICATE-----
+      MIIBhTCCASugAwIBAgIUJfQ1G3QW9W5JmM6z7Q9M9Q0Y0KowCgYIKoZIzj0EAwIw
+      EzERMA8GA1UEAwwIb3Zwbi10ZXN0MB4XDTI2MDEwMTAwMDAwMFoXDTM2MDEwMTAw
+      MDAwMFowEzERMA8GA1UEAwwIb3Zwbi10ZXN0MFkwEwYHKoZIzj0CAQYIKoZIzj0D
+      AQcDQgAEw2P9GQHk8r2m2mG4Xv8Jw6fD3F2rM4bJ2GQzj1f5aH3m3M5Q0n+uC2oVv
+      lB3w0dQ4G9F1sY4E6oQhXg4nW8v+9qNTMFEwHQYDVR0OBBYEFDs6x9h1gY0fD7kL
+      8K1kzv6dY8hGMB8GA1UdIwQYMBaAFDs6x9h1gY0fD7kL8K1kzv6dY8hGMA8GA1Ud
+      EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAKZ9ZpD5jN7s3QXcY5z9V4sL
+      pG7bXz1wGx9K2V8nM2mTAiA4r0v9dZ7g6Y8Eo4Jt2kP7Z8M6dX1qZ3cN5uV1bH6g
+      -----END CERTIFICATE-----
+    tls-crypt: |
+      -----BEGIN OpenVPN Static key V1-----
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      11111111111111111111111111111111
+      -----END OpenVPN Static key V1-----
+    username: demo
+    password: secret
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-ovpn", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::OpenVpnConnect {
+                proxy,
+                proto,
+                dev,
+                cipher,
+                auth,
+                ca,
+                tls_crypt,
+                username,
+                password,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "1.2.3.4:1194");
+                assert_eq!(proto, "udp");
+                assert_eq!(dev, "tun");
+                assert_eq!(cipher, "AES-128-GCM");
+                assert_eq!(auth, "SHA256");
+                assert!(ca.contains("BEGIN CERTIFICATE"));
+                assert!(tls_crypt.contains("BEGIN OpenVPN Static key V1"));
+                assert_eq!(username, "demo");
+                assert_eq!(password, "secret");
+                assert_eq!(target.authority(), "final.example.com:443");
+            }
+            _ => panic!("expected openvpn transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_openvpn_remote_dns_options() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: openvpn
+    name: edge-ovpn
+    server: 1.2.3.4
+    port: 1194
+    proto: udp
+    dev: tun
+    cipher: AES-128-GCM
+    auth: SHA256
+    username: demo
+    password: secret
+    ca: demo
+    tls-crypt: demo
+    remote-dns-resolve: true
+    dns: [udp://1.1.1.1]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-ovpn", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::OpenVpnConnect { tunnel_dns, .. } => {
+                assert!(tunnel_dns.remote_dns_resolve);
+                assert_eq!(tunnel_dns.dns, vec!["udp://1.1.1.1".to_owned()]);
+            }
+            _ => panic!("expected openvpn transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_openvpn_udp_outer_socks5_subplan() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: openvpn
+    name: edge-ovpn
+    server: 1.2.3.4
+    port: 1194
+    proto: udp
+    dev: tun
+    cipher: AES-128-GCM
+    auth: SHA256
+    username: demo
+    password: secret
+    ca: demo
+    tls-crypt: demo
+    dialer-proxy: outer-socks
+  - type: socks5
+    name: outer-socks
+    server: outer.example.com
+    port: 1080
+    udp: true
+    username: alice
+    password: secret
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-ovpn", &metadata, &BTreeMap::new()).unwrap();
+        assert_eq!(plan.hops.len(), 1);
+        match &plan.hops[0].action {
+            TransportAction::OpenVpnConnect {
+                proxy,
+                outer_socks5,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "1.2.3.4:1194");
+                assert_eq!(target.authority(), "final.example.com:443");
+                let outer = outer_socks5.as_ref().expect("expected openvpn outer socks5 plan");
+                assert_eq!(outer.proxy.authority(), "outer.example.com:1080");
+                let auth = outer.auth.as_ref().expect("expected socks5 auth");
+                assert_eq!(auth.username, "alice");
+                assert_eq!(auth.password, "secret");
+                assert!(outer.prefix_plan.is_none());
+            }
+            other => panic!("expected openvpn transport action, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_hysteria2_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: edge-hy2
+    server: hy2.example.com
+    port: 8443
+    password: secret
+    sni: edge.example.com
+    skip-cert-verify: true
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-hy2", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::Hy2Connect {
+                proxy,
+                password,
+                sni,
+                skip_cert_verify,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "hy2.example.com:8443");
+                assert_eq!(password, "secret");
+                assert_eq!(sni, "edge.example.com");
+                assert!(*skip_cert_verify);
+                assert_eq!(target.authority(), "final.example.com:443");
+            }
+            _ => panic!("expected hysteria2 transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_hysteria2_realm_opts() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: edge-hy2
+    server: hy2.example.com
+    port: 8443
+    password: secret
+    realm-opts:
+      enable: true
+      server-url: https://realm.example.com
+      token: public
+      realm-id: my-cabin-1f3a8c2e9b
+      stun-servers:
+        - stun.nextcloud.com:3478
+      sni: realm.example.com
+      skip-cert-verify: true
+      alpn: [h2]
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-hy2", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::Hy2Connect {
+                realm_enabled,
+                realm_server_url,
+                realm_token,
+                realm_id,
+                realm_stun_servers,
+                realm_sni,
+                realm_skip_cert_verify,
+                realm_alpn,
+                ..
+            } => {
+                assert!(*realm_enabled);
+                assert_eq!(realm_server_url, "https://realm.example.com");
+                assert_eq!(realm_token, "public");
+                assert_eq!(realm_id, "my-cabin-1f3a8c2e9b");
+                assert_eq!(realm_stun_servers, &vec!["stun.nextcloud.com:3478".to_owned()]);
+                assert_eq!(realm_sni, "realm.example.com");
+                assert!(*realm_skip_cert_verify);
+                assert_eq!(realm_alpn, &vec!["h2".to_owned()]);
+            }
+            _ => panic!("expected hysteria2 transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_hysteria2_realm_proxy_name_subplan() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria2
+    name: edge-hy2
+    server: hy2.example.com
+    port: 8443
+    password: secret
+    realm-opts:
+      enable: true
+      server-url: https://realm.example.com
+      token: public
+      realm-id: my-cabin-1f3a8c2e9b
+      stun-servers:
+        - stun.nextcloud.com:3478
+      proxy: outer-socks
+    dialer-proxy: outer-socks
+  - type: socks5
+    name: outer-socks
+    server: outer.example.com
+    port: 1080
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-hy2", &metadata, &BTreeMap::new()).unwrap();
+        assert_eq!(plan.hops.len(), 2);
+        match &plan.hops[1].action {
+            TransportAction::Hy2Connect {
+                realm_proxy,
+                realm_proxy_plan,
+                ..
+            } => {
+                assert_eq!(realm_proxy, "outer-socks");
+                let nested = realm_proxy_plan.as_ref().expect("expected hy2 realm proxy subplan");
+                assert_eq!(nested.hops.len(), 1);
+                match &nested.hops[0].action {
+                    TransportAction::Socks5Connect { proxy, target, .. } => {
+                        assert_eq!(proxy.authority(), "outer.example.com:1080");
+                        assert_eq!(target.authority(), "realm.example.com:443");
+                    }
+                    _ => panic!("expected nested socks5 transport action"),
+                }
+            }
+            _ => panic!("expected hysteria2 transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_hysteria_hop() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: hysteria
+    name: edge-hy
+    server: hy.example.com
+    port: 8443
+    auth-str: secret
+    sni: edge.example.com
+    skip-cert-verify: true
+    up: 10 Mbps
+    down: 50 Mbps
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-hy", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::HysteriaConnect {
+                proxy,
+                auth_str,
+                sni,
+                up,
+                down,
+                target,
+                ..
+            } => {
+                assert_eq!(proxy.authority(), "hy.example.com:8443");
+                assert_eq!(auth_str, "secret");
+                assert_eq!(sni, "edge.example.com");
+                assert_eq!(up, "10 Mbps");
+                assert_eq!(down, "50 Mbps");
+                assert_eq!(target.authority(), "final.example.com:443");
+            }
+            _ => panic!("expected hysteria action"),
+        }
+    }
+
+    #[test]
     fn transport_plan_materializes_vless_hop() {
         let document = parse_runtime_config_document(
             r#"
@@ -3558,6 +5001,11 @@ proxies:
             TransportAction::VlessConnect {
                 proxy,
                 uuid,
+                flow,
+                reality_public_key,
+                reality_short_id,
+                reality_support_x25519mlkem768,
+                client_fingerprint,
                 udp,
                 tls,
                 h2,
@@ -3566,12 +5014,65 @@ proxies:
             } => {
                 assert_eq!(proxy.authority(), "vless.example.com:443");
                 assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+                assert!(flow.is_empty());
+                assert!(reality_public_key.is_empty());
+                assert!(reality_short_id.is_empty());
+                assert!(!reality_support_x25519mlkem768);
+                assert!(client_fingerprint.is_empty());
                 assert!(*udp);
                 assert!(tls.enabled);
                 assert!(tls.skip_cert_verify);
                 assert_eq!(h2.host, vec!["vless.example.com".to_owned()]);
                 assert!(h2.path.is_empty());
                 assert_eq!(target.authority(), "final.example.com:8443");
+            }
+            _ => panic!("expected vless transport action"),
+        }
+    }
+
+    #[test]
+    fn transport_plan_materializes_vless_reality_and_client_fingerprint_fields() {
+        let document = parse_runtime_config_document(
+            r#"
+proxies:
+  - type: vless
+    name: edge-vless
+    server: vless.example.com
+    port: 443
+    uuid: b831381d-6324-4d53-ad4f-8cda48b30811
+    tls: true
+    flow: xtls-rprx-vision
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: abcdef
+      short-id: 1234
+      support-x25519mlkem768: true
+"#,
+        )
+        .unwrap();
+        let mut registry = build_runtime_registry(&document).unwrap();
+        let metadata = Metadata {
+            host: Some("final.example.com".into()),
+            dst_port: Some(8443),
+            ..Metadata::default()
+        };
+        let plan =
+            build_transport_plan(&mut registry, "edge-vless", &metadata, &BTreeMap::new())
+                .unwrap();
+        match &plan.hops[0].action {
+            TransportAction::VlessConnect {
+                flow,
+                reality_public_key,
+                reality_short_id,
+                reality_support_x25519mlkem768,
+                client_fingerprint,
+                ..
+            } => {
+                assert_eq!(flow, "xtls-rprx-vision");
+                assert_eq!(reality_public_key, "abcdef");
+                assert_eq!(reality_short_id, "1234");
+                assert!(*reality_support_x25519mlkem768);
+                assert_eq!(client_fingerprint, "chrome");
             }
             _ => panic!("expected vless transport action"),
         }

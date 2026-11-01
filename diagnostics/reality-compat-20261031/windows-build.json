@@ -1,0 +1,26 @@
+{
+  "artifact": "mihomo-rust-windows-amd64-reality-compat.exe",
+  "target": "x86_64-pc-windows-gnu",
+  "sha256": "7e5f6e230b0d9de934a0241387658bc3ec1c9eb99dbe47d7dd161c9d19330341",
+  "bytes": 39338251,
+  "native_windows_verified": false,
+  "reported_remote_nodes_verified": false,
+  "source_sha256": {
+    "rust/Cargo.lock": "5dda62731624a557876f9bf7955118a646b29fee7d2e47d478bd85b32931da86",
+    "rust/crates/mihomo-transport/src/reality_tls.rs": "15f113d74a598d0bfd994366f7a8dba2ad0217487e0befca0f55ec470fc04811",
+    "rust/crates/mihomo-transport/src/executor.rs": "83f47b2974e9064b653914386d13116c12fa281ce9d74fc0eee11c48355840fd",
+    "rust/crates/mihomo-transport/src/tls_client.rs": "eaa12b9f9907a3951d9dae72551eb310b2b22cdc3f3fec85227fbe4dadd83dc2",
+    "rust/crates/mihomo-transport/src/vless.rs": "4c73b9b650de9f9f75683d14452290d638f6f966aa026578ee8a59e5fea23530",
+    "rust/crates/mihomo-runtime/src/execution.rs": "cb17f82b7b40c3eab2505100632333ef0e188a87c186f70f71751147c48b3bfb",
+    "rust/crates/mihomo-runtime/src/tunnel_runtime.rs": "0067733c45b07b831691f0ea2d0110ac4779ae10a6c36cc79454e721fce82b81",
+    "rust/crates/mihomo-app/src/listener_udp_outbound_streams_v.rs": "53c94a412a91a17f072e0b9b355e51f7749b6fbe67ce39ad67d847e1c4cc7858"
+  },
+  "old_sing_box_archive_sha256": "8fc21f46ddf2d7022c34d5e3e2298a3b4064b6e1f85dce5cc23cb9c6015dafc4",
+  "validation": {
+    "transport_passed": 245,
+    "runtime_passed": 354,
+    "app_vless_library_passed": 81,
+    "app_vless_binary_passed": 11,
+    "interoperability_scenarios_passed": 54
+  }
+}

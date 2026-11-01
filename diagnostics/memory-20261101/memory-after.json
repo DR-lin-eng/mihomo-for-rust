@@ -1,0 +1,414 @@
+{
+  "core": "/tmp/mihomo-after",
+  "sha256": "0ac1a41eaa47eccb81c1b566d109a638b1749c5b7c249dc37586b10d2fcf0e8c",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "geosite_sha256": "2791dc94d5f2fceb1bf9b0d11e72e6309f33f2f99983fa032d7997f710ee552a",
+  "geosite_bytes": 4320390,
+  "records": [
+    {
+      "scenario": "idle",
+      "repeat": 0,
+      "startup_seconds": 0.0388,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 8072,
+        "VmRSS": 8072,
+        "Threads": 5,
+        "Pss": 8072,
+        "Private_Dirty": 1064,
+        "Anonymous": 1068
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 8464,
+        "VmRSS": 8224,
+        "Threads": 5,
+        "Pss": 8224,
+        "Private_Dirty": 1088,
+        "Anonymous": 1092
+      },
+      "peak_rss_kib": 8464,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 0,
+      "startup_seconds": 0.086,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24864,
+        "VmRSS": 24864,
+        "Threads": 5,
+        "Pss": 24864,
+        "Private_Dirty": 17852,
+        "Anonymous": 17860
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 45508,
+        "VmRSS": 25272,
+        "Threads": 5,
+        "Pss": 25272,
+        "Private_Dirty": 18132,
+        "Anonymous": 18140
+      },
+      "peak_rss_kib": 45508,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "geosite-120000",
+      "repeat": 0,
+      "startup_seconds": 0.0368,
+      "idle": {
+        "VmSize": 38372,
+        "VmHWM": 10816,
+        "VmRSS": 10816,
+        "Threads": 5,
+        "Pss": 10816,
+        "Private_Dirty": 3616,
+        "Anonymous": 3620
+      },
+      "after_api_poll": {
+        "VmSize": 38404,
+        "VmHWM": 11144,
+        "VmRSS": 10972,
+        "Threads": 5,
+        "Pss": 10972,
+        "Private_Dirty": 3644,
+        "Anonymous": 3648
+      },
+      "peak_rss_kib": 11144,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 0,
+      "startup_seconds": 0.0571,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 18948,
+        "VmRSS": 12504,
+        "Threads": 6,
+        "Pss": 12500,
+        "Private_Dirty": 5364,
+        "Anonymous": 5368
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 18948,
+        "VmRSS": 12656,
+        "Threads": 6,
+        "Pss": 12652,
+        "Private_Dirty": 5388,
+        "Anonymous": 5392
+      },
+      "peak_rss_kib": 18948,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 0,
+      "startup_seconds": 0.0372,
+      "idle": {
+        "VmSize": 39436,
+        "VmHWM": 9160,
+        "VmRSS": 9160,
+        "Threads": 7,
+        "Pss": 9160,
+        "Private_Dirty": 1260,
+        "Anonymous": 1264
+      },
+      "after_api_poll": {
+        "VmSize": 39472,
+        "VmHWM": 9780,
+        "VmRSS": 9372,
+        "Threads": 7,
+        "Pss": 9372,
+        "Private_Dirty": 1280,
+        "Anonymous": 1284
+      },
+      "peak_rss_kib": 9780,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8394704,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 1,
+      "startup_seconds": 0.036,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 8076,
+        "VmRSS": 8076,
+        "Threads": 5,
+        "Pss": 8076,
+        "Private_Dirty": 1068,
+        "Anonymous": 1072
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 8404,
+        "VmRSS": 8228,
+        "Threads": 5,
+        "Pss": 8228,
+        "Private_Dirty": 1092,
+        "Anonymous": 1096
+      },
+      "peak_rss_kib": 8468,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 1,
+      "startup_seconds": 0.0629,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24864,
+        "VmRSS": 24864,
+        "Threads": 5,
+        "Pss": 24864,
+        "Private_Dirty": 17852,
+        "Anonymous": 17860
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 45568,
+        "VmRSS": 25272,
+        "Threads": 5,
+        "Pss": 25272,
+        "Private_Dirty": 18132,
+        "Anonymous": 18140
+      },
+      "peak_rss_kib": 45568,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "geosite-120000",
+      "repeat": 1,
+      "startup_seconds": 0.0289,
+      "idle": {
+        "VmSize": 38372,
+        "VmHWM": 10816,
+        "VmRSS": 10816,
+        "Threads": 5,
+        "Pss": 10816,
+        "Private_Dirty": 3616,
+        "Anonymous": 3620
+      },
+      "after_api_poll": {
+        "VmSize": 38404,
+        "VmHWM": 11336,
+        "VmRSS": 10972,
+        "Threads": 5,
+        "Pss": 10972,
+        "Private_Dirty": 3644,
+        "Anonymous": 3648
+      },
+      "peak_rss_kib": 11336,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 1,
+      "startup_seconds": 0.0628,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 18932,
+        "VmRSS": 12504,
+        "Threads": 6,
+        "Pss": 12500,
+        "Private_Dirty": 5364,
+        "Anonymous": 5368
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 18932,
+        "VmRSS": 12656,
+        "Threads": 6,
+        "Pss": 12652,
+        "Private_Dirty": 5388,
+        "Anonymous": 5392
+      },
+      "peak_rss_kib": 18932,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 1,
+      "startup_seconds": 0.038,
+      "idle": {
+        "VmSize": 39436,
+        "VmHWM": 9160,
+        "VmRSS": 9160,
+        "Threads": 7,
+        "Pss": 9160,
+        "Private_Dirty": 1260,
+        "Anonymous": 1264
+      },
+      "after_api_poll": {
+        "VmSize": 39472,
+        "VmHWM": 9644,
+        "VmRSS": 9372,
+        "Threads": 7,
+        "Pss": 9372,
+        "Private_Dirty": 1280,
+        "Anonymous": 1284
+      },
+      "peak_rss_kib": 9644,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8394704,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 2,
+      "startup_seconds": 0.0299,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 8076,
+        "VmRSS": 8076,
+        "Threads": 5,
+        "Pss": 8076,
+        "Private_Dirty": 1068,
+        "Anonymous": 1072
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 8348,
+        "VmRSS": 8228,
+        "Threads": 5,
+        "Pss": 8228,
+        "Private_Dirty": 1092,
+        "Anonymous": 1096
+      },
+      "peak_rss_kib": 8348,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 2,
+      "startup_seconds": 0.0838,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24860,
+        "VmRSS": 24860,
+        "Threads": 5,
+        "Pss": 24860,
+        "Private_Dirty": 17848,
+        "Anonymous": 17856
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 45604,
+        "VmRSS": 25268,
+        "Threads": 5,
+        "Pss": 25268,
+        "Private_Dirty": 18128,
+        "Anonymous": 18136
+      },
+      "peak_rss_kib": 45604,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "geosite-120000",
+      "repeat": 2,
+      "startup_seconds": 0.0378,
+      "idle": {
+        "VmSize": 38372,
+        "VmHWM": 10816,
+        "VmRSS": 10816,
+        "Threads": 5,
+        "Pss": 10816,
+        "Private_Dirty": 3616,
+        "Anonymous": 3620
+      },
+      "after_api_poll": {
+        "VmSize": 38404,
+        "VmHWM": 11264,
+        "VmRSS": 10972,
+        "Threads": 5,
+        "Pss": 10972,
+        "Private_Dirty": 3644,
+        "Anonymous": 3648
+      },
+      "peak_rss_kib": 11296,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 2,
+      "startup_seconds": 0.0565,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 19032,
+        "VmRSS": 12504,
+        "Threads": 6,
+        "Pss": 12500,
+        "Private_Dirty": 5364,
+        "Anonymous": 5368
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 19032,
+        "VmRSS": 12656,
+        "Threads": 6,
+        "Pss": 12652,
+        "Private_Dirty": 5388,
+        "Anonymous": 5392
+      },
+      "peak_rss_kib": 19032,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 2,
+      "startup_seconds": 0.0377,
+      "idle": {
+        "VmSize": 39436,
+        "VmHWM": 9164,
+        "VmRSS": 9164,
+        "Threads": 7,
+        "Pss": 9164,
+        "Private_Dirty": 1264,
+        "Anonymous": 1268
+      },
+      "after_api_poll": {
+        "VmSize": 39472,
+        "VmHWM": 9532,
+        "VmRSS": 9376,
+        "Threads": 7,
+        "Pss": 9376,
+        "Private_Dirty": 1284,
+        "Anonymous": 1288
+      },
+      "peak_rss_kib": 9532,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8394704,
+      "passed": true
+    }
+  ]
+}

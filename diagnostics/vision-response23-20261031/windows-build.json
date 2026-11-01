@@ -1,0 +1,20 @@
+{
+  "artifact": "mihomo-rust-windows-amd64-response23-fix.exe",
+  "target": "x86_64-pc-windows-gnu",
+  "sha256": "838bf73f05d4b81dde1df2fb14848eeab6fbcba595ec32d1585f9ff31b502730",
+  "bytes": 39216954,
+  "windows_runtime_verified": false,
+  "source_sha256": {
+    "rust/Cargo.lock": "5dda62731624a557876f9bf7955118a646b29fee7d2e47d478bd85b32931da86",
+    "rust/crates/mihomo-transport/src/reality_tls.rs": "03e6443defa046abc432e3c6c22c41bf467f9b1ea544236aa42e822f80099bb4",
+    "rust/crates/mihomo-transport/src/tls_client.rs": "a90fa6ccb495ebd2f4ae49527f8f5bca3ce2a4b8ffe3551fc99bcd245f971f20",
+    "rust/crates/mihomo-transport/src/vless.rs": "e1dfcb29d57a8264ef3f0d896d973e2b946bed08c8ad11bd8723d591fca42af2",
+    "rust/crates/mihomo-transport/src/vision.rs": "2f95a0aae9d006798358538883c68e5217accd115820474043d505fca92b5e4b"
+  },
+  "validation": {
+    "transport_tests_passed": 238,
+    "xray_scenarios_passed": 12,
+    "app_vless_passed": true,
+    "native_windows_tested": false
+  }
+}

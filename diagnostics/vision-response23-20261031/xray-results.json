@@ -1,0 +1,23 @@
+{
+  "xray": "Xray 26.10.29 (Xray, Penetrates Everything.) Custom (go1.27.3 linux/arm64)",
+  "passed": [
+    "tls-udp/plain-http",
+    "tls-udp/TLSv1_2",
+    "tls-udp/TLSv1_3",
+    "tls-udp/server-first",
+    "tls-udp/datagrams",
+    "tls-xudp/datagrams",
+    "reality-udp/plain-http",
+    "reality-udp/TLSv1_2",
+    "reality-udp/TLSv1_3",
+    "reality-udp/server-first",
+    "reality-udp/datagrams",
+    "reality-xudp/datagrams"
+  ],
+  "direct_evidence": [
+    "2026/10/31 15:26:12.353901 [Debug] [1031009172] proxy: Xtls Unpadding new block, content 4096 padding 0 command 2",
+    "2026/10/31 15:26:14.910416 [Debug] [1746514947] proxy: Xtls Unpadding new block, content 4096 padding 0 command 2",
+    "2026/10/31 15:26:12.353390 [Debug] [1031009172] proxy: XtlsPadding 255 896 2",
+    "2026/10/31 15:26:14.910443 [Debug] [1746514947] proxy: XtlsPadding 510 683 2"
+  ]
+}

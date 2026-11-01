@@ -1,0 +1,16 @@
+{
+  "server": "sing-box",
+  "server_version": "sing-box version 1.14.4",
+  "mlkem": "off",
+  "camouflage_alpn": "h2,http/1.1",
+  "client_alpn": null,
+  "passed": [
+    "reality-udp/plain-http",
+    "reality-udp/TLSv1_2",
+    "reality-udp/TLSv1_3",
+    "reality-udp/server-first",
+    "reality-udp/datagrams",
+    "reality-xudp/datagrams"
+  ],
+  "direct_evidence": []
+}

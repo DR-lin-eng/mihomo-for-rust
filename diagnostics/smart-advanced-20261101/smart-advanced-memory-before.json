@@ -1,0 +1,252 @@
+{
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-memory",
+  "sha256": "0ac1a41eaa47eccb81c1b566d109a638b1749c5b7c249dc37586b10d2fcf0e8c",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "geosite_sha256": "2791dc94d5f2fceb1bf9b0d11e72e6309f33f2f99983fa032d7997f710ee552a",
+  "geosite_bytes": 4320390,
+  "records": [
+    {
+      "scenario": "idle",
+      "repeat": 0,
+      "startup_seconds": 0.0645,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 7640,
+        "VmRSS": 7640,
+        "Threads": 5,
+        "Pss": 7640,
+        "Private_Dirty": 1068,
+        "Anonymous": 1072
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 7820,
+        "VmRSS": 7820,
+        "Threads": 5,
+        "Pss": 7820,
+        "Private_Dirty": 1092,
+        "Anonymous": 1096
+      },
+      "peak_rss_kib": 7988,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 0,
+      "startup_seconds": 0.0869,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24420,
+        "VmRSS": 24420,
+        "Threads": 5,
+        "Pss": 24420,
+        "Private_Dirty": 17848,
+        "Anonymous": 17856
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 45108,
+        "VmRSS": 24856,
+        "Threads": 5,
+        "Pss": 24856,
+        "Private_Dirty": 18128,
+        "Anonymous": 18136
+      },
+      "peak_rss_kib": 45108,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 0,
+      "startup_seconds": 0.0582,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 18596,
+        "VmRSS": 12028,
+        "Threads": 6,
+        "Pss": 12024,
+        "Private_Dirty": 5360,
+        "Anonymous": 5364
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 18596,
+        "VmRSS": 12208,
+        "Threads": 6,
+        "Pss": 12204,
+        "Private_Dirty": 5384,
+        "Anonymous": 5388
+      },
+      "peak_rss_kib": 18596,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 1,
+      "startup_seconds": 0.0392,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 7632,
+        "VmRSS": 7632,
+        "Threads": 5,
+        "Pss": 7632,
+        "Private_Dirty": 1064,
+        "Anonymous": 1068
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 7924,
+        "VmRSS": 7812,
+        "Threads": 5,
+        "Pss": 7812,
+        "Private_Dirty": 1088,
+        "Anonymous": 1092
+      },
+      "peak_rss_kib": 8112,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 1,
+      "startup_seconds": 0.0818,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24424,
+        "VmRSS": 24424,
+        "Threads": 5,
+        "Pss": 24424,
+        "Private_Dirty": 17852,
+        "Anonymous": 17860
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 45120,
+        "VmRSS": 24860,
+        "Threads": 5,
+        "Pss": 24860,
+        "Private_Dirty": 18132,
+        "Anonymous": 18140
+      },
+      "peak_rss_kib": 45120,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 1,
+      "startup_seconds": 0.0554,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 18596,
+        "VmRSS": 12036,
+        "Threads": 6,
+        "Pss": 12032,
+        "Private_Dirty": 5364,
+        "Anonymous": 5368
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 18596,
+        "VmRSS": 12216,
+        "Threads": 6,
+        "Pss": 12212,
+        "Private_Dirty": 5388,
+        "Anonymous": 5392
+      },
+      "peak_rss_kib": 18596,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 2,
+      "startup_seconds": 0.031,
+      "idle": {
+        "VmSize": 35164,
+        "VmHWM": 7640,
+        "VmRSS": 7640,
+        "Threads": 5,
+        "Pss": 7640,
+        "Private_Dirty": 1068,
+        "Anonymous": 1072
+      },
+      "after_api_poll": {
+        "VmSize": 35200,
+        "VmHWM": 7848,
+        "VmRSS": 7820,
+        "Threads": 5,
+        "Pss": 7820,
+        "Private_Dirty": 1092,
+        "Anonymous": 1096
+      },
+      "peak_rss_kib": 7868,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 2,
+      "startup_seconds": 0.0819,
+      "idle": {
+        "VmSize": 54928,
+        "VmHWM": 24400,
+        "VmRSS": 24400,
+        "Threads": 5,
+        "Pss": 24400,
+        "Private_Dirty": 17852,
+        "Anonymous": 17860
+      },
+      "after_api_poll": {
+        "VmSize": 55224,
+        "VmHWM": 44812,
+        "VmRSS": 24836,
+        "Threads": 5,
+        "Pss": 24836,
+        "Private_Dirty": 18132,
+        "Anonymous": 18140
+      },
+      "peak_rss_kib": 45088,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 2,
+      "startup_seconds": 0.057,
+      "idle": {
+        "VmSize": 41636,
+        "VmHWM": 18596,
+        "VmRSS": 12032,
+        "Threads": 6,
+        "Pss": 12028,
+        "Private_Dirty": 5364,
+        "Anonymous": 5368
+      },
+      "after_api_poll": {
+        "VmSize": 41640,
+        "VmHWM": 18596,
+        "VmRSS": 12212,
+        "Threads": 6,
+        "Pss": 12208,
+        "Private_Dirty": 5388,
+        "Anonymous": 5392
+      },
+      "peak_rss_kib": 18744,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    }
+  ]
+}

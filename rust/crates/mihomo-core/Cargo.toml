@@ -6,8 +6,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+libc = "0.2"
 mihomo-buf = { path = "../mihomo-buf" }
 serde = { version = "1", features = ["derive"] }
+socket2 = { version = "0.5", features = ["all"] }
 
 [lib]
 path = "src/lib.rs"

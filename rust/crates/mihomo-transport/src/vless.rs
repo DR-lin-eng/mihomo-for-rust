@@ -1,35 +1,51 @@
 use std::io::{self, Read, Write};
 use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
+use std::sync::{Arc, Mutex};
 
 use mihomo_core::{BoxedTcpStream, TcpStream};
 use uuid::Uuid;
 
 use crate::{packetaddr_magic_target, TransportError, TransportTarget};
 
-const VERSION: u8 = 0;
-const COMMAND_TCP: u8 = 0x01;
-const COMMAND_UDP: u8 = 0x02;
-const COMMAND_MUX: u8 = 0x03;
-const ATYP_IPV4: u8 = 0x01;
-const ATYP_DOMAIN: u8 = 0x02;
-const ATYP_IPV6: u8 = 0x03;
+pub(crate) const VERSION: u8 = 0;
+pub(crate) const COMMAND_TCP: u8 = 0x01;
+pub(crate) const COMMAND_UDP: u8 = 0x02;
+pub(crate) const COMMAND_MUX: u8 = 0x03;
+pub(crate) const ATYP_IPV4: u8 = 0x01;
+pub(crate) const ATYP_DOMAIN: u8 = 0x02;
+pub(crate) const ATYP_IPV6: u8 = 0x03;
 const XUDP_STATUS_NEW: u8 = 0x01;
 const XUDP_STATUS_KEEP: u8 = 0x02;
 const XUDP_STATUS_END: u8 = 0x03;
 const XUDP_STATUS_KEEPALIVE: u8 = 0x04;
 const XUDP_OPTION_DATA: u8 = 0x01;
 const XUDP_NETWORK_UDP: u8 = 0x02;
-#[cfg(test)]
-const VLESS_MUX_TARGET: &str = "v1.mux.cool:666";
+pub(crate) const VLESS_MUX_TARGET: &str = "v1.mux.cool:666";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum AcceptedStream {
+    Tcp,
+    Udp,
+    Xudp,
+}
 
 pub(crate) fn wrap_stream(
     stream: BoxedTcpStream,
     uuid: &str,
     target: &TransportTarget,
 ) -> Result<BoxedTcpStream, TransportError> {
+    wrap_stream_with_flow(stream, uuid, "", target)
+}
+
+pub(crate) fn wrap_stream_with_flow(
+    stream: BoxedTcpStream,
+    uuid: &str,
+    flow: &str,
+    target: &TransportTarget,
+) -> Result<BoxedTcpStream, TransportError> {
     Ok(Box::new(VlessStream::new(
         stream,
-        build_request(uuid, COMMAND_TCP, Some(target))?,
+        build_request(uuid, flow, COMMAND_TCP, Some(target))?,
     )?))
 }
 
@@ -39,7 +55,7 @@ pub(crate) fn open_udp_stream(
     target: SocketAddr,
 ) -> Result<BoxedTcpStream, TransportError> {
     let target = TransportTarget::new(target.ip().to_string(), target.port());
-    let mut stream = VlessStream::new(stream, build_request(uuid, COMMAND_UDP, Some(&target))?)?;
+    let mut stream = VlessStream::new(stream, build_request(uuid, "", COMMAND_UDP, Some(&target))?)?;
     stream.ensure_request_sent(&[])?;
     Ok(Box::new(stream))
 }
@@ -49,7 +65,7 @@ pub(crate) fn open_packetaddr_udp_stream(
     uuid: &str,
 ) -> Result<BoxedTcpStream, TransportError> {
     let target = packetaddr_magic_target();
-    let mut stream = VlessStream::new(stream, build_request(uuid, COMMAND_UDP, Some(&target))?)?;
+    let mut stream = VlessStream::new(stream, build_request(uuid, "", COMMAND_UDP, Some(&target))?)?;
     stream.ensure_request_sent(&[])?;
     Ok(Box::new(stream))
 }
@@ -58,9 +74,30 @@ pub(crate) fn open_xudp_stream(
     stream: BoxedTcpStream,
     uuid: &str,
 ) -> Result<BoxedTcpStream, TransportError> {
-    let mut stream = VlessStream::new(stream, build_request(uuid, COMMAND_MUX, None)?)?;
+    let mut stream = VlessStream::new(stream, build_request(uuid, "", COMMAND_MUX, None)?)?;
     stream.ensure_request_sent(&[])?;
     Ok(Box::new(stream))
+}
+
+pub(crate) fn open_udp_stream_with_flow(
+    stream: BoxedTcpStream,
+    uuid: &str,
+    flow: &str,
+    target: SocketAddr,
+    packet_addr: bool,
+    xudp: bool,
+) -> Result<BoxedTcpStream, TransportError> {
+    let target = if packet_addr {
+        packetaddr_magic_target()
+    } else {
+        TransportTarget::new(target.ip().to_string(), target.port())
+    };
+    let command = if xudp { COMMAND_MUX } else { COMMAND_UDP };
+    // Defer the request until the first padded payload, just as for TCP.
+    Ok(Box::new(VlessStream::new(
+        stream,
+        build_request(uuid, flow, command, if xudp { None } else { Some(&target) })?,
+    )?))
 }
 
 pub(crate) fn write_udp_packet(stream: &mut dyn Write, payload: &[u8]) -> io::Result<usize> {
@@ -70,8 +107,10 @@ pub(crate) fn write_udp_packet(stream: &mut dyn Write, payload: &[u8]) -> io::Re
             format!("vless udp packet too large: {}", payload.len()),
         ));
     }
-    stream.write_all(&(payload.len() as u16).to_be_bytes())?;
-    stream.write_all(payload)?;
+    let mut packet = Vec::with_capacity(2 + payload.len());
+    packet.extend_from_slice(&(payload.len() as u16).to_be_bytes());
+    packet.extend_from_slice(payload);
+    stream.write_all(&packet)?;
     stream.flush()?;
     Ok(payload.len())
 }
@@ -98,11 +137,13 @@ pub(crate) fn write_xudp_packet(
             "vless xudp packet too large",
         ));
     }
-    stream.write_all(&(header_len as u16).to_be_bytes())?;
-    stream.write_all(&[0, 0, XUDP_STATUS_NEW, XUDP_OPTION_DATA, XUDP_NETWORK_UDP])?;
-    stream.write_all(&target)?;
-    stream.write_all(&(payload.len() as u16).to_be_bytes())?;
-    stream.write_all(payload)?;
+    let mut packet = Vec::with_capacity(4 + header_len + payload.len());
+    packet.extend_from_slice(&(header_len as u16).to_be_bytes());
+    packet.extend_from_slice(&[0, 0, XUDP_STATUS_NEW, XUDP_OPTION_DATA, XUDP_NETWORK_UDP]);
+    packet.extend_from_slice(&target);
+    packet.extend_from_slice(&(payload.len() as u16).to_be_bytes());
+    packet.extend_from_slice(payload);
+    stream.write_all(&packet)?;
     stream.flush()?;
     Ok(payload.len())
 }
@@ -184,17 +225,25 @@ pub(crate) fn read_xudp_packet(stream: &mut dyn Read) -> io::Result<(SocketAddr,
 
 fn build_request(
     uuid: &str,
+    flow: &str,
     command: u8,
     target: Option<&TransportTarget>,
 ) -> Result<Vec<u8>, TransportError> {
     let uuid = Uuid::parse_str(uuid).map_err(|err| {
         TransportError::InvalidPlan(format!("invalid vless uuid {uuid:?}: {err}"))
     })?;
+    let addons = encode_addons(flow);
     let target_host_len = target.map(|target| target.host.len()).unwrap_or_default();
-    let mut request = Vec::with_capacity(1 + 16 + 1 + 1 + 2 + 1 + target_host_len + 16);
+    let mut request = Vec::with_capacity(1 + 16 + 1 + addons.len() + 1 + 2 + 1 + target_host_len + 16);
     request.push(VERSION);
     request.extend_from_slice(uuid.as_bytes());
-    request.push(0);
+    if addons.len() > u8::MAX as usize {
+        return Err(TransportError::InvalidPlan(
+            "vless addons exceed 255 bytes".to_owned(),
+        ));
+    }
+    request.push(addons.len() as u8);
+    request.extend_from_slice(&addons);
     request.push(command);
     if command != COMMAND_MUX {
         let target = target.ok_or_else(|| {
@@ -204,6 +253,25 @@ fn build_request(
         encode_addr_into(&mut request, target)?;
     }
     Ok(request)
+}
+
+fn encode_addons(flow: &str) -> Vec<u8> {
+    if flow.trim().is_empty() {
+        return Vec::new();
+    }
+    let mut payload = Vec::with_capacity(flow.len() + 2);
+    write_uvarint(&mut payload, (1_u64 << 3) | 2);
+    write_uvarint(&mut payload, flow.len() as u64);
+    payload.extend_from_slice(flow.as_bytes());
+    payload
+}
+
+fn write_uvarint(buffer: &mut Vec<u8>, mut value: u64) {
+    while value >= 0x80 {
+        buffer.push((value as u8) | 0x80);
+        value >>= 7;
+    }
+    buffer.push(value as u8);
 }
 
 fn encode_addr_into(buffer: &mut Vec<u8>, target: &TransportTarget) -> Result<(), TransportError> {
@@ -233,59 +301,160 @@ fn encode_addr_into(buffer: &mut Vec<u8>, target: &TransportTarget) -> Result<()
     Ok(())
 }
 
+pub(crate) fn read_request(
+    stream: &mut dyn Read,
+) -> (u8, String, Vec<u8>, u8, String, AcceptedStream) {
+    let mut version = [0_u8; 1];
+    stream.read_exact(&mut version).unwrap();
+    let mut uuid = [0_u8; 16];
+    stream.read_exact(&mut uuid).unwrap();
+    let mut addon_len = [0_u8; 1];
+    stream.read_exact(&mut addon_len).unwrap();
+    let mut addons = vec![0_u8; addon_len[0] as usize];
+    if !addons.is_empty() {
+        stream.read_exact(&mut addons).unwrap();
+    }
+    let mut command = [0_u8; 1];
+    stream.read_exact(&mut command).unwrap();
+    if command[0] == COMMAND_MUX {
+        return (
+            version[0],
+            Uuid::from_bytes(uuid).to_string(),
+            addons,
+            command[0],
+            VLESS_MUX_TARGET.to_owned(),
+            AcceptedStream::Xudp,
+        );
+    }
+    let mut port = [0_u8; 2];
+    stream.read_exact(&mut port).unwrap();
+    let port = u16::from_be_bytes(port);
+    let mut atyp = [0_u8; 1];
+    stream.read_exact(&mut atyp).unwrap();
+    let host = match atyp[0] {
+        ATYP_IPV4 => {
+            let mut octets = [0_u8; 4];
+            stream.read_exact(&mut octets).unwrap();
+            std::net::Ipv4Addr::from(octets).to_string()
+        }
+        ATYP_IPV6 => {
+            let mut octets = [0_u8; 16];
+            stream.read_exact(&mut octets).unwrap();
+            std::net::Ipv6Addr::from(octets).to_string()
+        }
+        ATYP_DOMAIN => {
+            let mut len = [0_u8; 1];
+            stream.read_exact(&mut len).unwrap();
+            let mut host = vec![0_u8; len[0] as usize];
+            stream.read_exact(&mut host).unwrap();
+            String::from_utf8(host).unwrap()
+        }
+        other => panic!("unexpected vless atyp {other}"),
+    };
+    (
+        version[0],
+        Uuid::from_bytes(uuid).to_string(),
+        addons,
+        command[0],
+        format!("{host}:{port}"),
+        if command[0] == COMMAND_UDP {
+            AcceptedStream::Udp
+        } else {
+            AcceptedStream::Tcp
+        },
+    )
+}
+
 struct VlessStream {
     inner: BoxedTcpStream,
-    request: Vec<u8>,
-    request_sent: bool,
+    request: Arc<Mutex<Option<Vec<u8>>>>,
     response_received: bool,
+    response: Vec<u8>,
+}
+
+struct VlessWriteClone {
+    inner: BoxedTcpStream,
+    request: Arc<Mutex<Option<Vec<u8>>>>,
 }
 
 impl VlessStream {
     fn new(inner: BoxedTcpStream, request: Vec<u8>) -> Result<Self, TransportError> {
         Ok(Self {
             inner,
-            request,
-            request_sent: false,
+            request: Arc::new(Mutex::new(Some(request))),
             response_received: false,
+            response: Vec::new(),
         })
     }
 
     fn ensure_request_sent(&mut self, payload: &[u8]) -> io::Result<()> {
-        if self.request_sent {
-            if !payload.is_empty() {
-                self.inner.write_all(payload)?;
-            }
-            return Ok(());
-        }
-        self.inner.write_all(&self.request)?;
-        if !payload.is_empty() {
-            self.inner.write_all(payload)?;
-        }
-        self.inner.flush()?;
-        self.request_sent = true;
-        Ok(())
+        send_request(&mut self.inner, &self.request, payload)
     }
 
     fn ensure_response_received(&mut self) -> io::Result<()> {
         if self.response_received {
             return Ok(());
         }
-        let mut header = [0_u8; 2];
-        self.inner.read_exact(&mut header)?;
-        if header[0] != VERSION {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("unexpected vless response version {}", header[0]),
-            ));
+        loop {
+            let need = if self.response.len() < 2 {
+                2
+            } else {
+                if self.response[0] != VERSION {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("unexpected vless response version {}", self.response[0]),
+                    ));
+                }
+                2 + self.response[1] as usize
+            };
+            if self.response.len() == need && need >= 2 {
+                // Validate the version even when the addons length is zero.
+                if self.response[0] != VERSION {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "unexpected vless response version",
+                    ));
+                }
+                self.response_received = true;
+                self.response.clear();
+                return Ok(());
+            }
+            let mut part = [0_u8; 257];
+            match self.inner.read(&mut part[..need - self.response.len()]) {
+                Ok(0) => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        format!("truncated vless response: peer closed after {} of {need} header bytes", self.response.len()),
+                    ))
+                }
+                Ok(n) => self.response.extend_from_slice(&part[..n]),
+                Err(err) if err.kind() == io::ErrorKind::Interrupted => continue,
+                Err(err) => return Err(err),
+            }
         }
-        let addon_len = header[1] as usize;
-        if addon_len != 0 {
-            let mut discard = vec![0_u8; addon_len];
-            self.inner.read_exact(&mut discard)?;
-        }
-        self.response_received = true;
-        Ok(())
     }
+}
+
+// A relay can clone its writer before the first payload. Share the pending
+// request so either writer emits the header exactly once, in the same TLS
+// write as the first Vision padding frame.
+fn send_request(
+    inner: &mut BoxedTcpStream,
+    request: &Mutex<Option<Vec<u8>>>,
+    payload: &[u8],
+) -> io::Result<()> {
+    let mut pending = request.lock().unwrap();
+    if let Some(header) = pending.as_ref() {
+        let mut initial = Vec::with_capacity(header.len() + payload.len());
+        initial.extend_from_slice(header);
+        initial.extend_from_slice(payload);
+        inner.write_all(&initial)?;
+        inner.flush()?;
+        *pending = None;
+    } else {
+        inner.write_all(payload)?;
+    }
+    Ok(())
 }
 
 fn encode_xudp_addr(target: SocketAddr) -> Vec<u8> {
@@ -377,6 +546,9 @@ fn decode_xudp_addr(payload: &[u8]) -> io::Result<(SocketAddr, usize)> {
 
 impl Read for VlessStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
         self.ensure_response_received()?;
         self.inner.read(buf)
     }
@@ -393,12 +565,52 @@ impl Write for VlessStream {
     }
 }
 
-impl TcpStream for VlessStream {
-    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+impl Read for VlessWriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "vless stream does not support cloning",
+            "vless write clone is write-only",
         ))
+    }
+}
+
+impl Write for VlessWriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        send_request(&mut self.inner, &self.request, buf)?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+impl TcpStream for VlessStream {
+    fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
+    fn supports_tls_passthrough(&self) -> bool {
+        self.inner.supports_tls_passthrough()
+    }
+
+    fn start_tls_passthrough_read(&mut self) -> io::Result<()> {
+        self.inner.start_tls_passthrough_read()
+    }
+
+    fn start_tls_passthrough_write(&mut self) -> io::Result<()> {
+        self.inner.start_tls_passthrough_write()
+    }
+
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        if self.response_received {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "vless stream cannot be cloned after reads begin",
+            ));
+        }
+        Ok(Box::new(VlessWriteClone {
+            inner: self.inner.try_clone_box()?,
+            request: Arc::clone(&self.request),
+        }))
     }
 
     fn shutdown_write(&mut self) -> io::Result<()> {
@@ -407,6 +619,35 @@ impl TcpStream for VlessStream {
     }
 
     fn shutdown_all(&mut self) -> io::Result<()> {
+        self.inner.shutdown_all()
+    }
+}
+
+impl TcpStream for VlessWriteClone {
+    fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
+    fn supports_tls_passthrough(&self) -> bool {
+        self.inner.supports_tls_passthrough()
+    }
+
+    fn start_tls_passthrough_write(&mut self) -> io::Result<()> {
+        self.inner.start_tls_passthrough_write()
+    }
+
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "vless write clone does not support cloning",
+        ))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        send_request(&mut self.inner, &self.request, &[])?;
+        self.inner.shutdown_write()
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.shutdown_write()?;
         self.inner.shutdown_all()
     }
 }
@@ -424,16 +665,11 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
+        read_request, AcceptedStream,
         open_udp_stream, open_xudp_stream, read_udp_packet, read_xudp_packet, write_udp_packet,
         write_xudp_packet, ATYP_DOMAIN, ATYP_IPV4, ATYP_IPV6, COMMAND_MUX, COMMAND_TCP,
         COMMAND_UDP, VERSION, VLESS_MUX_TARGET,
     };
-
-    enum AcceptedStream {
-        Tcp,
-        Udp,
-        Xudp,
-    }
 
     #[test]
     fn vless_tcp_stream_round_trip_preserves_target_and_payload() {
@@ -441,9 +677,10 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let worker = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let (version, uuid, command, target, accepted) = read_request(&mut stream);
+            let (version, uuid, addons, command, target, accepted) = read_request(&mut stream);
             assert_eq!(version, VERSION);
             assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+            assert!(addons.is_empty());
             assert_eq!(command, COMMAND_TCP);
             assert_eq!(target, "final.example.com:443");
             match accepted {
@@ -469,6 +706,10 @@ mod tests {
                     uuid: "b831381d-6324-4d53-ad4f-8cda48b30811".into(),
                     udp: false,
                     flow: String::new(),
+                    reality_public_key: String::new(),
+                    reality_short_id: String::new(),
+                    reality_support_x25519mlkem768: false,
+                    client_fingerprint: String::new(),
                     network: String::new(),
                     websocket: crate::WebsocketOptions::default(),
                     grpc: crate::GrpcOptions::default(),
@@ -501,9 +742,10 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let worker = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let (version, uuid, command, target, accepted) = read_request(&mut stream);
+            let (version, uuid, addons, command, target, accepted) = read_request(&mut stream);
             assert_eq!(version, VERSION);
             assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+            assert!(addons.is_empty());
             assert_eq!(command, COMMAND_UDP);
             assert_eq!(target, "127.0.0.1:5353");
             match accepted {
@@ -540,9 +782,10 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let worker = thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
-            let (version, uuid, command, target, accepted) = read_request(&mut stream);
+            let (version, uuid, addons, command, target, accepted) = read_request(&mut stream);
             assert_eq!(version, VERSION);
             assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+            assert!(addons.is_empty());
             assert_eq!(command, COMMAND_MUX);
             assert_eq!(target, VLESS_MUX_TARGET);
             match accepted {
@@ -599,64 +842,45 @@ mod tests {
         stream.extend_from_slice(b"dns");
 
         let (target, payload) = read_xudp_packet(&mut std::io::Cursor::new(stream)).unwrap();
-        assert_eq!(target, "127.0.0.1:5353".parse().unwrap());
+        assert_eq!(target.port(), 5353);
+        assert!(target.ip().is_loopback(), "expected loopback target, got {target}");
         assert_eq!(payload, b"dns");
     }
 
-    fn read_request(stream: &mut dyn Read) -> (u8, String, u8, String, AcceptedStream) {
-        let mut version = [0_u8; 1];
-        stream.read_exact(&mut version).unwrap();
-        let mut uuid = [0_u8; 16];
-        stream.read_exact(&mut uuid).unwrap();
-        let mut addon_len = [0_u8; 1];
-        stream.read_exact(&mut addon_len).unwrap();
-        assert_eq!(addon_len[0], 0);
-        let mut command = [0_u8; 1];
-        stream.read_exact(&mut command).unwrap();
-        if command[0] == COMMAND_MUX {
-            return (
-                version[0],
-                Uuid::from_bytes(uuid).to_string(),
-                command[0],
-                VLESS_MUX_TARGET.to_owned(),
-                AcceptedStream::Xudp,
+    #[test]
+    fn vless_tcp_stream_encodes_flow_addons() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let (version, uuid, addons, command, target, accepted) = read_request(&mut stream);
+            assert_eq!(version, VERSION);
+            assert_eq!(uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
+            assert_eq!(
+                addons,
+                [
+                    0x0a, 0x10, b'x', b't', b'l', b's', b'-', b'r', b'p', b'r', b'x', b'-',
+                    b'v', b'i', b's', b'i', b'o', b'n'
+                ]
             );
-        }
-        let mut port = [0_u8; 2];
-        stream.read_exact(&mut port).unwrap();
-        let port = u16::from_be_bytes(port);
-        let mut atyp = [0_u8; 1];
-        stream.read_exact(&mut atyp).unwrap();
-        let host = match atyp[0] {
-            ATYP_IPV4 => {
-                let mut octets = [0_u8; 4];
-                stream.read_exact(&mut octets).unwrap();
-                std::net::Ipv4Addr::from(octets).to_string()
+            assert_eq!(command, COMMAND_TCP);
+            assert_eq!(target, "final.example.com:443");
+            match accepted {
+                AcceptedStream::Tcp => {}
+                _ => panic!("expected accepted tcp request"),
             }
-            ATYP_IPV6 => {
-                let mut octets = [0_u8; 16];
-                stream.read_exact(&mut octets).unwrap();
-                std::net::Ipv6Addr::from(octets).to_string()
-            }
-            ATYP_DOMAIN => {
-                let mut len = [0_u8; 1];
-                stream.read_exact(&mut len).unwrap();
-                let mut host = vec![0_u8; len[0] as usize];
-                stream.read_exact(&mut host).unwrap();
-                String::from_utf8(host).unwrap()
-            }
-            other => panic!("unexpected vless atyp {other}"),
-        };
-        (
-            version[0],
-            Uuid::from_bytes(uuid).to_string(),
-            command[0],
-            format!("{host}:{port}"),
-            if command[0] == COMMAND_UDP {
-                AcceptedStream::Udp
-            } else {
-                AcceptedStream::Tcp
-            },
+        });
+
+        let stream = std::net::TcpStream::connect(addr).unwrap();
+        let mut stream = super::wrap_stream_with_flow(
+            Box::new(stream),
+            "b831381d-6324-4d53-ad4f-8cda48b30811",
+            "xtls-rprx-vision",
+            &TransportTarget::new("final.example.com", 443),
         )
+        .unwrap();
+        stream.shutdown_write().unwrap();
+        worker.join().unwrap();
     }
+
 }

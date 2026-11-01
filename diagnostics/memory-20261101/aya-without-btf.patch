@@ -1,0 +1,23 @@
+--- aya-0.13.1/src/bpf.rs
++++ aya-local/src/bpf.rs
+@@ -167,8 +167,19 @@
+ impl<'a> EbpfLoader<'a> {
+     /// Creates a new loader instance.
+     pub fn new() -> Self {
++        let mut loader=Self::new_without_btf();
++        loader.btf=Btf::from_sys_fs().ok().map(Cow::Owned);
++        loader
++    }
++
++    /// Creates a loader without reading kernel BTF.
++    ///
++    /// Use this for programs with no CO-RE relocations, such as TC programs
++    /// using only the stable `__sk_buff` UAPI. Unlike `new().btf(None)`, this
++    /// constructor avoids the transient kernel BTF read and parse entirely.
++    pub fn new_without_btf() -> Self {
+         Self {
+-            btf: Btf::from_sys_fs().ok().map(Cow::Owned),
++            btf: None,
+             map_pin_path: None,
+             globals: HashMap::new(),
+             max_entries: HashMap::new(),

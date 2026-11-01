@@ -1,0 +1,44 @@
+[
+  {
+    "name": "help",
+    "passed": true,
+    "exit": 0,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "Usage: mihomo [options]\n  -d <directory>     Configuration/data directory\n  -f <file>          Configuration file (- for stdin)\n  -config <base64>   Base64 configuration\n  -ext-ui <path>     External dashboard directory\n  -ext-ctl <address> Controller HTTP address\n  -ext-ctl-unix <path> Controller Unix socket\n  -ext-ctl-pipe <name> Controller named pipe (unsupported in Rust runtime)\n  -secret <value>    Controller secret\n  -post-up <command> / -post-down <command>\n  -m                Enable geodata mode\n  -t                Validate configuration and exit\n  -v                Show version\n  -h                Show help"
+  },
+  {
+    "name": "Go flag aliases",
+    "passed": true,
+    "exit": 0,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "configuration file /tmp/mihomo-cli-final-m1z9je4w/config.yaml test is successful"
+  },
+  {
+    "name": "CLASH env defaults",
+    "passed": true,
+    "exit": 0,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "configuration file /tmp/mihomo-cli-final-m1z9je4w/config.yaml test is successful"
+  },
+  {
+    "name": "CLI overrides environment",
+    "passed": true,
+    "exit": 0,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "configuration file /tmp/mihomo-cli-final-m1z9je4w/config.yaml test is successful"
+  },
+  {
+    "name": "stdin config",
+    "passed": true,
+    "exit": 0,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "configuration file /tmp/mihomo-cli-final-m1z9je4w/config.yaml test is successful"
+  },
+  {
+    "name": "test rejects invalid runtime rule",
+    "passed": true,
+    "exit": 1,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "output": "unsupported rule type: NOT-A-RULE\nconfiguration test failed"
+  }
+]

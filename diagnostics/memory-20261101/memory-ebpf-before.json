@@ -1,0 +1,90 @@
+{
+  "core": "/tmp/mihomo-before",
+  "sha256": "53955985bebc2a7a2c41e0067e572f8ab165b20533b389b188562e767c9e9be8",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "geosite_sha256": "2791dc94d5f2fceb1bf9b0d11e72e6309f33f2f99983fa032d7997f710ee552a",
+  "geosite_bytes": 4320390,
+  "records": [
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 0,
+      "startup_seconds": 0.0406,
+      "idle": {
+        "VmSize": 39588,
+        "VmHWM": 26008,
+        "VmRSS": 9164,
+        "Threads": 7,
+        "Pss": 9164,
+        "Private_Dirty": 1392,
+        "Anonymous": 1396
+      },
+      "after_api_poll": {
+        "VmSize": 39620,
+        "VmHWM": 26008,
+        "VmRSS": 9428,
+        "Threads": 7,
+        "Pss": 9428,
+        "Private_Dirty": 1400,
+        "Anonymous": 1404
+      },
+      "peak_rss_kib": 26008,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8574480,
+      "passed": true
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 1,
+      "startup_seconds": 0.0381,
+      "idle": {
+        "VmSize": 39588,
+        "VmHWM": 26136,
+        "VmRSS": 9164,
+        "Threads": 7,
+        "Pss": 9164,
+        "Private_Dirty": 1392,
+        "Anonymous": 1396
+      },
+      "after_api_poll": {
+        "VmSize": 39620,
+        "VmHWM": 26136,
+        "VmRSS": 9428,
+        "Threads": 7,
+        "Pss": 9428,
+        "Private_Dirty": 1400,
+        "Anonymous": 1404
+      },
+      "peak_rss_kib": 26136,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8574480,
+      "passed": true
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "repeat": 2,
+      "startup_seconds": 0.0279,
+      "idle": {
+        "VmSize": 39588,
+        "VmHWM": 26140,
+        "VmRSS": 9168,
+        "Threads": 7,
+        "Pss": 9168,
+        "Private_Dirty": 1396,
+        "Anonymous": 1400
+      },
+      "after_api_poll": {
+        "VmSize": 39620,
+        "VmHWM": 26140,
+        "VmRSS": 9432,
+        "Threads": 7,
+        "Pss": 9432,
+        "Private_Dirty": 1404,
+        "Anonymous": 1408
+      },
+      "peak_rss_kib": 26140,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 8574480,
+      "passed": true
+    }
+  ]
+}

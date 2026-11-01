@@ -1,0 +1,1222 @@
+{
+  "asn": [
+    [
+      "google",
+      100
+    ],
+    [
+      "amazon",
+      101
+    ],
+    [
+      "microsoft",
+      102
+    ],
+    [
+      "facebook",
+      103
+    ],
+    [
+      "apple",
+      104
+    ],
+    [
+      "cloudflare",
+      105
+    ],
+    [
+      "akamai",
+      106
+    ],
+    [
+      "fastly",
+      107
+    ],
+    [
+      "netflix",
+      108
+    ],
+    [
+      "alibaba",
+      109
+    ],
+    [
+      "tencent",
+      110
+    ],
+    [
+      "baidu",
+      111
+    ],
+    [
+      "huawei",
+      112
+    ],
+    [
+      "bytedance",
+      113
+    ],
+    [
+      "tiktok",
+      113
+    ],
+    [
+      "xiaomi",
+      114
+    ],
+    [
+      "salesforce",
+      115
+    ],
+    [
+      "adobe",
+      116
+    ],
+    [
+      "nvidia",
+      117
+    ],
+    [
+      "chinatelecom",
+      120
+    ],
+    [
+      "china telecom",
+      120
+    ],
+    [
+      "chinanet",
+      120
+    ],
+    [
+      "chinaunicom",
+      121
+    ],
+    [
+      "china unicom",
+      121
+    ],
+    [
+      "chinamobile",
+      122
+    ],
+    [
+      "china mobile",
+      122
+    ],
+    [
+      "cmnet",
+      122
+    ],
+    [
+      "chinaedu",
+      123
+    ],
+    [
+      "china education",
+      123
+    ],
+    [
+      "cernet",
+      123
+    ],
+    [
+      "cstnet",
+      124
+    ],
+    [
+      "verizon",
+      140
+    ],
+    [
+      "comcast",
+      141
+    ],
+    [
+      "at&t",
+      142
+    ],
+    [
+      "sprint",
+      143
+    ],
+    [
+      "t-mobile",
+      144
+    ],
+    [
+      "tmobile",
+      144
+    ],
+    [
+      "level3",
+      145
+    ],
+    [
+      "level 3",
+      145
+    ],
+    [
+      "lumen",
+      145
+    ],
+    [
+      "centurylink",
+      145
+    ],
+    [
+      "ntt",
+      146
+    ],
+    [
+      "kddi",
+      147
+    ],
+    [
+      "softbank",
+      148
+    ],
+    [
+      "telstra",
+      149
+    ],
+    [
+      "singtel",
+      150
+    ],
+    [
+      "starhub",
+      151
+    ],
+    [
+      "m1",
+      152
+    ],
+    [
+      "pccw",
+      153
+    ],
+    [
+      "hkbn",
+      154
+    ],
+    [
+      "smartone",
+      155
+    ],
+    [
+      "hgc",
+      156
+    ],
+    [
+      "cht",
+      157
+    ],
+    [
+      "chunghwa",
+      157
+    ],
+    [
+      "hinet",
+      157
+    ],
+    [
+      "fetnet",
+      158
+    ],
+    [
+      "far eastone",
+      158
+    ],
+    [
+      "twm",
+      159
+    ],
+    [
+      "taiwan mobile",
+      159
+    ],
+    [
+      "hkt",
+      160
+    ],
+    [
+      "deutsche telekom",
+      161
+    ],
+    [
+      "vodafone",
+      162
+    ],
+    [
+      "telefonica",
+      163
+    ],
+    [
+      "optus",
+      164
+    ],
+    [
+      "bell canada",
+      165
+    ],
+    [
+      "rogers communications",
+      166
+    ],
+    [
+      "telus",
+      167
+    ],
+    [
+      "rakuten",
+      168
+    ],
+    [
+      "korea telecom",
+      169
+    ],
+    [
+      "viettel",
+      170
+    ],
+    [
+      "pldt",
+      171
+    ],
+    [
+      "sk broadband",
+      172
+    ],
+    [
+      "charter communications",
+      173
+    ],
+    [
+      "cdn77",
+      180
+    ],
+    [
+      "limelight",
+      181
+    ],
+    [
+      "edgecast",
+      182
+    ],
+    [
+      "edgio",
+      182
+    ],
+    [
+      "stackpath",
+      183
+    ],
+    [
+      "imperva",
+      184
+    ],
+    [
+      "oracle",
+      185
+    ],
+    [
+      "ibm",
+      186
+    ],
+    [
+      "digitalocean",
+      187
+    ],
+    [
+      "linode",
+      188
+    ],
+    [
+      "ovh",
+      189
+    ],
+    [
+      "hetzner",
+      190
+    ],
+    [
+      "vultr",
+      191
+    ],
+    [
+      "cogent",
+      192
+    ],
+    [
+      "leaseweb",
+      193
+    ],
+    [
+      "upyun",
+      194
+    ],
+    [
+      "qingcloud",
+      195
+    ],
+    [
+      "ucloud",
+      196
+    ],
+    [
+      "contabo",
+      197
+    ],
+    [
+      "rackspace",
+      198
+    ],
+    [
+      "bunnyway",
+      199
+    ],
+    [
+      "bunnycdn",
+      199
+    ],
+    [
+      "netactuate",
+      200
+    ],
+    [
+      "wangsu",
+      201
+    ],
+    [
+      "kingsoft",
+      202
+    ],
+    [
+      "scaleway",
+      203
+    ],
+    [
+      "ionos",
+      204
+    ],
+    [
+      "twitter",
+      220
+    ],
+    [
+      "twitch",
+      221
+    ],
+    [
+      "discord",
+      222
+    ],
+    [
+      "spotify",
+      223
+    ],
+    [
+      "github",
+      224
+    ],
+    [
+      "steam",
+      225
+    ],
+    [
+      "blizzard",
+      226
+    ],
+    [
+      "riotgames",
+      227
+    ],
+    [
+      "riot games",
+      227
+    ],
+    [
+      "epicgames",
+      228
+    ],
+    [
+      "electronic arts",
+      229
+    ],
+    [
+      "valve",
+      230
+    ],
+    [
+      "mozilla",
+      231
+    ],
+    [
+      "reddit",
+      232
+    ],
+    [
+      "openai",
+      233
+    ],
+    [
+      "bilibili",
+      234
+    ],
+    [
+      "cern",
+      240
+    ],
+    [
+      "stanford",
+      241
+    ],
+    [
+      "tsinghua",
+      242
+    ],
+    [
+      "pku",
+      243
+    ],
+    [
+      "visa",
+      250
+    ],
+    [
+      "mastercard",
+      251
+    ],
+    [
+      "paypal",
+      252
+    ],
+    [
+      "stripe",
+      253
+    ],
+    [
+      "alipay",
+      254
+    ],
+    [
+      "wechatpay",
+      255
+    ],
+    [
+      "unionpay",
+      256
+    ],
+    [
+      "hkix",
+      260
+    ],
+    [
+      "linx",
+      261
+    ],
+    [
+      "jpix",
+      262
+    ],
+    [
+      "equinix",
+      263
+    ],
+    [
+      "sgix",
+      264
+    ],
+    [
+      "de-cix",
+      265
+    ],
+    [
+      "ams-ix",
+      266
+    ]
+  ],
+  "geo": {
+    "CN": 100,
+    "HK": 101,
+    "TW": 102,
+    "JP": 103,
+    "KR": 104,
+    "SG": 105,
+    "US": 106,
+    "CA": 107,
+    "GB": 108,
+    "DE": 109,
+    "FR": 110,
+    "RU": 111,
+    "AU": 112,
+    "IN": 113,
+    "BR": 114,
+    "IT": 115,
+    "ES": 116,
+    "NL": 117,
+    "SE": 118,
+    "CH": 119,
+    "PL": 120,
+    "TR": 121,
+    "MX": 122,
+    "ZA": 123,
+    "AR": 124,
+    "ID": 125,
+    "TH": 126,
+    "VN": 127,
+    "PH": 128,
+    "MY": 129,
+    "MO": 130,
+    "AE": 131,
+    "AT": 132,
+    "BD": 133,
+    "BE": 134,
+    "CL": 135,
+    "CO": 136,
+    "CZ": 137,
+    "DK": 138,
+    "EG": 139,
+    "FI": 140,
+    "GR": 141,
+    "IE": 142,
+    "IL": 143,
+    "IS": 144,
+    "KE": 145,
+    "KH": 146,
+    "KZ": 147,
+    "LK": 148,
+    "LU": 149,
+    "MA": 150,
+    "MM": 151,
+    "NG": 152,
+    "NO": 153,
+    "NZ": 154,
+    "PE": 155,
+    "PK": 156,
+    "PT": 157,
+    "RO": 158,
+    "SA": 159,
+    "UA": 160
+  },
+  "streamingKeywords": [
+    "youtube",
+    "netflix",
+    "hulu",
+    "spotify",
+    "tiktok",
+    "douyin",
+    "youku",
+    "iqiyi",
+    "bilibili",
+    "twitch",
+    "hbo",
+    "disney",
+    "vimeo",
+    "vod",
+    "stream",
+    "video",
+    "media",
+    "movie",
+    "tv",
+    "music",
+    "audio",
+    "cdm",
+    "cdn",
+    "content",
+    "live",
+    "livestream",
+    "replay",
+    "shorts",
+    "kuaishou",
+    "huya",
+    "douyu",
+    "googlevideo",
+    "ytimg",
+    "primevideo",
+    "hotstar",
+    "wetv",
+    "kugou",
+    "acfun"
+  ],
+  "gameKeywords": [
+    "game",
+    "play.google",
+    "steam",
+    "xbox",
+    "playstation",
+    "nintendo",
+    "ea.com",
+    "riotcdn",
+    "blizzard",
+    "ubisoft",
+    "epic",
+    "cod.",
+    "callofduty",
+    "minecraft",
+    "roblox",
+    "pubg",
+    "fortnite",
+    "valorant",
+    "riotgames",
+    "leagueoflegends",
+    "warzone",
+    "apex",
+    "apexlegends",
+    "overwatch",
+    "dota",
+    "csgo",
+    "counterstrike",
+    "hearthstone",
+    "battlenet",
+    "battle.net",
+    "genshin",
+    "mihoyo",
+    "hoyoverse",
+    "lol",
+    "arenaofvalor",
+    "honorofkings"
+  ],
+  "communicationKeywords": [
+    "meet",
+    "zoom",
+    "teams",
+    "voip",
+    "sip",
+    "call",
+    "chat",
+    "conference",
+    "webex",
+    "discord",
+    "slack",
+    "telegram",
+    "signal",
+    "whatsapp",
+    "skype",
+    "wechat",
+    "voicechat",
+    "videocall",
+    "rtc",
+    "webrtc",
+    "jitsi",
+    "mumble",
+    "ventrilo",
+    "teamspeak",
+    "discord.gg",
+    "meeting",
+    "huddle",
+    "gather",
+    "qq",
+    "msn",
+    "icq",
+    "line.me",
+    "linecorp",
+    "line-apps",
+    "line-scdn",
+    "kakao",
+    "viber",
+    "imo.im",
+    "element.io"
+  ],
+  "apiServiceKeywords": [
+    "api.cloudflare.com",
+    "api.amazonaws.com",
+    "api.azure.com",
+    "googleapis.com",
+    "api.fastly.com",
+    "api.maxcdn.com",
+    "api.keycdn.com",
+    "api.bunnycdn.com",
+    "api.digitalocean.com",
+    "api.vultr.com",
+    "api.linode.com",
+    "api.hetzner.com",
+    "amazonaws.com",
+    "api.vercel.com",
+    "api.netlify.com",
+    "api.heroku.com",
+    "api.railway.app",
+    "api.render.com",
+    "api.fly.io",
+    "registry.npmjs.org",
+    "pypi.org",
+    "hub.docker.com",
+    "registry.docker.io",
+    "rubygems.org",
+    "crates.io",
+    "api.datadog.com",
+    "api.newrelic.com",
+    "api.segment.com",
+    "api.mixpanel.com",
+    "api.amplitude.com",
+    "api.hotjar.com",
+    "api.sentry.io",
+    "api.rollbar.com",
+    "api.auth0.com",
+    "api.okta.com",
+    "api.twilio.com",
+    "api.sendgrid.com",
+    "api.mailgun.com",
+    "api.stripe.com",
+    "ecs.aliyuncs.com",
+    "api.qcloud.com",
+    "api.ucloud.cn",
+    "api.huaweicloud.com",
+    "api.baidubce.com",
+    "api.volcengine.com",
+    "gateway.",
+    "api-gateway.",
+    "apigateway.",
+    "/api/",
+    "/v1/",
+    "/v2/",
+    "/v3/",
+    "/v4/",
+    "/rest/",
+    "/graphql/",
+    "rest.",
+    "graphql.",
+    "webhook.",
+    "rpc."
+  ],
+  "dnsServiceKeywords": [
+    "8.8.8.8",
+    "8.8.4.4",
+    "1.1.1.1",
+    "1.0.0.1",
+    "9.9.9.9",
+    "149.112.112.112",
+    "208.67.222.222",
+    "208.67.220.220",
+    "dns.google",
+    "dns.google.com",
+    "cloudflare-dns.com",
+    "dns.cloudflare.com",
+    "one.one.one.one",
+    "family.cloudflare-dns.com",
+    "security.cloudflare-dns.com",
+    "dns.quad9.net",
+    "dns9.quad9.net",
+    "dns10.quad9.net",
+    "dns11.quad9.net",
+    "doh.opendns.com",
+    "doh.familyshield.opendns.com",
+    "doh.sandbox.opendns.com",
+    "mozilla.cloudflare-dns.com",
+    "firefox.dns.nextdns.io",
+    "nextdns.io",
+    "dns.adguard.com",
+    "dns-family.adguard.com",
+    "dns-unfiltered.adguard.com",
+    "doh.cleanbrowsing.org",
+    "family-filter-dns.cleanbrowsing.org",
+    "dot.cloudflare-dns.com",
+    "dot.alidns.com",
+    "dot.dns.sb",
+    "dot.360.cn",
+    "doh.pub",
+    "dns.pub",
+    "doh.360.cn",
+    "dns.alidns.com",
+    "doh.alidns.com",
+    "doh.dns.sb",
+    "rubyfish.cn",
+    "dns.rubyfish.cn",
+    "pdns.fkgfw.cf",
+    "commons.host",
+    "odvr.nic.cz",
+    "doh.libredns.gr",
+    "dns.digitale-gesellschaft.ch",
+    "dns.switch.ch",
+    "jp.tiar.app",
+    "jp.tiarap.org",
+    "kaitain.restena.lu",
+    "dns.twnic.tw",
+    "dns.hinet.net",
+    "dns",
+    "doh",
+    "doq",
+    "dot",
+    "resolver",
+    "nameserver",
+    "recursive",
+    "authoritative",
+    "secure-dns",
+    "private-dns"
+  ],
+  "dnsServicePorts": [
+    53,
+    853,
+    784,
+    5053,
+    5353,
+    5355,
+    8853,
+    9953
+  ],
+  "apiServicePorts": [
+    8080,
+    8443,
+    9000,
+    9001,
+    9002,
+    3000,
+    3001,
+    5000,
+    5001,
+    8000,
+    8001,
+    8888,
+    4000,
+    4001,
+    6000,
+    6001,
+    7000,
+    7001
+  ],
+  "gameSpecificPorts": [
+    25565,
+    27015,
+    27016,
+    27017,
+    27018,
+    27019,
+    27020,
+    27031,
+    27036,
+    3074,
+    3478,
+    3479,
+    3659,
+    6250,
+    7000,
+    7001,
+    7002,
+    7003,
+    7004,
+    8393,
+    8394,
+    9000,
+    9001,
+    9330,
+    9331,
+    9339,
+    14000,
+    14001,
+    14002,
+    14003,
+    14004,
+    14008,
+    16000,
+    18000,
+    18060,
+    18120,
+    18180,
+    18240,
+    18300,
+    19000,
+    19132,
+    20000,
+    20001,
+    20002,
+    22100,
+    22101,
+    22102,
+    30000,
+    30001,
+    30002,
+    30003,
+    30004,
+    35000,
+    35001,
+    35002,
+    40000,
+    40001,
+    40002,
+    50000,
+    50001,
+    50002,
+    50505,
+    65010,
+    65050,
+    3724,
+    6112,
+    6881
+  ],
+  "communicationPorts": [
+    5060,
+    5061,
+    1720,
+    1080,
+    1443,
+    3478,
+    3479,
+    5349,
+    5350,
+    5222,
+    5269,
+    5938,
+    6881,
+    6882,
+    6883,
+    6884,
+    6885,
+    6886,
+    6887,
+    6888,
+    6889,
+    8801,
+    8802,
+    8443,
+    10000,
+    10001,
+    19302,
+    19303,
+    50000,
+    50001,
+    50002,
+    50003,
+    50004,
+    50005,
+    55000,
+    55001,
+    1863,
+    5228,
+    34784
+  ],
+  "wellKnownPorts": {
+    "22": 100,
+    "25": 101,
+    "53": 102,
+    "80": 103,
+    "110": 104,
+    "123": 120,
+    "143": 105,
+    "389": 130,
+    "443": 106,
+    "445": 122,
+    "465": 107,
+    "587": 121,
+    "636": 131,
+    "784": 102,
+    "853": 102,
+    "993": 108,
+    "995": 109,
+    "1194": 110,
+    "1433": 124,
+    "1521": 125,
+    "1812": 111,
+    "2049": 126,
+    "3306": 112,
+    "3389": 123,
+    "5053": 102,
+    "5353": 102,
+    "5355": 102,
+    "5432": 113,
+    "5672": 128,
+    "5900": 127,
+    "6379": 114,
+    "6660": 116,
+    "6665": 116,
+    "6666": 116,
+    "6667": 116,
+    "6668": 116,
+    "6669": 116,
+    "8000": 117,
+    "8008": 117,
+    "8080": 117,
+    "8443": 118,
+    "8853": 102,
+    "8883": 119,
+    "9200": 129,
+    "9953": 102,
+    "11211": 132,
+    "27017": 115
+  },
+  "portRanges": [
+    [
+      0,
+      1023,
+      8
+    ],
+    [
+      1024,
+      49151,
+      9
+    ],
+    [
+      49152,
+      65535,
+      10
+    ]
+  ],
+  "gameCommRanges": [
+    [
+      3000,
+      3999,
+      3
+    ],
+    [
+      5000,
+      5999,
+      2
+    ],
+    [
+      6000,
+      7000,
+      3
+    ],
+    [
+      8000,
+      9000,
+      3
+    ],
+    [
+      10000,
+      20000,
+      3
+    ],
+    [
+      27000,
+      28000,
+      1
+    ],
+    [
+      30000,
+      32000,
+      1
+    ],
+    [
+      49000,
+      50000,
+      2
+    ],
+    [
+      50000,
+      55000,
+      3
+    ],
+    [
+      55000,
+      60000,
+      2
+    ]
+  ],
+  "privateIPNetworks": [
+    [
+      "10.0.0.0/8",
+      10
+    ],
+    [
+      "172.16.0.0/12",
+      10
+    ],
+    [
+      "192.168.0.0/16",
+      10
+    ],
+    [
+      "127.0.0.0/8",
+      11
+    ],
+    [
+      "169.254.0.0/16",
+      12
+    ],
+    [
+      "100.64.0.0/10",
+      13
+    ],
+    [
+      "192.0.2.0/24",
+      13
+    ],
+    [
+      "198.51.100.0/24",
+      13
+    ],
+    [
+      "203.0.113.0/24",
+      13
+    ],
+    [
+      "240.0.0.0/4",
+      13
+    ],
+    [
+      "::1/128",
+      11
+    ],
+    [
+      "fe80::/10",
+      12
+    ],
+    [
+      "fc00::/7",
+      10
+    ],
+    [
+      "2001:db8::/32",
+      13
+    ],
+    [
+      "ff00::/8",
+      13
+    ]
+  ],
+  "sharedASNs": [
+    "13335",
+    "12222",
+    "16625",
+    "20940",
+    "31110",
+    "35994",
+    "54113",
+    "22822",
+    "15133",
+    "19551",
+    "20446",
+    "5065",
+    "60068",
+    "16509",
+    "36408",
+    "4809",
+    "4847",
+    "199524",
+    "212238",
+    "55933",
+    "43260",
+    "43317",
+    "43996",
+    "33438",
+    "396982",
+    "16276",
+    "30081",
+    "12389",
+    "37888",
+    "45090",
+    "207143",
+    "14061",
+    "24940",
+    "31898",
+    "36351",
+    "14618",
+    "45102",
+    "132203",
+    "55990",
+    "12876",
+    "51167",
+    "197540",
+    "20473",
+    "63949",
+    "9009",
+    "60781",
+    "36236",
+    "39572",
+    "400618",
+    "4134",
+    "4808",
+    "4837"
+  ]
+}

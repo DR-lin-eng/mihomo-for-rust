@@ -7,9 +7,11 @@ repository.workspace = true
 
 [dependencies]
 base64 = "0.22"
+hickory-proto = { version = "0.24", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 mihomo-core = { path = "../mihomo-core" }
 mihomo-config = { path = "../mihomo-config" }
+mihomo-ebpf = { path = "../mihomo-ebpf" }
 mihomo-dns = { path = "../mihomo-dns" }
 mihomo-inbound = { path = "../mihomo-inbound" }
 mihomo-outbound = { path = "../mihomo-outbound" }
@@ -22,6 +24,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
 sha1 = "0.10"
+zstd = "0.13"
 
 [dev-dependencies]
  mihomo-transport = { path = "../mihomo-transport" }

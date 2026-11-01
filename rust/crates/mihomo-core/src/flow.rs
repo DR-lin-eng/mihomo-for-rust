@@ -82,6 +82,7 @@ pub struct Metadata {
     pub remote_destination: String,
     pub dscp: Option<u8>,
     pub sniff_host: Option<String>,
+    pub smart_rule: Option<(String,usize)>,
 }
 
 impl Default for Metadata {
@@ -111,6 +112,7 @@ impl Default for Metadata {
             remote_destination: String::new(),
             dscp: None,
             sniff_host: None,
+            smart_rule: None,
         }
     }
 }
@@ -219,7 +221,31 @@ impl std::fmt::Display for ParseMetadataError {
 impl std::error::Error for ParseMetadataError {}
 
 pub trait TcpStream: Read + Write + Send + Any {
+    /// Optional physical TCP counters; multiplexed/QUIC streams may have none.
+    fn tcp_stats(&self)->Option<crate::TcpStats>{None}
+    fn set_timeouts(&self,_read:Option<std::time::Duration>,_write:Option<std::time::Duration>)->io::Result<()>{Ok(())}
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream>;
+
+    /// Whether this stream can switch each direction from TLS to its underlying
+    /// transport at a record boundary (XTLS Vision).
+    fn supports_tls_passthrough(&self) -> bool {
+        false
+    }
+
+    fn start_tls_passthrough_read(&mut self) -> io::Result<()> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "TLS read passthrough unavailable",
+        ))
+    }
+
+    fn start_tls_passthrough_write(&mut self) -> io::Result<()> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "TLS write passthrough unavailable",
+        ))
+    }
 
     fn shutdown_write(&mut self) -> io::Result<()> {
         Ok(())
@@ -231,6 +257,9 @@ pub trait TcpStream: Read + Write + Send + Any {
 }
 
 impl TcpStream for std::net::TcpStream {
+    fn tcp_stats(&self)->Option<crate::TcpStats>{crate::tcp_stats::read(self)}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.set_read_timeout(read)?;self.set_write_timeout(write)}
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Ok(Box::new(self.try_clone()?))
     }
@@ -245,8 +274,23 @@ impl TcpStream for std::net::TcpStream {
 }
 
 impl TcpStream for Box<dyn TcpStream> {
+    fn tcp_stats(&self)->Option<crate::TcpStats>{(**self).tcp_stats()}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{(**self).set_timeouts(read,write)}
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         (**self).try_clone_box()
+    }
+
+    fn supports_tls_passthrough(&self) -> bool {
+        (**self).supports_tls_passthrough()
+    }
+
+    fn start_tls_passthrough_read(&mut self) -> io::Result<()> {
+        (**self).start_tls_passthrough_read()
+    }
+
+    fn start_tls_passthrough_write(&mut self) -> io::Result<()> {
+        (**self).start_tls_passthrough_write()
     }
 
     fn shutdown_write(&mut self) -> io::Result<()> {

@@ -1,0 +1,11 @@
+{
+  "dashboard": "MetaCubeXD v1.273.1",
+  "smart_group_visible": true,
+  "manual_selection_verified": {
+    "type": "Smart",
+    "now": "DIRECT",
+    "fixed": "DIRECT"
+  },
+  "core_sha256": "8a799f3f70b9d142ba9e0665c74f5a822e7a9edb4db7ff6eb1948bdb0d34cb1a",
+  "screenshot": "output/playwright/smart-20261101/smart-group.png"
+}

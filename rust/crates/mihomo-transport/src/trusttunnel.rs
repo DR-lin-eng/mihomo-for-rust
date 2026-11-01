@@ -4,7 +4,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use base64::Engine as _;
 use mihomo_core::BoxedTcpStream;
 
-use crate::{h2_stream, TlsOptions, TransportError, TransportTarget};
+use crate::{h2_stream, h3_stream, TlsOptions, TransportError, TransportTarget};
 
 const UDP_MAGIC_ADDRESS: &str = "_udp2";
 const TCP_USER_AGENT: &str = "mihomo-rust trusttunnel";
@@ -29,6 +29,78 @@ pub(crate) fn wrap_tls_stream(
     )
 }
 
+pub(crate) fn wrap_quic_stream(
+    proxy: &TransportTarget,
+    tls: &TlsOptions,
+    alpn: &[String],
+    username: &str,
+    password: &str,
+    target: &TransportTarget,
+) -> Result<BoxedTcpStream, TransportError> {
+    h3_stream::wrap_quic_stream_with_request(
+        proxy,
+        &h3_stream::H3ConnectOptions {
+            sni: tls.sni.clone(),
+            alpn: if alpn.is_empty() {
+                vec!["h3".to_owned()]
+            } else {
+                alpn.to_vec()
+            },
+            skip_cert_verify: tls.skip_cert_verify,
+        },
+        h3_stream::H3RequestOptions {
+            authority: target.authority(),
+            path: "/".to_owned(),
+            method: "CONNECT".to_owned(),
+            headers: vec![
+                ("user-agent".to_owned(), TCP_USER_AGENT.to_owned()),
+                (
+                    "proxy-authorization".to_owned(),
+                    build_basic_auth(username, password),
+                ),
+            ],
+        },
+    )
+}
+
+pub(crate) fn wrap_quic_stream_with_socks5_stream(
+    proxy: &TransportTarget,
+    tls: &TlsOptions,
+    alpn: &[String],
+    username: &str,
+    password: &str,
+    target: &TransportTarget,
+    control_stream: BoxedTcpStream,
+    auth: Option<crate::BasicAuth>,
+) -> Result<BoxedTcpStream, TransportError> {
+    h3_stream::wrap_quic_stream_with_request_and_socks5_stream(
+        proxy,
+        &h3_stream::H3ConnectOptions {
+            sni: tls.sni.clone(),
+            alpn: if alpn.is_empty() {
+                vec!["h3".to_owned()]
+            } else {
+                alpn.to_vec()
+            },
+            skip_cert_verify: tls.skip_cert_verify,
+        },
+        h3_stream::H3RequestOptions {
+            authority: target.authority(),
+            path: "/".to_owned(),
+            method: "CONNECT".to_owned(),
+            headers: vec![
+                ("user-agent".to_owned(), TCP_USER_AGENT.to_owned()),
+                (
+                    "proxy-authorization".to_owned(),
+                    build_basic_auth(username, password),
+                ),
+            ],
+        },
+        Some(control_stream),
+        auth,
+    )
+}
+
 pub(crate) fn open_udp_stream(
     stream: BoxedTcpStream,
     proxy: &TransportTarget,
@@ -43,6 +115,76 @@ pub(crate) fn open_udp_stream(
         tls,
         alpn,
         request_options(UDP_MAGIC_ADDRESS.to_owned(), UDP_USER_AGENT, username, password),
+    )
+}
+
+pub(crate) fn open_quic_udp_stream(
+    proxy: &TransportTarget,
+    tls: &TlsOptions,
+    alpn: &[String],
+    username: &str,
+    password: &str,
+) -> Result<BoxedTcpStream, TransportError> {
+    h3_stream::wrap_quic_stream_with_request(
+        proxy,
+        &h3_stream::H3ConnectOptions {
+            sni: tls.sni.clone(),
+            alpn: if alpn.is_empty() {
+                vec!["h3".to_owned()]
+            } else {
+                alpn.to_vec()
+            },
+            skip_cert_verify: tls.skip_cert_verify,
+        },
+        h3_stream::H3RequestOptions {
+            authority: UDP_MAGIC_ADDRESS.to_owned(),
+            path: "/".to_owned(),
+            method: "CONNECT".to_owned(),
+            headers: vec![
+                ("user-agent".to_owned(), UDP_USER_AGENT.to_owned()),
+                (
+                    "proxy-authorization".to_owned(),
+                    build_basic_auth(username, password),
+                ),
+            ],
+        },
+    )
+}
+
+pub(crate) fn open_quic_udp_stream_with_socks5_stream(
+    proxy: &TransportTarget,
+    tls: &TlsOptions,
+    alpn: &[String],
+    username: &str,
+    password: &str,
+    control_stream: BoxedTcpStream,
+    auth: Option<crate::BasicAuth>,
+) -> Result<BoxedTcpStream, TransportError> {
+    h3_stream::wrap_quic_stream_with_request_and_socks5_stream(
+        proxy,
+        &h3_stream::H3ConnectOptions {
+            sni: tls.sni.clone(),
+            alpn: if alpn.is_empty() {
+                vec!["h3".to_owned()]
+            } else {
+                alpn.to_vec()
+            },
+            skip_cert_verify: tls.skip_cert_verify,
+        },
+        h3_stream::H3RequestOptions {
+            authority: UDP_MAGIC_ADDRESS.to_owned(),
+            path: "/".to_owned(),
+            method: "CONNECT".to_owned(),
+            headers: vec![
+                ("user-agent".to_owned(), UDP_USER_AGENT.to_owned()),
+                (
+                    "proxy-authorization".to_owned(),
+                    build_basic_auth(username, password),
+                ),
+            ],
+        },
+        Some(control_stream),
+        auth,
     )
 }
 
@@ -135,4 +277,3 @@ fn parse_16_bytes_ip(buffer: [u8; 16]) -> IpAddr {
     }
     IpAddr::V6(Ipv6Addr::from(buffer))
 }
-

@@ -6,8 +6,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+libc = "0.2"
 mihomo-core = { path = "../mihomo-core" }
 mihomo-inbound = { path = "../mihomo-inbound" }
+ipnet = "2"
 
 [lib]
 path = "src/lib.rs"

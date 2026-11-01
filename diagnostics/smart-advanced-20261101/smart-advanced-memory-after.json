@@ -1,0 +1,252 @@
+{
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-smart-advanced",
+  "sha256": "58fcaf91b04514df2f012eee688a9a3bd7e6e330eda75d21311c1ce5092876de",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "geosite_sha256": "2791dc94d5f2fceb1bf9b0d11e72e6309f33f2f99983fa032d7997f710ee552a",
+  "geosite_bytes": 4320390,
+  "records": [
+    {
+      "scenario": "idle",
+      "repeat": 0,
+      "startup_seconds": 0.0299,
+      "idle": {
+        "VmSize": 36940,
+        "VmHWM": 8312,
+        "VmRSS": 8312,
+        "Threads": 5,
+        "Pss": 8308,
+        "Private_Dirty": 1100,
+        "Anonymous": 1104
+      },
+      "after_api_poll": {
+        "VmSize": 36976,
+        "VmHWM": 8640,
+        "VmRSS": 8468,
+        "Threads": 5,
+        "Pss": 8464,
+        "Private_Dirty": 1128,
+        "Anonymous": 1136
+      },
+      "peak_rss_kib": 8640,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 0,
+      "startup_seconds": 0.0899,
+      "idle": {
+        "VmSize": 56192,
+        "VmHWM": 24784,
+        "VmRSS": 24784,
+        "Threads": 5,
+        "Pss": 24780,
+        "Private_Dirty": 17568,
+        "Anonymous": 17576
+      },
+      "after_api_poll": {
+        "VmSize": 56488,
+        "VmHWM": 45200,
+        "VmRSS": 25196,
+        "Threads": 5,
+        "Pss": 25192,
+        "Private_Dirty": 17852,
+        "Anonymous": 17864
+      },
+      "peak_rss_kib": 45412,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 0,
+      "startup_seconds": 0.054,
+      "idle": {
+        "VmSize": 47564,
+        "VmHWM": 19044,
+        "VmRSS": 12772,
+        "Threads": 8,
+        "Pss": 12768,
+        "Private_Dirty": 5412,
+        "Anonymous": 5416
+      },
+      "after_api_poll": {
+        "VmSize": 47568,
+        "VmHWM": 19044,
+        "VmRSS": 12928,
+        "Threads": 8,
+        "Pss": 12924,
+        "Private_Dirty": 5440,
+        "Anonymous": 5448
+      },
+      "peak_rss_kib": 19044,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 1,
+      "startup_seconds": 0.0309,
+      "idle": {
+        "VmSize": 36940,
+        "VmHWM": 8312,
+        "VmRSS": 8312,
+        "Threads": 5,
+        "Pss": 8308,
+        "Private_Dirty": 1100,
+        "Anonymous": 1104
+      },
+      "after_api_poll": {
+        "VmSize": 36976,
+        "VmHWM": 8468,
+        "VmRSS": 8468,
+        "Threads": 5,
+        "Pss": 8464,
+        "Private_Dirty": 1128,
+        "Anonymous": 1136
+      },
+      "peak_rss_kib": 8676,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 1,
+      "startup_seconds": 0.0914,
+      "idle": {
+        "VmSize": 56192,
+        "VmHWM": 24788,
+        "VmRSS": 24788,
+        "Threads": 5,
+        "Pss": 24784,
+        "Private_Dirty": 17572,
+        "Anonymous": 17580
+      },
+      "after_api_poll": {
+        "VmSize": 56488,
+        "VmHWM": 45236,
+        "VmRSS": 25200,
+        "Threads": 5,
+        "Pss": 25196,
+        "Private_Dirty": 17856,
+        "Anonymous": 17868
+      },
+      "peak_rss_kib": 45316,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 1,
+      "startup_seconds": 0.0559,
+      "idle": {
+        "VmSize": 47564,
+        "VmHWM": 18932,
+        "VmRSS": 12768,
+        "Threads": 8,
+        "Pss": 12764,
+        "Private_Dirty": 5408,
+        "Anonymous": 5412
+      },
+      "after_api_poll": {
+        "VmSize": 47568,
+        "VmHWM": 18932,
+        "VmRSS": 12924,
+        "Threads": 8,
+        "Pss": 12920,
+        "Private_Dirty": 5436,
+        "Anonymous": 5444
+      },
+      "peak_rss_kib": 18932,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "idle",
+      "repeat": 2,
+      "startup_seconds": 0.0401,
+      "idle": {
+        "VmSize": 36940,
+        "VmHWM": 8312,
+        "VmRSS": 8312,
+        "Threads": 5,
+        "Pss": 8308,
+        "Private_Dirty": 1100,
+        "Anonymous": 1104
+      },
+      "after_api_poll": {
+        "VmSize": 36976,
+        "VmHWM": 8468,
+        "VmRSS": 8468,
+        "Threads": 5,
+        "Pss": 8464,
+        "Private_Dirty": 1128,
+        "Anonymous": 1136
+      },
+      "peak_rss_kib": 8516,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "rules-40000",
+      "repeat": 2,
+      "startup_seconds": 0.0804,
+      "idle": {
+        "VmSize": 56192,
+        "VmHWM": 24788,
+        "VmRSS": 24788,
+        "Threads": 5,
+        "Pss": 24784,
+        "Private_Dirty": 17572,
+        "Anonymous": 17580
+      },
+      "after_api_poll": {
+        "VmSize": 56488,
+        "VmHWM": 45244,
+        "VmRSS": 25200,
+        "Threads": 5,
+        "Pss": 25196,
+        "Private_Dirty": 17856,
+        "Anonymous": 17868
+      },
+      "peak_rss_kib": 45244,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    },
+    {
+      "scenario": "smart-18-groups",
+      "repeat": 2,
+      "startup_seconds": 0.057,
+      "idle": {
+        "VmSize": 47564,
+        "VmHWM": 19044,
+        "VmRSS": 12768,
+        "Threads": 8,
+        "Pss": 12764,
+        "Private_Dirty": 5408,
+        "Anonymous": 5412
+      },
+      "after_api_poll": {
+        "VmSize": 47568,
+        "VmHWM": 19044,
+        "VmRSS": 12924,
+        "Threads": 8,
+        "Pss": 12920,
+        "Private_Dirty": 5436,
+        "Anonymous": 5444
+      },
+      "peak_rss_kib": 19044,
+      "requests": 32,
+      "kernel_map_memlock_bytes": 0,
+      "passed": true
+    }
+  ]
+}

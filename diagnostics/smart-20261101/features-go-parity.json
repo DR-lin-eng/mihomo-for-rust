@@ -1,0 +1,8 @@
+{
+  "reference": "vernesong/mihomo Alpha 77af4804d091d89b871c99b52d50915f4a600d81 feature functions",
+  "inputs": 160,
+  "slots": 32,
+  "max_absolute_error": 8.881784197001252e-16,
+  "passed": true,
+  "mismatches": []
+}

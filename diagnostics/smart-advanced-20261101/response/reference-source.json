@@ -1,0 +1,21 @@
+{
+  "commit": "77af4804d091d89b871c99b52d50915f4a600d81",
+  "functions": [
+    "ClassifyResponse",
+    "parseRetryAfter",
+    "rateLimitTTL",
+    "isEdgeAnswer",
+    "isChallenge",
+    "isRateLimited",
+    "ignore",
+    "reachable",
+    "record",
+    "IsRegionUnavailableLocation",
+    "IsRegionUnavailableText"
+  ],
+  "files": {
+    "component/smart/response.go": "5535f02d2cc81588e19ef5bf88446b48fc9c081c56be3f3936cb5c3cf3cfe622",
+    "component/smart/exit.go": "fcb854b389e9786dd7e9bfe294190f30ab3add1827eebdbb09c07eef8821b085"
+  },
+  "cases": 1980
+}

@@ -58,6 +58,39 @@ pub fn build_effective_listeners(document: &RuntimeConfigDocument) -> Vec<Effect
         document.bind_address.as_str(),
         document.allow_lan,
     );
+    if document.tuic_server.enable && !document.tuic_server.listen.trim().is_empty() {
+        listeners.push(EffectiveListener {
+            synthetic_name: "__top_level_tuic__".to_owned(),
+            kind: InboundKind::Tuic,
+            addresses: document
+                .tuic_server
+                .listen
+                .split(',')
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned)
+                .collect(),
+            origin: ListenerOrigin::TopLevel,
+        });
+    }
+    if !document.shadow_socks_config.trim().is_empty() {
+        maybe_push_top_level_url_listener(
+            &mut listeners,
+            "__top_level_shadowsocks__",
+            InboundKind::ShadowSocks,
+            &document.shadow_socks_config,
+            "ss://",
+        );
+    }
+    if !document.vmess_config.trim().is_empty() {
+        maybe_push_top_level_url_listener(
+            &mut listeners,
+            "__top_level_vmess__",
+            InboundKind::Vmess,
+            &document.vmess_config,
+            "vmess://",
+        );
+    }
 
     listeners.extend(document.listeners.iter().map(|listener| EffectiveListener {
         synthetic_name: listener.base().name.clone(),
@@ -85,6 +118,36 @@ fn maybe_push_top_level_listener(
         synthetic_name: synthetic_name.to_owned(),
         kind,
         addresses: vec![address],
+        origin: ListenerOrigin::TopLevel,
+    });
+}
+
+fn maybe_push_top_level_url_listener(
+    listeners: &mut Vec<EffectiveListener>,
+    synthetic_name: &str,
+    kind: InboundKind,
+    raw: &str,
+    scheme: &str,
+) {
+    let Some(value) = raw.trim().strip_prefix(scheme) else {
+        return;
+    };
+    let Some((_, addresses)) = value.split_once('@') else {
+        return;
+    };
+    let addresses = addresses
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
+        .collect::<Vec<_>>();
+    if addresses.is_empty() {
+        return;
+    }
+    listeners.push(EffectiveListener {
+        synthetic_name: synthetic_name.to_owned(),
+        kind,
+        addresses,
         origin: ListenerOrigin::TopLevel,
     });
 }
@@ -185,5 +248,49 @@ listeners:
         assert_eq!(listeners[0].synthetic_name, "__top_level_http__");
         assert_eq!(listeners[1].synthetic_name, "custom-socks");
         assert_eq!(listeners[1].addresses, vec!["127.0.0.1:1080", "127.0.0.1:1081"]);
+    }
+
+    #[test]
+    fn top_level_url_based_inbounds_are_reflected_in_effective_listeners() {
+        let document = parse_runtime_config_document(
+            r#"
+ss-config: ss://aes-128-gcm:secret@127.0.0.1:12345,127.0.0.1:12346
+vmess-config: vmess://user:b831381d-6324-4d53-ad4f-8cda48b30811@127.0.0.1:22345
+"#,
+        )
+        .unwrap();
+        let listeners = build_effective_listeners(&document);
+        assert!(listeners.iter().any(|listener| {
+            listener.synthetic_name == "__top_level_shadowsocks__"
+                && listener.kind == InboundKind::ShadowSocks
+                && listener.addresses == vec!["127.0.0.1:12345", "127.0.0.1:12346"]
+        }));
+        assert!(listeners.iter().any(|listener| {
+            listener.synthetic_name == "__top_level_vmess__"
+                && listener.kind == InboundKind::Vmess
+                && listener.addresses == vec!["127.0.0.1:22345"]
+        }));
+    }
+
+    #[test]
+    fn top_level_tuic_server_is_reflected_in_effective_listeners() {
+        let document = parse_runtime_config_document(
+            r#"
+tuic-server:
+  enable: true
+  listen: 127.0.0.1:10443,127.0.0.1:10444
+  token:
+    - secret
+  certificate: cert
+  private-key: key
+"#,
+        )
+        .unwrap();
+        let listeners = build_effective_listeners(&document);
+        assert!(listeners.iter().any(|listener| {
+            listener.synthetic_name == "__top_level_tuic__"
+                && listener.kind == InboundKind::Tuic
+                && listener.addresses == vec!["127.0.0.1:10443", "127.0.0.1:10444"]
+        }));
     }
 }

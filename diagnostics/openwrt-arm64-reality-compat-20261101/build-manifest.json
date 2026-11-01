@@ -1,0 +1,21 @@
+{
+  "artifact": "mihomo-rust-openwrt-arm64-reality-compat",
+  "target": "aarch64-unknown-linux-musl",
+  "arch": "AArch64 (ARM64), little-endian, generic ARMv8",
+  "statically_linked": true,
+  "shared_library_dependencies": [],
+  "bytes": 24479872,
+  "gzip_bytes": 11276057,
+  "sha256": {
+    "mihomo-rust-openwrt-arm64-reality-compat": "77b02c4269ff5e7b314d109acd0d505c882bc219cd5d07001b6e714f95f43427",
+    "mihomo-rust-openwrt-arm64-reality-compat.gz": "eb3752dd98df4f136d9d350687c554dca676d40271fc429a9b32deb86508ccda"
+  },
+  "rust_toolchain": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+  "validation": {
+    "alpine_3_20_arm64_startup": true,
+    "configuration_check": true,
+    "reality_vision_interoperability_scenarios": 12,
+    "openwrt_device_verified": false
+  },
+  "source_hash_file": "source-before.json"
+}

@@ -1,0 +1,76 @@
+{
+  "created_utc": "2026-10-31T19:40:40.146289+00:00",
+  "reference": {
+    "repository": "https://github.com/vernesong/mihomo",
+    "branch": "Alpha",
+    "commit": "77af4804d091d89b871c99b52d50915f4a600d81",
+    "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788"
+  },
+  "source_sha256": {
+    "rust/Cargo.lock": "bf3bfb266544eb9d4e1c8a8d8f4c3f0bde90035615725b8cccedfbd9041f0b42",
+    "rust/crates/mihomo-runtime/Cargo.toml": "853080eca79f1e8efdfbe5255fc90e2678f5df2b1679d37291de17a2d7236c6e",
+    "rust/crates/mihomo-runtime/src/lib.rs": "21febb128e7482bd31d201d2f98ee0f769ff1d1aaa4e9ba0c2595f0f822959dc",
+    "rust/crates/mihomo-runtime/src/group.rs": "f1ebbb311bcc1d3e690d3b44c1dd3c78d5d9c5f0386670a71d54e0ac39848779",
+    "rust/crates/mihomo-runtime/src/bootstrap.rs": "14126bd9e4ef36593b3fe6d31327b53fcd08bf0f6b8d942d0be7286fc396886d",
+    "rust/crates/mihomo-runtime/src/tunnel_runtime.rs": "9ccbb59f4450d8597cd76a3f2714e3b545400269c2c5bbf6d663fee0739695de",
+    "rust/crates/mihomo-runtime/examples/smart-model.rs": "87bd46e97896d2f025c4de85d818dcfbb09eb53355b0b74bcc35488d971d9ad5",
+    "rust/crates/mihomo-outbound/src/kinds.rs": "01dcdc8be2ec2f017c1c1b378c180721f7d37574eea4f391db951e0c7423b9ef",
+    "rust/crates/mihomo-outbound/src/models.rs": "b88b481a72dded6c312dd8614dd1e6407f816e44756f5f6d048644b30e2976f6",
+    "rust/crates/mihomo-outbound/src/tests.rs": "c264138456b7c6cfb60692876fcbe6ff9e827b3cf57df940dca96ca2a1d8807e",
+    "rust/crates/mihomo-config/src/document.rs": "60d973a9c7fda52297b079c9118565978273232681c31d6e3f69e5be71d9311d",
+    "rust/crates/mihomo-config/src/validation.rs": "4815882c748ac7da3b4fef9ddaa4f7ddbb917b88d6e8008ca27f526f32082dc8",
+    "rust/crates/mihomo-config/src/tests.rs": "dd10e7b639a3da80dee3e09be9865f424de74e668ca3a2c9a30d3b1d0f42ff99",
+    "rust/crates/mihomo-api/src/server.rs": "7018ed9de0109b7e478798ae4539c7b57a12fa76c8648058d82b0c6fd4872c62",
+    "rust/crates/mihomo-api/src/server/smart.rs": "5f4e9fa56b3874073dcdbdbf0192bd9df4084427f5b1b164062dc789845ac846",
+    "rust/crates/mihomo-api/src/snapshot_builder.rs": "efddafa0185d4efe710fdb5158aa3ce9868d4aa34e1707e831d00be7ccf853dd",
+    "rust/crates/mihomo-api/src/snapshot_types.rs": "b95a27ec9b464a77db85498aa86366e08ec8e74e35a5871bb6fdc4e8caa42125",
+    "rust/crates/mihomo-app/src/app.rs": "ec2fef2a9e03975dc2d6fc3f9cfc4c1a9734e276d93743e8c5ae9b10096f78a1",
+    "rust/crates/mihomo-app/src/main_commands.rs": "fd575b5d441b4f8cf179bf4e6476a3459bab14ef1136d3384087a9b3fdc9fa45",
+    "rust/crates/mihomo-app/src/listener_service_runner.rs": "90a8cc2c774923b3ce603cc45fba1b2d53f73a5b2592c9b0f72f9a075761f1a2",
+    "rust/crates/mihomo-app/src/listener_udp_session.rs": "c996f071d3d3bd8a7949873beefbcb38147930f25fc6c38125ad55fba8f639ce",
+    "rust/crates/mihomo-app/src/listener_udp_session_ops.rs": "82e392f3810e03c6789ffc8160dd3b9d9875ff091c175b8577d6e7edbef30bb7",
+    "scripts/smart-smoke.py": "4303b7a471a919a34439512946925807a4cb70a0100e91c54b4fe024c6902295",
+    "scripts/smart-model-verify.py": "fd7bc2ce184ab19803fae85ce14a0e231fb4f1f21d60e4f6fcc3b9e7d110e307",
+    "rust/crates/mihomo-runtime/src/smart/download.rs": "a030bc719d69c24e5a0e9f2fce277d005fe8f11047fbeb6ddd7f52e2a51346f0",
+    "rust/crates/mihomo-runtime/src/smart/feature-tables.json": "3f1cf058c6ad1285d6ba4702e85a7ee99cbad149f90160c4c8717c84420bfe54",
+    "rust/crates/mihomo-runtime/src/smart/features.rs": "26c4a349d741a182e1bed9b57b37498c97391b2da9dcab6a633d4d348d667d3d",
+    "rust/crates/mihomo-runtime/src/smart/geodata.rs": "0ba46b4cda55a476762f1ec9f8c8469a4edb5f6337e8b82ed69f9d3591cf83cf",
+    "rust/crates/mihomo-runtime/src/smart/mod.rs": "449879886e4664292f520f327032d2ca7b4236bcc38120755fbe2c9dc339f037",
+    "rust/crates/mihomo-runtime/src/smart/model.rs": "645ee23fa7b42d1af507a2edcdfca93433221782fb4f448d25c92cfd17169175",
+    "rust/crates/mihomo-runtime/src/smart/runtime.rs": "c08861f3c69d049773abb9e239e72374746ee07a7d875c4b80aec35fe0d5692d",
+    "rust/crates/mihomo-runtime/src/smart/stream.rs": "cf66e92e4f3be4efab92d2b6a732b84191439f672abb59e4ca1237a2cac38bb8",
+    "rust/crates/mihomo-runtime/src/smart/tests.rs": "7410f1611e58f2a419691252ff4259ce4e1c24bf38d74dbf6dfee6c27382bb2e",
+    "rust/crates/mihomo-runtime/src/smart/weight.rs": "e1de7bbe8f4b88964cce3b1fc11b5865202a06714422b5b715933f57521f1b51"
+  },
+  "artifact": {
+    "path": "bin/mihomo-rust-openwrt-arm64-smart",
+    "sha256": "8a799f3f70b9d142ba9e0665c74f5a822e7a9edb4db7ff6eb1948bdb0d34cb1a",
+    "size_bytes": 25594640,
+    "target": "aarch64-unknown-linux-musl",
+    "static": true,
+    "stripped": true
+  },
+  "tests": {
+    "subsystem_unit": 458,
+    "mmdb_fixture": 1,
+    "app_dns": 11,
+    "app_reload": 2,
+    "udp_sessions": 2,
+    "smart_runtime": 39,
+    "compatibility_runtime": 55,
+    "model_numeric_cases": 160,
+    "feature_parity_cases": 160,
+    "adaptive_parity_cases": 160
+  },
+  "browser": {
+    "dashboard": "MetaCubeXD v1.273.1",
+    "smart_group_visible": true,
+    "manual_selection_verified": {
+      "type": "Smart",
+      "now": "DIRECT",
+      "fixed": "DIRECT"
+    },
+    "core_sha256": "8a799f3f70b9d142ba9e0665c74f5a822e7a9edb4db7ff6eb1948bdb0d34cb1a",
+    "screenshot": "output/playwright/smart-20261101/smart-group.png"
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "baseline_sha256": "53955985bebc2a7a2c41e0067e572f8ab165b20533b389b188562e767c9e9be8",
+  "optimized_sha256": "0ac1a41eaa47eccb81c1b566d109a638b1749c5b7c249dc37586b10d2fcf0e8c",
+  "method": "median of three runs per scenario, same ARM64 musl target, Docker CPUs=2; RSS includes executable/shared pages, BPF map memlock is separate",
+  "scenarios": [
+    {
+      "scenario": "idle",
+      "runs": 3,
+      "peak_rss_kib": {
+        "before": 8700,
+        "after": 8464,
+        "reduction_percent": 2.71
+      },
+      "idle_rss_kib": {
+        "before": 8104,
+        "after": 8076,
+        "reduction_percent": 0.35
+      },
+      "after_poll_rss_kib": {
+        "before": 8308,
+        "after": 8228,
+        "reduction_percent": 0.96
+      },
+      "after_poll_anonymous_kib": {
+        "before": 1176,
+        "after": 1096,
+        "reduction_percent": 6.8
+      },
+      "kernel_map_memlock_bytes": {
+        "before": 0,
+        "after": 0,
+        "reduction_percent": 0
+      }
+    },
+    {
+      "scenario": "rules-40000",
+      "runs": 3,
+      "peak_rss_kib": {
+        "before": 74708,
+        "after": 45568,
+        "reduction_percent": 39.01
+      },
+      "idle_rss_kib": {
+        "before": 34932,
+        "after": 24864,
+        "reduction_percent": 28.82
+      },
+      "after_poll_rss_kib": {
+        "before": 35396,
+        "after": 25272,
+        "reduction_percent": 28.6
+      },
+      "after_poll_anonymous_kib": {
+        "before": 28264,
+        "after": 18140,
+        "reduction_percent": 35.82
+      },
+      "kernel_map_memlock_bytes": {
+        "before": 0,
+        "after": 0,
+        "reduction_percent": 0
+      }
+    },
+    {
+      "scenario": "geosite-120000",
+      "runs": 3,
+      "peak_rss_kib": {
+        "before": 12288,
+        "after": 11296,
+        "reduction_percent": 8.07
+      },
+      "idle_rss_kib": {
+        "before": 10916,
+        "after": 10816,
+        "reduction_percent": 0.92
+      },
+      "after_poll_rss_kib": {
+        "before": 11056,
+        "after": 10972,
+        "reduction_percent": 0.76
+      },
+      "after_poll_anonymous_kib": {
+        "before": 3732,
+        "after": 3648,
+        "reduction_percent": 2.25
+      },
+      "kernel_map_memlock_bytes": {
+        "before": 0,
+        "after": 0,
+        "reduction_percent": 0
+      }
+    },
+    {
+      "scenario": "smart-18-groups",
+      "runs": 3,
+      "peak_rss_kib": {
+        "before": 20084,
+        "after": 18948,
+        "reduction_percent": 5.66
+      },
+      "idle_rss_kib": {
+        "before": 13904,
+        "after": 12504,
+        "reduction_percent": 10.07
+      },
+      "after_poll_rss_kib": {
+        "before": 14104,
+        "after": 12656,
+        "reduction_percent": 10.27
+      },
+      "after_poll_anonymous_kib": {
+        "before": 6840,
+        "after": 5392,
+        "reduction_percent": 21.17
+      },
+      "kernel_map_memlock_bytes": {
+        "before": 0,
+        "after": 0,
+        "reduction_percent": 0
+      }
+    },
+    {
+      "scenario": "ebpf-auto-redir",
+      "runs": 3,
+      "peak_rss_kib": {
+        "before": 26136,
+        "after": 9644,
+        "reduction_percent": 63.1
+      },
+      "idle_rss_kib": {
+        "before": 9164,
+        "after": 9160,
+        "reduction_percent": 0.04
+      },
+      "after_poll_rss_kib": {
+        "before": 9428,
+        "after": 9372,
+        "reduction_percent": 0.59
+      },
+      "after_poll_anonymous_kib": {
+        "before": 1404,
+        "after": 1284,
+        "reduction_percent": 8.55
+      },
+      "kernel_map_memlock_bytes": {
+        "before": 8574480,
+        "after": 8394704,
+        "reduction_percent": 2.1
+      }
+    }
+  ]
+}

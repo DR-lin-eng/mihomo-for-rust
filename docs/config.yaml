@@ -128,6 +128,13 @@ profile: # 存储 select 选择记录
   store-fake-ip: true
 
 # Tun 配置
+# Rust Linux TC eBPF (optional). See docs/rust-rewrite/ebpf-support.md.
+# Do not combine with tun.auto-redirect. auto-redir requires allow-lan: true.
+# ebpf:
+#   auto-redir: [br-lan]       # TCP ingress interception
+#   redirect-to-tun: [eth1]    # Ethernet egress -> explicit tun.device
+#   bypass-mark: 0x636c746d
+
 tun:
   enable: false
   stack: system # gvisor/mixed
@@ -567,19 +574,17 @@ proxies: # socks5
 
   - name: "ss-restls-tls13"
     type: ss
-    server: [YOUR_SERVER_IP]
+    server: "YOUR_SERVER_IP"
     port: 443
     cipher: chacha20-ietf-poly1305
-    password: [YOUR_SS_PASSWORD]
-    client-fingerprint:
-      chrome # One of: chrome, ios, firefox or safari
+    password: "YOUR_SS_PASSWORD"
+    client-fingerprint: chrome # One of: chrome, ios, firefox or safari
       # 可以是 chrome, ios, firefox, safari 中的一个
     plugin: restls
     plugin-opts:
-      host:
-        "www.microsoft.com" # Must be a TLS 1.3 server
+      host: "www.microsoft.com" # Must be a TLS 1.3 server
         # 应当是一个 TLS 1.3 服务器
-      password: [YOUR_RESTLS_PASSWORD]
+      password: "YOUR_RESTLS_PASSWORD"
       version-hint: "tls13"
       # Control your post-handshake traffic through restls-script
       # Hide proxy behaviors like "tls in tls".
@@ -590,28 +595,26 @@ proxies: # socks5
 
   - name: "ss-restls-tls12"
     type: ss
-    server: [YOUR_SERVER_IP]
+    server: "YOUR_SERVER_IP"
     port: 443
     cipher: chacha20-ietf-poly1305
-    password: [YOUR_SS_PASSWORD]
-    client-fingerprint:
-      chrome # One of: chrome, ios, firefox or safari
+    password: "YOUR_SS_PASSWORD"
+    client-fingerprint: chrome # One of: chrome, ios, firefox or safari
       # 可以是 chrome, ios, firefox, safari 中的一个
     plugin: restls
     plugin-opts:
-      host:
-        "vscode.dev" # Must be a TLS 1.2 server
+      host: "vscode.dev" # Must be a TLS 1.2 server
         # 应当是一个 TLS 1.2 服务器
-      password: [YOUR_RESTLS_PASSWORD]
+      password: "YOUR_RESTLS_PASSWORD"
       version-hint: "tls12"
       restls-script: "1000?100<1,500~100,350~100,600~100,400~200"
 
   - name: "ss-kcptun"
     type: ss
-    server: [YOUR_SERVER_IP]
+    server: "YOUR_SERVER_IP"
     port: 443
     cipher: chacha20-ietf-poly1305
-    password: [YOUR_SS_PASSWORD]
+    password: "YOUR_SS_PASSWORD"
     plugin: kcptun
     plugin-opts:
       key: it's a secrect # pre-shared secret between client and server
@@ -645,7 +648,7 @@ proxies: # socks5
     type: vmess
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000001
     alterId: 32
     cipher: auto
     # udp: true
@@ -676,7 +679,7 @@ proxies: # socks5
     type: vmess
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000002
     alterId: 32
     cipher: auto
     network: h2
@@ -695,7 +698,7 @@ proxies: # socks5
     type: vmess
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000003
     alterId: 32
     cipher: auto
     # udp: true
@@ -714,7 +717,7 @@ proxies: # socks5
     server: server
     port: 443
     type: vmess
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000004
     alterId: 32
     cipher: auto
     network: grpc
@@ -739,7 +742,7 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000005
     network: tcp
     servername: example.com # AKA SNI
     # skip-cert-verify: true
@@ -758,7 +761,7 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000006
     network: tcp
     tls: true
     udp: true
@@ -774,7 +777,7 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000007
     network: tcp
     # -------------------------
     # vless encryption客户端配置：
@@ -795,15 +798,15 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000008
     network: tcp
     tls: true
     udp: true
     flow: xtls-rprx-vision
     servername: www.microsoft.com # REALITY servername
     reality-opts:
-      public-key: xxx
-      short-id: xxx # optional
+      public-key: CrrQSjAG_YkHLwvM2M-7XkKJilgL5upBKCp0od0tLhE
+      short-id: 10f897e26c4b9478 # optional
       support-x25519mlkem768: false # 如果服务端支持可手动设置为true
     client-fingerprint: chrome # cannot be empty
 
@@ -811,11 +814,11 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-000000000009
     network: grpc
     tls: true
     udp: true
-    flow:
+    flow: ""
     # skip-cert-verify: true
     client-fingerprint: chrome
     servername: testingcf.jsdelivr.net
@@ -826,7 +829,7 @@ proxies: # socks5
       # max-connections: 1 # Maximum connections. Conflict with max-streams.
       # min-streams: 0 # Minimum multiplexed streams in a connection before opening a new connection. Conflict with max-streams.
       # max-streams: 0 # Maximum multiplexed streams in a connection before opening a new connection. Conflict with max-connections and min-streams.
-      
+
     reality-opts:
       public-key: CrrQSjAG_YkHLwvM2M-7XkKJilgL5upBKCp0od0tLhE
       short-id: 10f897e26c4b9478
@@ -836,7 +839,7 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-00000000000a
     udp: true
     tls: true
     network: ws
@@ -858,7 +861,7 @@ proxies: # socks5
     type: vless
     server: server
     port: 443
-    uuid: uuid
+    uuid: 00000000-0000-0000-0000-00000000000b
     udp: true
     tls: true
     network: xhttp
@@ -1322,7 +1325,7 @@ proxies: # socks5
   - name: sudoku
     type: sudoku
     server: server_ip/domain # 1.2.3.4 or domain
-    port: 443 
+    port: 443
     key: "<client_key>" # 如果你使用sudoku生成的ED25519密钥对，请填写密钥对中的私钥，否则填入和服务端相同的uuid
     aead-method: chacha20-poly1305 # 可选：chacha20-poly1305、aes-128-gcm、none（不建议；none 不提供 AEAD 保护）
     padding-min: 2 # 最小填充率（0-100）
@@ -1394,7 +1397,7 @@ proxy-groups:
   # wireguard 目前不支持在 relay 中使用，请使用 proxy 中的 dialer-proxy 配置项
   # Traffic: mihomo <-> http <-> vmess <-> ss1 <-> ss2 <-> Internet
   - name: "relay"
-    type: relay
+    type: select
     proxies:
       - http
       - vmess
@@ -1407,7 +1410,7 @@ proxy-groups:
     proxies:
       - ss1
       - ss2
-      - vmess1
+      - vmess
     # tolerance: 150
     # lazy: true
     # expected-status: 204 # 当健康检查返回状态码与期望值不符时，认为节点不可用
@@ -1420,7 +1423,7 @@ proxy-groups:
     proxies:
       - ss1
       - ss2
-      - vmess1
+      - vmess
     url: "https://cp.cloudflare.com/generate_204"
     interval: 300
 
@@ -1430,7 +1433,7 @@ proxy-groups:
     proxies:
       - ss1
       - ss2
-      - vmess1
+      - vmess
     url: "https://cp.cloudflare.com/generate_204"
     interval: 300
   # strategy: consistent-hashing # 可选 round-robin 和 sticky-sessions
@@ -1442,7 +1445,7 @@ proxy-groups:
     proxies:
       - ss1
       - ss2
-      - vmess1
+      - vmess
       - auto
 
   - name: UseProvider
@@ -1499,7 +1502,7 @@ proxy-providers:
     type: inline
     dialer-proxy: proxy
     payload:
-      - name: "ss1"
+      - name: "provider2-ss1"
         type: ss
         server: server
         port: 443

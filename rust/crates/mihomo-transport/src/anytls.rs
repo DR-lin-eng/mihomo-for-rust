@@ -1,5 +1,5 @@
 use std::io::{self, Read, Write};
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 
 use mihomo_core::{BoxedTcpStream, TcpStream};
 use sha2::{Digest, Sha256};
@@ -14,7 +14,7 @@ const CMD_ALERT: u8 = 0x05;
 const CMD_SYNACK: u8 = 0x07;
 const CMD_SERVER_SETTINGS: u8 = 0x0a;
 const STREAM_ID: u32 = 1;
-const UOT_MAGIC_ADDRESS: &str = "sp.v2.udp-over-tcp.arpa";
+pub(crate) const UOT_MAGIC_ADDRESS: &str = "sp.v2.udp-over-tcp.arpa";
 
 pub(crate) fn wrap_stream(
     mut stream: BoxedTcpStream,
@@ -54,6 +54,80 @@ pub(crate) fn open_udp_stream(
     Ok(stream)
 }
 
+pub(crate) fn accept_server_stream(
+    stream: BoxedTcpStream,
+    password: &str,
+) -> Result<(TransportTarget, BoxedTcpStream), TransportError> {
+    accept_server_stream_with_password_hashes(stream, &[Sha256::digest(password.as_bytes()).into()])
+        .map(|(target, _index, stream)| (target, stream))
+}
+
+pub(crate) fn accept_server_stream_with_password_hashes(
+    mut stream: BoxedTcpStream,
+    password_hashes: &[[u8; 32]],
+) -> Result<(TransportTarget, usize, BoxedTcpStream), TransportError> {
+    let mut actual_hash = [0_u8; 32];
+    stream.read_exact(&mut actual_hash).map_err(TransportError::from)?;
+    let matched = password_hashes
+        .iter()
+        .position(|hash| *hash == actual_hash)
+        .ok_or_else(|| {
+            TransportError::invalid_proxy_response("anytls authentication failed")
+        })?;
+
+    let mut padding_len = [0_u8; 2];
+    stream
+        .read_exact(&mut padding_len)
+        .map_err(TransportError::from)?;
+    let padding_len = u16::from_be_bytes(padding_len) as usize;
+    if padding_len != 0 {
+        let mut padding = vec![0_u8; padding_len];
+        stream.read_exact(&mut padding).map_err(TransportError::from)?;
+    }
+
+    let (command, stream_id, payload) = read_frame(&mut *stream)?;
+    if command != CMD_SETTINGS || stream_id != 0 {
+        return Err(TransportError::invalid_proxy_response(
+            "unexpected anytls settings frame",
+        ));
+    }
+    if !String::from_utf8_lossy(&payload).contains("v=2") {
+        return Err(TransportError::invalid_proxy_response(
+            "anytls client settings missing v=2",
+        ));
+    }
+
+    let (command, stream_id, payload) = read_frame(&mut *stream)?;
+    if command != CMD_SYN || stream_id != STREAM_ID || !payload.is_empty() {
+        return Err(TransportError::invalid_proxy_response(
+            "unexpected anytls syn frame",
+        ));
+    }
+
+    let (command, stream_id, payload) = read_frame(&mut *stream)?;
+    if command != CMD_PSH || stream_id != STREAM_ID {
+        return Err(TransportError::invalid_proxy_response(
+            "unexpected anytls target frame",
+        ));
+    }
+    let target = decode_target(&payload)?;
+
+    write_frame(&mut *stream, CMD_SERVER_SETTINGS, 0, b"v=2")?;
+    write_frame(&mut *stream, CMD_SYNACK, STREAM_ID, &[])?;
+    stream.flush().map_err(TransportError::from)?;
+
+    Ok((
+        target,
+        matched,
+        Box::new(AnyTlsStream {
+            inner: stream,
+            read_buf: Vec::new(),
+            read_off: 0,
+            finished: false,
+        }),
+    ))
+}
+
 pub(crate) fn write_udp_packet(
     stream: &mut dyn Write,
     destination: SocketAddr,
@@ -75,6 +149,13 @@ pub(crate) fn read_udp_packet(
     let mut payload = vec![0_u8; length];
     stream.read_exact(&mut payload)?;
     Ok((destination, payload))
+}
+
+pub(crate) fn read_uot_request(stream: &mut dyn Read) -> io::Result<(bool, SocketAddr)> {
+    let mut is_connect = [0_u8; 1];
+    stream.read_exact(&mut is_connect)?;
+    let destination = read_uot_addr(stream)?;
+    Ok((is_connect[0] != 0, destination))
 }
 
 fn write_auth_prelude(stream: &mut dyn Write, password: &str) -> Result<(), TransportError> {
@@ -103,11 +184,99 @@ fn write_frame(
     stream.write_all(&frame).map_err(TransportError::from)
 }
 
+fn read_frame(stream: &mut dyn Read) -> Result<(u8, u32, Vec<u8>), TransportError> {
+    let mut header = [0_u8; 7];
+    stream.read_exact(&mut header).map_err(TransportError::from)?;
+    let command = header[0];
+    let sid = u32::from_be_bytes([header[1], header[2], header[3], header[4]]);
+    let length = u16::from_be_bytes([header[5], header[6]]) as usize;
+    let mut payload = vec![0_u8; length];
+    stream.read_exact(&mut payload).map_err(TransportError::from)?;
+    Ok((command, sid, payload))
+}
+
+fn decode_target(payload: &[u8]) -> Result<TransportTarget, TransportError> {
+    if payload.is_empty() {
+        return Err(TransportError::invalid_proxy_response(
+            "empty anytls target payload",
+        ));
+    }
+    let atyp = payload[0];
+    let mut offset = 1;
+    let host = match atyp {
+        0x01 => {
+            if offset + 4 > payload.len() {
+                return Err(TransportError::invalid_proxy_response(
+                    "truncated anytls ipv4 target",
+                ));
+            }
+            let ip = IpAddr::V4(Ipv4Addr::new(
+                payload[offset],
+                payload[offset + 1],
+                payload[offset + 2],
+                payload[offset + 3],
+            ));
+            offset += 4;
+            ip.to_string()
+        }
+        0x04 => {
+            if offset + 16 > payload.len() {
+                return Err(TransportError::invalid_proxy_response(
+                    "truncated anytls ipv6 target",
+                ));
+            }
+            let mut octets = [0_u8; 16];
+            octets.copy_from_slice(&payload[offset..offset + 16]);
+            offset += 16;
+            IpAddr::V6(Ipv6Addr::from(octets)).to_string()
+        }
+        0x03 => {
+            if offset >= payload.len() {
+                return Err(TransportError::invalid_proxy_response(
+                    "truncated anytls domain target length",
+                ));
+            }
+            let length = payload[offset] as usize;
+            offset += 1;
+            if offset + length > payload.len() {
+                return Err(TransportError::invalid_proxy_response(
+                    "truncated anytls domain target",
+                ));
+            }
+            let host = String::from_utf8(payload[offset..offset + length].to_vec())
+                .map_err(|err| TransportError::InvalidPlan(err.to_string()))?;
+            offset += length;
+            host
+        }
+        other => {
+            return Err(TransportError::InvalidProxyResponse(format!(
+                "unsupported anytls target atyp {other}"
+            )))
+        }
+    };
+    if offset + 2 > payload.len() {
+        return Err(TransportError::invalid_proxy_response(
+            "truncated anytls target port",
+        ));
+    }
+    let port = u16::from_be_bytes([payload[offset], payload[offset + 1]]);
+    if offset + 2 != payload.len() {
+        return Err(TransportError::invalid_proxy_response(
+            "anytls target payload has trailing bytes",
+        ));
+    }
+    Ok(TransportTarget::new(host, port))
+}
+
 struct AnyTlsStream {
     inner: BoxedTcpStream,
     read_buf: Vec<u8>,
     read_off: usize,
     finished: bool,
+}
+
+struct AnyTlsWriteClone {
+    inner: BoxedTcpStream,
 }
 
 impl AnyTlsStream {
@@ -175,16 +344,62 @@ impl Write for AnyTlsStream {
     }
 }
 
+impl Read for AnyTlsWriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "anytls write clone is write-only",
+        ))
+    }
+}
+
+impl Write for AnyTlsWriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        write_frame(&mut *self.inner, CMD_PSH, STREAM_ID, buf)
+            .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 impl TcpStream for AnyTlsStream {
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        if self.read_off != 0 || !self.read_buf.is_empty() || self.finished {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "anytls stream cannot be cloned after reads begin",
+            ));
+        }
+        Ok(Box::new(AnyTlsWriteClone {
+            inner: self.inner.try_clone_box()?,
+        }))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        write_frame(&mut *self.inner, CMD_FIN, STREAM_ID, &[])
+            .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+        self.inner.flush()
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.shutdown_write()?;
+        self.inner.shutdown_all()
+    }
+}
+
+impl TcpStream for AnyTlsWriteClone {
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "anytls stream does not support cloning",
+            "anytls write clone does not support cloning",
         ))
     }
 
     fn shutdown_write(&mut self) -> io::Result<()> {
-    write_frame(&mut *self.inner, CMD_FIN, STREAM_ID, &[])
+        write_frame(&mut *self.inner, CMD_FIN, STREAM_ID, &[])
             .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
         self.inner.flush()
     }

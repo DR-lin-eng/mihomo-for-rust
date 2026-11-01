@@ -1,0 +1,53 @@
+{
+  "date_utc": "2026-10-31T18:51:59.422552+00:00",
+  "base_commit": "a2995e08867050872422f8eece4f63886796ad2f",
+  "source_state": "existing dirty workspace plus compatibility changes",
+  "source_sha256": {
+    "rust/Cargo.lock": "e40f0b14414d21739fa86fd904d1ba48f8a28c124c389ba46fd8363bb268e0d1",
+    "rust/crates/mihomo-api/Cargo.toml": "70d8f4d84b89ecb22f2955b6e5a2a8c477a9a9033d646d7d0e0f95128e58149d",
+    "rust/crates/mihomo-api/src/server.rs": "b3423acceb3c03528832b4d046ec1316070c35ec270168fef0302a07592dcde1",
+    "rust/crates/mihomo-api/src/server/cors.rs": "9dbc7860d6a71b916462bb460d76186c92638a0cc8678db9cececf5f3cde1331",
+    "rust/crates/mihomo-api/src/server/config_control.rs": "c1b6180675fe60724c0e3ca970936552f4f1a9af692cfe4e21f2f56cf5b846a7",
+    "rust/crates/mihomo-api/src/snapshot_builder.rs": "1314d4610f6105ac6f0972434a0b054616c389b471c98aca4d295a950148da4a",
+    "rust/crates/mihomo-api/src/snapshot_types.rs": "556807853530be42a15943d26ad356c92b9066fe17769b62ac01403063048ee2",
+    "rust/crates/mihomo-core/src/lib.rs": "edb3bf927648e7fe52b86bdb2157ac77b3b1ba81acbf9d392a7029038869f073",
+    "rust/crates/mihomo-core/src/logs.rs": "7cad532142d56fe38d7552ddd5484a15676cf9eacfaf94d8becfb93f99eca1c5",
+    "rust/crates/mihomo-config/src/boot.rs": "6bcb488e33890a88001751d898324783b03943fcd7cf7f9f56fc573b32124c8b",
+    "rust/crates/mihomo-config/src/document.rs": "df5e83b967430a45e0068e24436944ba718f9724baebaa464b74e5c4e8a4cc2f",
+    "rust/crates/mihomo-config/src/tests.rs": "0e7685169c5fc9be8fc049320b31696b6689e735c1e975238fde3b7300f230bb",
+    "rust/crates/mihomo-dns/src/lib.rs": "f917bc1591e9ec27a3d6a05a3d0a02b8fbaa813b3934c1e9d547240b4e0b9ba2",
+    "rust/crates/mihomo-dns/src/types.rs": "e449be638a4a268211b26506a35342c2f204b3373c955359e0211797d9c78df0",
+    "rust/crates/mihomo-dns/src/packet.rs": "f33f386740fb13eddcf5190e2a6f371df7cef369128d2fea8cdc6372757c9b0c",
+    "rust/crates/mihomo-dns/src/runtime.rs": "96b8b5ed03c40d595c727dd66cad99ef2fa6fac13f9d1c7f64ae6b83d7f65095",
+    "rust/crates/mihomo-dns/src/upstream.rs": "a0e13f9d2268aa7665bb31fce171df9e2f67a0a5761783b54cb5bceebf166759",
+    "rust/crates/mihomo-dns/src/tests.rs": "73d2ae94a699c1072ba7caacc6d58d50666e4b20d04ffe9294d2af8fb01891e9",
+    "rust/crates/mihomo-runtime/src/bootstrap.rs": "71371a1bf370cc3f73e676b3fcd02892d2df2fae14d890e384e131504d3d2b27",
+    "rust/crates/mihomo-app/src/app.rs": "08792144046e18220e4a9fc500cccb0807c92287fd8013262988f4bac2f02076",
+    "rust/crates/mihomo-app/src/main.rs": "e7aac6f545f72802d6157b37ece02333f14398481f9e58db134f746337fa96f3",
+    "rust/crates/mihomo-app/src/main_process.rs": "003046a2b43cfc1f259953243f3392cf345159fe24b28a00d6c1dfe4e4dca3ef",
+    "rust/crates/mihomo-app/src/dns_transport_core.rs": "57f9e354fd275c152e3e040da8233c0449f01abf22aa4685b3f289dc38f65f35",
+    "rust/crates/mihomo-app/src/dns_transport_nameserver.rs": "90fba613ef7ba0c98cb51666e474033beed1ed87e97111b2cd5145a88d0dce3c",
+    "rust/crates/mihomo-app/src/listener_service_runtime_udp.rs": "22a3398a858637639bb9e5f682503241e74237987a93b9d582e3f94b503d9e7e",
+    "rust/crates/mihomo-app/src/listener_service_runner.rs": "7726dac95cb4323dce1efb039ca85e561c5f7d72f5ab7906d83040f7f91d50cb",
+    "rust/crates/mihomo-app/src/listener_udp_session_ops.rs": "03425b23c644f063263fa43c8e62a361c5926d3996a06d955f991251f7c556f4",
+    "rust/crates/mihomo-app/src/native_support/udp.rs": "8d19cd3e80aa2f4958b92fb148ec2ed4d6dd0f758b6b23551cd9df77140bb04b",
+    "rust/crates/mihomo-app/src/native_support/dns.rs": "afb96f49e6527c7ade3ca21ac127f8001e6a2c5ee37c00e60bb0f6b81318197b",
+    "scripts/ui-api-conformance.py": "d48d714fc05d068272ee238853e9c453a2d021e7fe5b9ee970d30a55d69c7ad3"
+  },
+  "artifact": {
+    "path": "bin/mihomo-rust-openwrt-arm64-ui-api-fix",
+    "size_bytes": 25135888,
+    "sha256": "3e2367d7dac7af571793f66b352dfada0b0155c0c622611401d6f176039cde23",
+    "target": "aarch64-unknown-linux-musl",
+    "linkage": "static, stripped",
+    "rust": "1.88.0"
+  },
+  "tests": {
+    "unit": 130,
+    "app_dns": 11,
+    "official_conformance": 55,
+    "arm64_conformance": 55,
+    "cli": 6,
+    "app_reload": 2
+  }
+}

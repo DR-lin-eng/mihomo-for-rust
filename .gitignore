@@ -21,6 +21,20 @@ vendor
 # macOS file
 .DS_Store
 
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+
+# Local agent state and dependency caches
+.mimosa/
+rust/.mimosa/
+rust/.cargo-home*/
+
+# Raw diagnostic output is reproducible from the checked-in summaries/scripts.
+diagnostics/**/*.log
+diagnostics/**/pe-imports.txt
+diagnostics/**/*.dat
+
 # Local dependency caches
 /.gomodcache/
 /.gocache/

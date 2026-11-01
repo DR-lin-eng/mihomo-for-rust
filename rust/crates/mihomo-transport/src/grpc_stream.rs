@@ -122,6 +122,10 @@ struct GrpcStream {
     remaining: usize,
 }
 
+struct GrpcWriteClone {
+    inner: BoxedTcpStream,
+}
+
 impl GrpcStream {
     fn new(inner: BoxedTcpStream) -> Self {
         Self { inner, remaining: 0 }
@@ -180,11 +184,67 @@ impl Write for GrpcStream {
     }
 }
 
+impl Read for GrpcWriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "grpc write clone is write-only",
+        ))
+    }
+}
+
+impl Write for GrpcWriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let var_len = uvarint_len(buf.len());
+        let total_len = 1usize
+            .checked_add(var_len)
+            .and_then(|len| len.checked_add(buf.len()))
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "grpc frame too large"))?;
+        let total_len = u32::try_from(total_len)
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "grpc frame too large"))?;
+        let mut frame = Vec::with_capacity(6 + var_len + buf.len());
+        frame.push(0x00);
+        frame.extend_from_slice(&total_len.to_be_bytes());
+        frame.push(0x0a);
+        encode_uvarint(buf.len(), &mut frame);
+        frame.extend_from_slice(buf);
+        self.inner.write_all(&frame)?;
+        self.inner.flush()?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 impl TcpStream for GrpcStream {
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        if self.remaining != 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "grpc stream cannot be cloned mid-frame",
+            ));
+        }
+        Ok(Box::new(GrpcWriteClone {
+            inner: self.inner.try_clone_box()?,
+        }))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        self.inner.shutdown_write()
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.inner.shutdown_all()
+    }
+}
+
+impl TcpStream for GrpcWriteClone {
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "grpc stream does not support cloning",
+            "grpc write clone does not support cloning",
         ))
     }
 

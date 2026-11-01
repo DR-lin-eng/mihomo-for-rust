@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/netip"
@@ -449,7 +450,10 @@ func updateProfile(cfg *config.Config) {
 }
 
 func patchSelectGroup(proxies map[string]C.Proxy) {
-	mapping := cachefile.Cache().SelectedMap()
+	mapping := selectedProxyMappingFromEnv()
+	if mapping == nil {
+		mapping = cachefile.Cache().SelectedMap()
+	}
 	if mapping == nil {
 		return
 	}
@@ -467,6 +471,19 @@ func patchSelectGroup(proxies map[string]C.Proxy) {
 
 		selector.ForceSet(selected)
 	}
+}
+
+func selectedProxyMappingFromEnv() map[string]string {
+	payload := os.Getenv("MIHOMO_SELECTED_PROXY_JSON")
+	if payload == "" {
+		return nil
+	}
+	mapping := map[string]string{}
+	if err := json.Unmarshal([]byte(payload), &mapping); err != nil {
+		log.Warnln("selected proxy env decode failed: %s", err.Error())
+		return nil
+	}
+	return mapping
 }
 
 func updateIPTables(cfg *config.Config) {

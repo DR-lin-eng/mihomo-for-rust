@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::sync::mpsc;
 use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
@@ -79,11 +80,16 @@ fn global_log_bus() -> &'static Mutex<LogBus> {
     BUS.get_or_init(|| Mutex::new(LogBus::default()))
 }
 
+static MIN_LOG_LEVEL: AtomicU8 = AtomicU8::new(0);
+
+pub fn set_log_level(level: &str) {
+    let level = if level == "silent" { 4 } else { LogLevel::parse(level).map(rank).unwrap_or(1) };
+    MIN_LOG_LEVEL.store(level, Ordering::Relaxed);
+}
+
 pub fn push_log(level: LogLevel, message: impl Into<String>) {
-    global_log_bus()
-        .lock()
-        .unwrap()
-        .push(LogEntry::new(level, message));
+    if rank(level) < MIN_LOG_LEVEL.load(Ordering::Relaxed) { return; }
+    global_log_bus().lock().unwrap().push(LogEntry::new(level, message));
 }
 
 pub fn recent_logs(min_level: LogLevel) -> Vec<LogEntry> {

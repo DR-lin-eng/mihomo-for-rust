@@ -10,6 +10,7 @@ mihomo-inbound = { path = "../mihomo-inbound" }
 mihomo-outbound = { path = "../mihomo-outbound" }
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
+uuid = "1"
 
 [lib]
 path = "src/lib.rs"

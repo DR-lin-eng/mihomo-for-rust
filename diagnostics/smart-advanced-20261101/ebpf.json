@@ -1,0 +1,469 @@
+{
+  "core": "/repo/bin/mihomo-rust-openwrt-arm64-smart-advanced",
+  "checks": [
+    {
+      "name": "auto-redir real programs loaded",
+      "passed": true,
+      "detail": {
+        "supported": true,
+        "running": true,
+        "interfaces": [
+          {
+            "name": "ebpf-lan",
+            "mode": "auto-redir",
+            "ingress": true,
+            "egress": true,
+            "program_ids": [
+              4909,
+              4910
+            ],
+            "counters": {
+              "processed": 0,
+              "redirected": 0,
+              "bypassed": 0,
+              "dropped": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "eBPF status requires bearer",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "API exposes configured ebpf",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TC ingress and egress attached",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 LAN TCP transparent proxy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 original destination preserved",
+      "passed": true,
+      "detail": [
+        [
+          "203.0.113.10",
+          443
+        ],
+        [
+          "2001:db8:abcd::10",
+          443
+        ],
+        [
+          "203.0.113.11",
+          8443
+        ],
+        [
+          "203.0.113.14",
+          443
+        ],
+        [
+          "203.0.113.12",
+          443
+        ],
+        [
+          "203.0.113.20",
+          443
+        ],
+        [
+          "0.0.0.0",
+          50271
+        ],
+        [
+          "203.0.113.20",
+          5354
+        ],
+        [
+          "2001:db8:abcd::20",
+          443
+        ],
+        [
+          "203.0.113.13",
+          443
+        ]
+      ]
+    },
+    {
+      "name": "IPv6 LAN TCP transparent proxy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 original destination preserved",
+      "passed": true,
+      "detail": [
+        [
+          "203.0.113.10",
+          443
+        ],
+        [
+          "2001:db8:abcd::10",
+          443
+        ],
+        [
+          "203.0.113.11",
+          8443
+        ],
+        [
+          "203.0.113.14",
+          443
+        ],
+        [
+          "203.0.113.12",
+          443
+        ],
+        [
+          "203.0.113.20",
+          443
+        ],
+        [
+          "0.0.0.0",
+          50271
+        ],
+        [
+          "203.0.113.20",
+          5354
+        ],
+        [
+          "2001:db8:abcd::20",
+          443
+        ],
+        [
+          "203.0.113.13",
+          443
+        ]
+      ]
+    },
+    {
+      "name": "kernel packet counters advance",
+      "passed": true,
+      "detail": {
+        "processed": 26,
+        "redirected": 20,
+        "bypassed": 6,
+        "dropped": 0
+      }
+    },
+    {
+      "name": "config reload with BPF attached",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reload detaches old programs",
+      "passed": true,
+      "detail": [
+        4912,
+        4911
+      ]
+    },
+    {
+      "name": "traffic still works after reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "failed eBPF reconfiguration returns error",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "failed eBPF reconfiguration restores previous capture",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal exit detaches filters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal exit frees programs",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "owned empty clsact removed",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "foreign TC filter preserved",
+      "passed": true,
+      "detail": [
+        {
+          "protocol": "all",
+          "pref": 10,
+          "kind": "matchall",
+          "chain": 0
+        },
+        {
+          "protocol": "all",
+          "pref": 10,
+          "kind": "matchall",
+          "chain": 0,
+          "options": {
+            "handle": 1,
+            "not_in_hw": true,
+            "actions": [
+              {
+                "order": 1,
+                "kind": "gact",
+                "control_action": {
+                  "type": "continue"
+                },
+                "prob": {
+                  "random_type": "none",
+                  "control_action": {
+                    "type": "pass"
+                  },
+                  "val": 0
+                },
+                "index": 1,
+                "ref": 1,
+                "bind": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "foreign clsact preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "preexisting empty clsact preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TUN redirect program attached",
+      "passed": true,
+      "detail": {
+        "supported": true,
+        "running": true,
+        "interfaces": [
+          {
+            "name": "ebpf-wan",
+            "mode": "redirect-to-tun",
+            "ingress": false,
+            "egress": true,
+            "program_ids": [
+              4940
+            ],
+            "counters": {
+              "processed": 0,
+              "redirected": 0,
+              "bypassed": 0,
+              "dropped": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TC egress redirects IPv4 TCP into core TUN",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TC egress redirects IPv4 UDP into core TUN",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TC egress redirects IPv6 TCP into core TUN",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TUN kernel counters advance",
+      "passed": true,
+      "detail": {
+        "processed": 12,
+        "redirected": 12,
+        "bypassed": 0,
+        "dropped": 0
+      }
+    },
+    {
+      "name": "TUN mode exit removes BPF filters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TUN mode exit frees BPF programs",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "live eBPF ownership is exclusive",
+      "passed": true,
+      "detail": "listener accept error: listener shutdown requested\napp start error: eBPF auto-redir on ebpf-lan: interface 27 is already owned by another running Mihomo eBPF instance; Linux with CONFIG_BPF_SYSCALL/NET_CLS_BPF and CAP_BPF (or CAP_SYS_ADMIN) plus CAP_NET_ADMIN is required\n"
+    },
+    {
+      "name": "rejected second core leaves first attached",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "crash recovery removes stale programs",
+      "passed": true,
+      "detail": [
+        4957,
+        4958
+      ]
+    },
+    {
+      "name": "TCP works after crash recovery",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "core TCP sockets bypass eBPF capture",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "core UDP sockets bypass eBPF capture",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "core DNS UDP sockets bypass capture",
+      "passed": true,
+      "detail": {
+        "AD": false,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "fixture",
+            "name": "bypass.test.",
+            "type": 16
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "bypass.test.",
+            "qclass": 1,
+            "qtype": 16
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "bypass mark observed by kernel",
+      "passed": true,
+      "detail": {
+        "supported": true,
+        "running": true,
+        "interfaces": [
+          {
+            "name": "ebpf-direct",
+            "mode": "redirect-to-tun",
+            "ingress": false,
+            "egress": true,
+            "program_ids": [
+              4966
+            ],
+            "counters": {
+              "processed": 14,
+              "redirected": 6,
+              "bypassed": 8,
+              "dropped": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing capture interface fails startup",
+      "passed": true,
+      "detail": "listener accept error: listener shutdown requested\napp start error: No such device (os error 19)\n"
+    },
+    {
+      "name": "failed startup leaves no BPF programs",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "insufficient capabilities fail explicitly",
+      "passed": true,
+      "detail": "listener accept error: listener shutdown requested\napp start error: eBPF auto-redir on ebpf-lan: map error: failed to create map `stats` with code -1; Linux with CONFIG_BPF_SYSCALL/NET_CLS_BPF and CAP_BPF (or CAP_SYS_ADMIN) plus CAP_NET_ADMIN is required\n"
+    },
+    {
+      "name": "capability failure leaves no BPF programs",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "destinations": [
+    [
+      "203.0.113.10",
+      443
+    ],
+    [
+      "2001:db8:abcd::10",
+      443
+    ],
+    [
+      "203.0.113.11",
+      8443
+    ],
+    [
+      "203.0.113.14",
+      443
+    ],
+    [
+      "203.0.113.12",
+      443
+    ],
+    [
+      "203.0.113.20",
+      443
+    ],
+    [
+      "0.0.0.0",
+      50271
+    ],
+    [
+      "203.0.113.20",
+      5354
+    ],
+    [
+      "2001:db8:abcd::20",
+      443
+    ],
+    [
+      "203.0.113.13",
+      443
+    ]
+  ],
+  "logs": {
+    "auto-redir.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n",
+    "foreign-filter.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\n",
+    "foreign-empty-qdisc.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\n",
+    "redirect-to-tun.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\n",
+    "before-crash.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\n",
+    "after-crash.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\n",
+    "core-socket-bypass.log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=7 groups=1 providers=0 controllers=127.0.0.1:36453 bound_listeners=2\nlistener accept error: listener shutdown requested\n"
+  },
+  "workspace": "/tmp/mihomo-ebpf-smoke-4mdo30ov"
+}

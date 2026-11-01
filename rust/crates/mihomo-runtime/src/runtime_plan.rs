@@ -1,0 +1,90 @@
+use mihomo_config::BootOptions;
+use mihomo_core::{RewriteStage, SubsystemManifest, GLOBAL_INVARIANTS};
+use mihomo_platform::{
+    current_capabilities, supported_optimization_variants, OptimizationVariant, TargetProfile,
+    SUPPORTED_TARGETS,
+};
+
+pub struct RuntimePlan {
+    pub command: &'static str,
+    pub current_family: &'static str,
+    pub invariant_count: usize,
+    pub subsystem_count: usize,
+    pub openwrt_friendly_targets: usize,
+    pub optimization_variants: Vec<OptimizationVariant>,
+}
+
+pub fn runtime_subsystems() -> Vec<&'static SubsystemManifest> {
+    static API_MANIFEST: SubsystemManifest = SubsystemManifest {
+        crate_name: "mihomo-api",
+        go_areas: &["hub/route"],
+        contracts: &["external controller", "external UI", "API-facing runtime state"],
+        stage: RewriteStage::Verified,
+    };
+    vec![
+        &API_MANIFEST,
+        mihomo_dns::manifest(),
+        mihomo_inbound::manifest(),
+        mihomo_outbound::manifest(),
+        mihomo_rules::manifest(),
+        mihomo_transport::manifest(),
+        mihomo_tun::manifest(),
+    ]
+}
+
+pub fn supported_targets() -> &'static [TargetProfile] {
+    SUPPORTED_TARGETS
+}
+
+pub fn build_runtime_plan(options: &BootOptions) -> RuntimePlan {
+    let caps = current_capabilities();
+    let openwrt_target = supported_targets()
+        .iter()
+        .find(|target| target.family == caps.family && target.openwrt_friendly);
+    RuntimePlan {
+        command: options.command.name(),
+        current_family: caps.family,
+        invariant_count: GLOBAL_INVARIANTS.len(),
+        subsystem_count: runtime_subsystems().len(),
+        openwrt_friendly_targets: supported_targets()
+            .iter()
+            .filter(|target| target.openwrt_friendly)
+            .count(),
+        optimization_variants: openwrt_target
+            .or_else(|| supported_targets().iter().find(|target| target.family == caps.family))
+            .map(|target| supported_optimization_variants(target, &caps))
+            .unwrap_or_else(|| vec![OptimizationVariant::Standard]),
+    }
+}
+
+impl RuntimePlan {
+    pub fn render_human_summary(&self) -> String {
+        format!(
+            "command={} platform={} invariants={} subsystems={} openwrt_profiles={} variants={}",
+            self.command,
+            self.current_family,
+            self.invariant_count,
+            self.subsystem_count,
+            self.openwrt_friendly_targets,
+            self.optimization_variants
+                .iter()
+                .map(|variant| variant.as_str())
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use mihomo_config::BootOptions;
+
+    use super::build_runtime_plan;
+
+    #[test]
+    fn runtime_plan_covers_embedded_targets() {
+        let plan = build_runtime_plan(&BootOptions::default());
+        assert!(plan.openwrt_friendly_targets >= 4);
+        assert!(plan.subsystem_count >= 7);
+    }
+}

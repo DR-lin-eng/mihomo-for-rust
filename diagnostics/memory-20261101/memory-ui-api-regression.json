@@ -1,0 +1,1077 @@
+{
+  "label": "rust",
+  "version": {
+    "meta": true,
+    "version": "0.1.0"
+  },
+  "checks": [
+    {
+      "name": "version.meta boolean",
+      "passed": true,
+      "detail": {
+        "meta": true,
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "secret enforced",
+      "passed": true,
+      "detail": 401
+    },
+    {
+      "name": "CORS on auth error",
+      "passed": true,
+      "detail": {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+        "Vary": "Origin",
+        "Content-Length": "26",
+        "Connection": "close"
+      }
+    },
+    {
+      "name": "CORS preflight before auth",
+      "passed": true,
+      "detail": {
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, PATCH, DELETE",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Access-Control-Max-Age": "300",
+        "Vary": "Origin",
+        "Content-Length": "0",
+        "Connection": "close"
+      }
+    },
+    {
+      "name": "CORS private network",
+      "passed": true,
+      "detail": {
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, PATCH, DELETE",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Private-Network": "true",
+        "Access-Control-Max-Age": "300",
+        "Vary": "Origin",
+        "Content-Length": "0",
+        "Connection": "close"
+      }
+    },
+    {
+      "name": "UI /ui/metacubexd/",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "UI /ui/metacubexd/index.html",
+      "passed": true,
+      "detail": 301
+    },
+    {
+      "name": "UI subdirectory redirect",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UI traversal denied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "configuration fully applied",
+      "passed": true,
+      "detail": [
+        "COMPATIBLE",
+        "DIRECT",
+        "DNS-PROXY",
+        "GLOBAL",
+        "PASS",
+        "REJECT",
+        "REJECT-DROP",
+        "测试选择"
+      ]
+    },
+    {
+      "name": "official group type",
+      "passed": true,
+      "detail": {
+        "alive": true,
+        "all": [
+          "DIRECT",
+          "REJECT"
+        ],
+        "dialer-proxy": "",
+        "emptyFallback": "COMPATIBLE",
+        "extra": {},
+        "hidden": false,
+        "history": [],
+        "icon": "",
+        "interface": "",
+        "mptcp": false,
+        "name": "测试选择",
+        "now": "DIRECT",
+        "provider-name": "",
+        "routing-mark": 0,
+        "smux": false,
+        "testUrl": "",
+        "tfo": false,
+        "type": "Selector",
+        "udp": true,
+        "uot": false,
+        "xudp": false
+      }
+    },
+    {
+      "name": "group common fields",
+      "passed": true,
+      "detail": {
+        "alive": true,
+        "all": [
+          "DIRECT",
+          "REJECT"
+        ],
+        "dialer-proxy": "",
+        "emptyFallback": "COMPATIBLE",
+        "extra": {},
+        "hidden": false,
+        "history": [],
+        "icon": "",
+        "interface": "",
+        "mptcp": false,
+        "name": "测试选择",
+        "now": "DIRECT",
+        "provider-name": "",
+        "routing-mark": 0,
+        "smux": false,
+        "testUrl": "",
+        "tfo": false,
+        "type": "Selector",
+        "udp": true,
+        "uot": false,
+        "xudp": false
+      }
+    },
+    {
+      "name": "TUN enable in configs",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "select Unicode group",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "selection reflected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "PATCH configs {'mode': 'global'}",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "PATCH configs {'log-level': 'debug'}",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "PATCH configs {}",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mode reflected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "log-level reflected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reject invalid mode",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "remote HTTPS RR ordinary.test",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "ordinary.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "ordinary.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS used proxy ordinary.test",
+      "passed": true,
+      "detail": [
+        "127.0.0.1:37243"
+      ]
+    },
+    {
+      "name": "remote HTTPS RR one.dot.test",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "one.dot.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "one.dot.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS used proxy one.dot.test",
+      "passed": true,
+      "detail": [
+        "127.0.0.1:42909"
+      ]
+    },
+    {
+      "name": "remote HTTPS RR one.doh.test",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "one.doh.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "one.doh.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS used proxy one.doh.test",
+      "passed": true,
+      "detail": [
+        "127.0.0.1:44095"
+      ]
+    },
+    {
+      "name": "remote HTTPS RR one.rules.test",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "one.rules.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "one.rules.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS used proxy one.rules.test",
+      "passed": true,
+      "detail": [
+        "127.0.0.1:37243"
+      ]
+    },
+    {
+      "name": "respect-rules false keeps plain DNS direct",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "one.direct.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "one.direct.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "proxy DNS failure reports an error",
+      "passed": true,
+      "detail": [
+        500,
+        "{\"message\":\"invalid proxy response: proxy closed before CONNECT response completed\"}"
+      ]
+    },
+    {
+      "name": "DNS API A",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "127.0.0.1",
+            "name": "records.test.",
+            "type": 1
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "records.test.",
+            "qclass": 1,
+            "qtype": 1
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS API AAAA",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "::1",
+            "name": "records.test.",
+            "type": 28
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "records.test.",
+            "qclass": 1,
+            "qtype": 28
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "DNS API TXT",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "fixture",
+            "name": "records.test.",
+            "type": 16
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "records.test.",
+            "qclass": 1,
+            "qtype": 16
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "preserve NXDOMAIN",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "nxdomain.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 3,
+        "TC": false
+      }
+    },
+    {
+      "name": "UDP HTTPS wire preserved",
+      "passed": true,
+      "detail": {
+        "actual": "123481a0000100010000000005687474707304746573740000410001c00c004100010000007b0003000100",
+        "expected": "123481a0000100010000000005687474707304746573740000410001c00c004100010000007b0003000100"
+      }
+    },
+    {
+      "name": "TCP HTTPS wire preserved",
+      "passed": true,
+      "detail": {
+        "actual": "123481a0000100010000000005687474707304746573740000410001c00c004100010000007b0003000100",
+        "expected": "123481a0000100010000000005687474707304746573740000410001c00c004100010000007b0003000100"
+      }
+    },
+    {
+      "name": "external DoH GET follows proxy",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "external DoH POST follows proxy",
+      "passed": true,
+      "detail": 200
+    },
+    {
+      "name": "PATCH ports applies",
+      "passed": true,
+      "detail": [
+        204,
+        ""
+      ]
+    },
+    {
+      "name": "changed port reflected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "bind failure reported",
+      "passed": true,
+      "detail": [
+        400,
+        "{\"message\":\"Address in use (os error 98)\"}"
+      ]
+    },
+    {
+      "name": "controller survives failed apply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "old config restored after failed apply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid reload rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "OpenClash path reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reload restored original port",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "payload reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "payload applied",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reload DNS routing policy",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "respect-rules true routes plain DNS via rules",
+      "passed": true,
+      "detail": {
+        "AD": true,
+        "Answer": [
+          {
+            "TTL": 123,
+            "data": "1 .",
+            "name": "two.direct.test.",
+            "type": 65
+          }
+        ],
+        "CD": false,
+        "Question": [
+          {
+            "name": "two.direct.test.",
+            "qclass": 1,
+            "qtype": 65
+          }
+        ],
+        "RA": true,
+        "RD": true,
+        "Status": 0,
+        "TC": false
+      }
+    },
+    {
+      "name": "enable fake-IP resolver",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fake-IP allocated distinct addresses",
+      "passed": true,
+      "detail": [
+        "198.18.0.4",
+        "198.18.0.5"
+      ]
+    },
+    {
+      "name": "reload fake-IP resolver",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fake-IP mapping survives reload",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "proxy_connections": [
+    "127.0.0.1:37243",
+    "127.0.0.1:42909",
+    "127.0.0.1:44095",
+    "127.0.0.1:37243",
+    "127.0.0.1:1",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243",
+    "127.0.0.1:37243"
+  ],
+  "upstream_query_types": [
+    65,
+    1,
+    28,
+    65,
+    1,
+    28,
+    65,
+    65,
+    65,
+    1,
+    28,
+    16,
+    65,
+    65,
+    65,
+    65,
+    65,
+    65,
+    65,
+    65,
+    65,
+    65
+  ],
+  "endpoints": {
+    "/version": {
+      "status": 200,
+      "body": {
+        "meta": true,
+        "version": "0.1.0"
+      }
+    },
+    "/configs": {
+      "status": 200,
+      "body": {
+        "port": 0,
+        "socks-port": 0,
+        "redir-port": 0,
+        "tproxy-port": 0,
+        "mixed-port": 42039,
+        "ss-config": "",
+        "vmess-config": "",
+        "authentication": [],
+        "skip-auth-prefixes": [],
+        "lan-allowed-ips": [],
+        "lan-disallowed-ips": [],
+        "mode": "rule",
+        "unified-delay": false,
+        "log-level": "info",
+        "allow-lan": false,
+        "bind-address": "",
+        "inbound-tfo": false,
+        "inbound-mptcp": false,
+        "ipv6": true,
+        "interface-name": "",
+        "routing-mark": 0,
+        "geox-url": {
+          "geoip": "",
+          "mmdb": "",
+          "asn": "",
+          "geosite": ""
+        },
+        "geo-auto-update": false,
+        "geo-update-interval": 0,
+        "geodata-mode": false,
+        "geodata-loader": "",
+        "geosite-matcher": "",
+        "tcp-concurrent": false,
+        "find-process-mode": "",
+        "sniffing": false,
+        "global-client-fingerprint": "",
+        "global-ua": "",
+        "etag-support": false,
+        "keep-alive-idle": 0,
+        "keep-alive-interval": 0,
+        "disable-keep-alive": false,
+        "external-controller": "127.0.0.1:36179",
+        "external-controller-tls": "",
+        "external-controller-unix": "/tmp/mihomo-api-conformance-ctsi281i/controller.sock",
+        "external-controller-pipe": "",
+        "external-ui": "ui",
+        "external-ui-url": "",
+        "external-ui-name": "metacubexd",
+        "tuic-server": {
+          "enable": false,
+          "listen": "",
+          "token": [],
+          "users": {},
+          "certificate": "",
+          "private-key": "",
+          "client-auth-type": "",
+          "client-auth-cert": "",
+          "ech-key": "",
+          "congestion-controller": "",
+          "max-idle-time": 0,
+          "authentication-timeout": 0,
+          "alpn": [],
+          "max-udp-relay-packet-size": 0,
+          "max-datagram-frame-size": 0,
+          "cwnd": 0,
+          "bbr-profile": "",
+          "mux-option": {}
+        },
+        "tun": {
+          "enable": false,
+          "name": "",
+          "listen": "",
+          "port": "",
+          "rule": "",
+          "proxy": "",
+          "device": "",
+          "stack": "gvisor",
+          "dns-hijack": [],
+          "auto-route": false,
+          "auto-detect-interface": false,
+          "mtu": 0,
+          "gso": false,
+          "gso-max-size": 0,
+          "inet4-address": [],
+          "inet6-address": [],
+          "iproute2-table-index": 0,
+          "iproute2-rule-index": 0,
+          "auto-redirect": false,
+          "auto-redirect-input-mark": 0,
+          "auto-redirect-output-mark": 0,
+          "auto-redirect-iproute2-fallback-rule-index": 0,
+          "loopback-address": [],
+          "strict-route": false,
+          "route-address": [],
+          "route-address-set": [],
+          "route-exclude-address": [],
+          "route-exclude-address-set": [],
+          "include-interface": [],
+          "exclude-interface": [],
+          "include-uid": [],
+          "include-uid-range": [],
+          "exclude-uid": [],
+          "exclude-uid-range": [],
+          "exclude-src-port": [],
+          "exclude-src-port-range": [],
+          "exclude-dst-port": [],
+          "exclude-dst-port-range": [],
+          "include-android-user": [],
+          "include-package": [],
+          "exclude-package": [],
+          "include-mac-address": [],
+          "exclude-mac-address": [],
+          "endpoint-independent-nat": false,
+          "udp-timeout": 0,
+          "disable-icmp-forwarding": false,
+          "file-descriptor": 0,
+          "inet4-route-address": [],
+          "inet6-route-address": [],
+          "inet4-route-exclude-address": [],
+          "inet6-route-exclude-address": [],
+          "recvmsgx": false,
+          "sendmsgx": false
+        },
+        "listener_count": 1,
+        "proxy_count": 8,
+        "group_count": 2,
+        "provider_count": 0,
+        "ebpf": {
+          "redirect-to-tun": [],
+          "auto-redir": [],
+          "bypass-mark": 0
+        },
+        "lgbm-auto-update": false,
+        "lgbm-update-interval": 72,
+        "lgbm-url": "https://github.com/vernesong/mihomo/releases/download/LightGBM-Model/Model.bin",
+        "smart-collector-size": 100.0
+      }
+    },
+    "/proxies": {
+      "status": 200,
+      "body": {
+        "proxies": {
+          "COMPATIBLE": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "COMPATIBLE",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "Compatible",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "DIRECT": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "DIRECT",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "Direct",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "DNS-PROXY": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "DNS-PROXY",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "Http",
+            "udp": false,
+            "uot": false,
+            "xudp": false
+          },
+          "GLOBAL": {
+            "alive": true,
+            "all": [
+              "DIRECT",
+              "REJECT",
+              "DNS-PROXY",
+              "测试选择"
+            ],
+            "dialer-proxy": "",
+            "emptyFallback": "COMPATIBLE",
+            "extra": {},
+            "hidden": false,
+            "history": [],
+            "icon": "",
+            "interface": "",
+            "mptcp": false,
+            "name": "GLOBAL",
+            "now": "DIRECT",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "testUrl": "",
+            "tfo": false,
+            "type": "Selector",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "PASS": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "PASS",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "Pass",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "REJECT": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "REJECT",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "Reject",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "REJECT-DROP": {
+            "alive": true,
+            "dialer-proxy": "",
+            "extra": {},
+            "history": [],
+            "interface": "",
+            "mptcp": false,
+            "name": "REJECT-DROP",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "tfo": false,
+            "type": "RejectDrop",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          },
+          "测试选择": {
+            "alive": true,
+            "all": [
+              "DIRECT",
+              "REJECT"
+            ],
+            "dialer-proxy": "",
+            "emptyFallback": "COMPATIBLE",
+            "extra": {},
+            "hidden": false,
+            "history": [],
+            "icon": "",
+            "interface": "",
+            "mptcp": false,
+            "name": "测试选择",
+            "now": "REJECT",
+            "provider-name": "",
+            "routing-mark": 0,
+            "smux": false,
+            "testUrl": "",
+            "tfo": false,
+            "type": "Selector",
+            "udp": true,
+            "uot": false,
+            "xudp": false
+          }
+        }
+      }
+    },
+    "/group": {
+      "status": 200,
+      "body": {
+        "proxies": [
+          {
+            "name": "GLOBAL",
+            "type": "Selector",
+            "all": [
+              "DIRECT",
+              "REJECT",
+              "DNS-PROXY",
+              "测试选择"
+            ],
+            "now": "DIRECT",
+            "testUrl": "",
+            "emptyFallback": "COMPATIBLE",
+            "hidden": false,
+            "icon": "",
+            "alive": true,
+            "history": [],
+            "extra": {},
+            "udp": true,
+            "xudp": false,
+            "uot": false,
+            "interface": "",
+            "routing-mark": 0,
+            "provider-name": "",
+            "dialer-proxy": "",
+            "tfo": false,
+            "mptcp": false,
+            "smux": false
+          },
+          {
+            "name": "测试选择",
+            "type": "Selector",
+            "all": [
+              "DIRECT",
+              "REJECT"
+            ],
+            "now": "REJECT",
+            "testUrl": "",
+            "emptyFallback": "COMPATIBLE",
+            "hidden": false,
+            "icon": "",
+            "alive": true,
+            "history": [],
+            "extra": {},
+            "udp": true,
+            "xudp": false,
+            "uot": false,
+            "interface": "",
+            "routing-mark": 0,
+            "provider-name": "",
+            "dialer-proxy": "",
+            "tfo": false,
+            "mptcp": false,
+            "smux": false
+          }
+        ]
+      }
+    },
+    "/providers/proxies": {
+      "status": 200,
+      "body": {
+        "providers": {}
+      }
+    },
+    "/providers/rules": {
+      "status": 200,
+      "body": {
+        "providers": {}
+      }
+    },
+    "/rules": {
+      "status": 200,
+      "body": {
+        "rules": [
+          {
+            "index": 0,
+            "type": "Match",
+            "payload": "",
+            "proxy": "DNS-PROXY",
+            "size": -1,
+            "extra": {
+              "disabled": false,
+              "hitCount": 0,
+              "hitAt": "0001-01-01T00:00:00Z",
+              "missCount": 0,
+              "missAt": "0001-01-01T00:00:00Z"
+            }
+          }
+        ]
+      }
+    },
+    "/connections": {
+      "status": 200,
+      "body": {
+        "downloadTotal": 0,
+        "uploadTotal": 0,
+        "connections": [],
+        "memory": 11247616
+      }
+    },
+    "/configs/geo": {
+      "status": 501,
+      "body": "{\"message\":\"this update operation is not implemented by the Rust core\"}"
+    },
+    "/upgrade/ui": {
+      "status": 501,
+      "body": "{\"message\":\"this update operation is not implemented by the Rust core\"}"
+    },
+    "/upgrade/geo": {
+      "status": 501,
+      "body": "{\"message\":\"this update operation is not implemented by the Rust core\"}"
+    }
+  },
+  "log": "command=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=1 proxies=8 groups=2 providers=0 controllers=127.0.0.1:36179,127.0.0.1:0 bound_listeners=2\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n"
+}

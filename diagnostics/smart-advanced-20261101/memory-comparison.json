@@ -1,0 +1,80 @@
+{
+  "method": "Final runs were sequential after other core tests ended; same ARM64 musl target and Docker container (CPUs=2), median of three runs per scenario. Each run polls 32 API requests. RSS includes file/shared pages; Anonymous measures private data more directly.",
+  "baseline_sha256": "0ac1a41eaa47eccb81c1b566d109a638b1749c5b7c249dc37586b10d2fcf0e8c",
+  "advanced_sha256": "58fcaf91b04514df2f012eee688a9a3bd7e6e330eda75d21311c1ce5092876de",
+  "passed": true,
+  "scenarios": [
+    {
+      "scenario": "idle",
+      "runs": 3,
+      "idle_rss_kib": {
+        "before": 7640,
+        "after": 8312,
+        "delta": 672
+      },
+      "after_api_rss_kib": {
+        "before": 7820,
+        "after": 8468,
+        "delta": 648
+      },
+      "anonymous_kib": {
+        "before": 1096,
+        "after": 1136,
+        "delta": 40
+      },
+      "peak_rss_kib": {
+        "before": 7988,
+        "after": 8640,
+        "delta": 652
+      }
+    },
+    {
+      "scenario": "rules-40000",
+      "runs": 3,
+      "idle_rss_kib": {
+        "before": 24420,
+        "after": 24788,
+        "delta": 368
+      },
+      "after_api_rss_kib": {
+        "before": 24856,
+        "after": 25200,
+        "delta": 344
+      },
+      "anonymous_kib": {
+        "before": 18140,
+        "after": 17868,
+        "delta": -272
+      },
+      "peak_rss_kib": {
+        "before": 45108,
+        "after": 45316,
+        "delta": 208
+      }
+    },
+    {
+      "scenario": "smart-18-groups",
+      "runs": 3,
+      "idle_rss_kib": {
+        "before": 12032,
+        "after": 12768,
+        "delta": 736
+      },
+      "after_api_rss_kib": {
+        "before": 12212,
+        "after": 12924,
+        "delta": 712
+      },
+      "anonymous_kib": {
+        "before": 5392,
+        "after": 5444,
+        "delta": 52
+      },
+      "peak_rss_kib": {
+        "before": 18596,
+        "after": 19044,
+        "delta": 448
+      }
+    }
+  ]
+}

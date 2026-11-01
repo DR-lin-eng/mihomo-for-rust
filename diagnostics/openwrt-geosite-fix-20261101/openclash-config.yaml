@@ -1,0 +1,9 @@
+mode: rule
+mixed-port: 17890
+geodata-loader: memconservative
+geosite-matcher: succinct
+dns:
+  enable: false
+rules:
+  - GEOSITE,cn,DIRECT
+  - MATCH,DIRECT

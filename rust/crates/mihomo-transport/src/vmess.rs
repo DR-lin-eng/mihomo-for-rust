@@ -342,44 +342,12 @@ fn accept_server_stream_with_security(
     security: Security,
 ) -> Result<VmessAcceptedStream, TransportError> {
     let parsed = parse_client_request(stream, uuid)?;
-    if parsed.security != security {
+    if parsed.header.security != security {
         return Err(TransportError::invalid_proxy_response(
             "vmess security mismatch",
         ));
     }
-    let stream: BoxedTcpStream = Box::new(VmessServerStream {
-        inner: parsed.inner,
-        security: parsed.security,
-        req_body_key: parsed.req_body_key,
-        req_body_iv: parsed.req_body_iv,
-        resp_body_key: parsed.resp_body_key,
-        resp_body_iv: parsed.resp_body_iv,
-        resp_v: parsed.resp_v,
-        response_sent: false,
-        legacy_protocol: parsed.legacy_protocol,
-        read_state: ReadState::default(),
-        write_state: WriteState::default(),
-        chunk_stream: parsed.chunk_stream,
-        chunk_masking: parsed.chunk_masking,
-        global_padding: parsed.global_padding,
-        authenticated_length: parsed.authenticated_length,
-    });
-    if parsed.command == COMMAND_UDP {
-        Ok(VmessAcceptedStream::Udp {
-            target: parsed.target,
-            stream,
-        })
-    } else if parsed.command == COMMAND_MUX {
-        Ok(VmessAcceptedStream::Xudp {
-            target: parsed.target,
-            stream,
-        })
-    } else {
-        Ok(VmessAcceptedStream::Tcp {
-            target: parsed.target,
-            stream,
-        })
-    }
+    Ok(build_server_stream(parsed.inner, parsed.header))
 }
 
 pub(crate) fn accept_server_stream(
@@ -387,39 +355,7 @@ pub(crate) fn accept_server_stream(
     uuid: &str,
 ) -> Result<VmessAcceptedStream, TransportError> {
     let parsed = parse_client_request(stream, uuid)?;
-    let stream: BoxedTcpStream = Box::new(VmessServerStream {
-        inner: parsed.inner,
-        security: parsed.security,
-        req_body_key: parsed.req_body_key,
-        req_body_iv: parsed.req_body_iv,
-        resp_body_key: parsed.resp_body_key,
-        resp_body_iv: parsed.resp_body_iv,
-        resp_v: parsed.resp_v,
-        response_sent: false,
-        legacy_protocol: parsed.legacy_protocol,
-        read_state: ReadState::default(),
-        write_state: WriteState::default(),
-        chunk_stream: parsed.chunk_stream,
-        chunk_masking: parsed.chunk_masking,
-        global_padding: parsed.global_padding,
-        authenticated_length: parsed.authenticated_length,
-    });
-    if parsed.command == COMMAND_UDP {
-        Ok(VmessAcceptedStream::Udp {
-            target: parsed.target,
-            stream,
-        })
-    } else if parsed.command == COMMAND_MUX {
-        Ok(VmessAcceptedStream::Xudp {
-            target: parsed.target,
-            stream,
-        })
-    } else {
-        Ok(VmessAcceptedStream::Tcp {
-            target: parsed.target,
-            stream,
-        })
-    }
+    Ok(build_server_stream(parsed.inner, parsed.header))
 }
 
 pub(crate) fn accept_server_stream_for_tests(
@@ -554,8 +490,7 @@ impl ClientHandshakeState {
     }
 }
 
-struct ParsedClientRequest {
-    inner: BoxedTcpStream,
+struct ParsedClientHeader {
     security: Security,
     command: u8,
     target: String,
@@ -571,10 +506,131 @@ struct ParsedClientRequest {
     authenticated_length: bool,
 }
 
+struct ParsedClientRequest {
+    inner: BoxedTcpStream,
+    header: ParsedClientHeader,
+}
+
 fn parse_client_request(
-    mut stream: BoxedTcpStream,
+    stream: BoxedTcpStream,
     uuid: &str,
 ) -> Result<ParsedClientRequest, TransportError> {
+    let mut reader = RewindableStream::new(stream);
+    let header = parse_client_header(&mut reader, uuid)?;
+    Ok(ParsedClientRequest {
+        inner: reader.into_inner(),
+        header,
+    })
+}
+
+/// Buffers every byte handed to the parser so a multi-user listener can
+/// rewind and retry the same request header against each configured user.
+struct RewindableStream {
+    inner: BoxedTcpStream,
+    recorded: Vec<u8>,
+    pos: usize,
+}
+
+impl RewindableStream {
+    fn new(inner: BoxedTcpStream) -> Self {
+        Self {
+            inner,
+            recorded: Vec::new(),
+            pos: 0,
+        }
+    }
+
+    fn rewind(&mut self) {
+        self.pos = 0;
+    }
+
+    fn into_inner(self) -> BoxedTcpStream {
+        self.inner
+    }
+}
+
+impl Read for RewindableStream {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        if self.pos < self.recorded.len() {
+            let end = (self.pos + buf.len()).min(self.recorded.len());
+            let len = end - self.pos;
+            buf[..len].copy_from_slice(&self.recorded[self.pos..end]);
+            self.pos = end;
+            return Ok(len);
+        }
+        let read = self.inner.read(buf)?;
+        self.recorded.extend_from_slice(&buf[..read]);
+        self.pos += read;
+        Ok(read)
+    }
+}
+
+/// Tries the request header against every configured UUID and returns the
+/// matching one; AEAD authentication makes a wrong user fail cleanly.
+pub(crate) fn accept_server_stream_with_uuids(
+    stream: BoxedTcpStream,
+    uuids: &[String],
+) -> Result<(VmessAcceptedStream, String), TransportError> {
+    let mut reader = RewindableStream::new(stream);
+    let mut last_error = None;
+    for uuid in uuids {
+        reader.rewind();
+        match parse_client_header(&mut reader, uuid) {
+            Ok(header) => {
+                let stream = build_server_stream(reader.into_inner(), header);
+                return Ok((stream, uuid.clone()));
+            }
+            Err(err) => last_error = Some(err),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        TransportError::invalid_proxy_response("vmess listener has no users configured")
+    }))
+}
+
+fn build_server_stream(inner: BoxedTcpStream, header: ParsedClientHeader) -> VmessAcceptedStream {
+    let stream: BoxedTcpStream = Box::new(VmessServerStream {
+        inner,
+        security: header.security,
+        req_body_key: header.req_body_key,
+        req_body_iv: header.req_body_iv,
+        resp_body_key: header.resp_body_key,
+        resp_body_iv: header.resp_body_iv,
+        resp_v: header.resp_v,
+        response_sent: false,
+        legacy_protocol: header.legacy_protocol,
+        read_state: ReadState::default(),
+        write_state: WriteState::default(),
+        chunk_stream: header.chunk_stream,
+        chunk_masking: header.chunk_masking,
+        global_padding: header.global_padding,
+        authenticated_length: header.authenticated_length,
+    });
+    if header.command == COMMAND_UDP {
+        VmessAcceptedStream::Udp {
+            target: header.target,
+            stream,
+        }
+    } else if header.command == COMMAND_MUX {
+        VmessAcceptedStream::Xudp {
+            target: header.target,
+            stream,
+        }
+    } else {
+        VmessAcceptedStream::Tcp {
+            target: header.target,
+            stream,
+        }
+    }
+}
+
+fn parse_client_header(
+    stream: &mut dyn Read,
+    uuid: &str,
+) -> Result<ParsedClientHeader, TransportError> {
     let uuid = Uuid::parse_str(uuid).map_err(|err| {
         TransportError::InvalidPlan(format!("invalid vmess uuid {uuid:?}: {err}"))
     })?;
@@ -582,12 +638,12 @@ fn parse_client_request(
     let mut auth_id = [0_u8; 16];
     stream.read_exact(&mut auth_id).map_err(TransportError::from)?;
     let legacy_parse =
-        try_open_vmess_legacy_header(&mut *stream, cmd_key, derive_alter_key(&uuid), &auth_id, 5)?;
+        try_open_vmess_legacy_header(stream, cmd_key, derive_alter_key(&uuid), &auth_id, 5)?;
     let (payload, legacy_protocol) = if let Some(payload) = legacy_parse {
         (payload, true)
     } else {
         (
-            open_vmess_aead_header_with_auth_id(&mut *stream, cmd_key, auth_id)?,
+            open_vmess_aead_header_with_auth_id(stream, cmd_key, auth_id)?,
             false,
         )
     };
@@ -687,8 +743,7 @@ fn parse_client_request(
         first_16_sha256(&req_body_iv)
     };
 
-    Ok(ParsedClientRequest {
-        inner: stream,
+    Ok(ParsedClientHeader {
         security,
         command,
         target,
@@ -723,10 +778,34 @@ struct VmessClientStream {
     authenticated_length: bool,
 }
 
+struct VmessClientWriteClone {
+    inner: BoxedTcpStream,
+    security: Security,
+    req_body_key: [u8; 16],
+    req_body_iv: [u8; 16],
+    write_state: WriteState,
+    chunk_stream: bool,
+    chunk_masking: bool,
+    global_padding: bool,
+    authenticated_length: bool,
+}
+
 impl VmessClientStream {
     fn ensure_response_received(&mut self) -> io::Result<()> {
         if self.response_received {
             return Ok(());
+        }
+        // Socket read timeouts must surface as WouldBlock/TimedOut so UDP
+        // reply polling can retry instead of treating them as protocol errors.
+        fn response_header_io_error(err: TransportError) -> io::Error {
+            match err {
+                TransportError::Io { kind, message }
+                    if matches!(kind, io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) =>
+                {
+                    io::Error::new(kind, message)
+                }
+                other => io::Error::new(io::ErrorKind::InvalidData, other.to_string()),
+            }
         }
         if self.legacy_protocol {
             if matches!(self.security, Security::Legacy) {
@@ -751,7 +830,7 @@ impl VmessClientStream {
                     &self.resp_body_iv,
                     self.resp_v,
                 )
-                .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?;
+                .map_err(response_header_io_error)?;
             }
         } else {
             recv_response_header(
@@ -760,7 +839,7 @@ impl VmessClientStream {
                 &self.resp_body_iv,
                 self.resp_v,
             )
-            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?;
+            .map_err(response_header_io_error)?;
         }
         self.response_received = true;
         Ok(())
@@ -810,11 +889,81 @@ impl Write for VmessClientStream {
     }
 }
 
+impl Read for VmessClientWriteClone {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "vmess client write clone is write-only",
+        ))
+    }
+}
+
+impl Write for VmessClientWriteClone {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        write_body_chunk(
+            &mut *self.inner,
+            self.security,
+            &self.req_body_key,
+            &self.req_body_iv,
+            &self.req_body_key,
+            &self.req_body_iv,
+            self.chunk_stream,
+            self.chunk_masking,
+            self.global_padding,
+            self.authenticated_length,
+            &mut self.write_state,
+            buf,
+        )
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 impl TcpStream for VmessClientStream {
+    fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
+    fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+        if self.response_received
+            || self.write_state.write_count != 0
+            || self.write_state.length_mask.is_some()
+            || self.write_state.legacy_cipher.is_some()
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "vmess client stream cannot be cloned after writes or reads begin",
+            ));
+        }
+        Ok(Box::new(VmessClientWriteClone {
+            inner: self.inner.try_clone_box()?,
+            security: self.security,
+            req_body_key: self.req_body_key,
+            req_body_iv: self.req_body_iv,
+            write_state: WriteState::default(),
+            chunk_stream: self.chunk_stream,
+            chunk_masking: self.chunk_masking,
+            global_padding: self.global_padding,
+            authenticated_length: self.authenticated_length,
+        }))
+    }
+
+    fn shutdown_write(&mut self) -> io::Result<()> {
+        self.inner.shutdown_write()
+    }
+
+    fn shutdown_all(&mut self) -> io::Result<()> {
+        self.inner.shutdown_all()
+    }
+}
+
+impl TcpStream for VmessClientWriteClone {
+    fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,
-            "vmess stream does not support cloning",
+            "vmess client write clone does not support cloning",
         ))
     }
 
@@ -2789,7 +2938,8 @@ mod tests {
         stream.extend_from_slice(b"dns");
 
         let (target, payload) = read_xudp_packet(&mut std::io::Cursor::new(stream)).unwrap();
-        assert_eq!(target, "127.0.0.1:5353".parse().unwrap());
+        assert_eq!(target.port(), 5353);
+        assert!(target.ip().is_loopback(), "expected loopback target, got {target}");
         assert_eq!(payload, b"dns");
     }
 }

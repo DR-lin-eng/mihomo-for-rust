@@ -1,0 +1,9 @@
+mode: rule
+mixed-port: 17890
+allow-lan: false
+ipv6: false
+log-level: info
+dns:
+  enable: false
+rules:
+  - MATCH,DIRECT

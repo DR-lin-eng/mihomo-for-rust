@@ -1,0 +1,17 @@
+[package]
+name = "mihomo-ebpf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+mihomo-config = { path = "../mihomo-config" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = "0.13.1"
+
+[dev-dependencies]
+serde_json = "1"

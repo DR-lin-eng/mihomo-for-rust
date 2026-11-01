@@ -1,0 +1,531 @@
+{
+  "checks": [
+    {
+      "name": "OpenClash identifies smart core",
+      "passed": true,
+      "detail": "Mihomo Meta 0.1.0 linux aarch64 with rustc 1.88.0 (6b00bc388 2025-06-23) unknown time variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload smart ebpf"
+    },
+    {
+      "name": "API exposes Smart type",
+      "passed": true,
+      "detail": {
+        "name": "智能选择",
+        "type": "Smart",
+        "all": [
+          "dead",
+          "fast",
+          "slow"
+        ],
+        "now": "Smart - Select",
+        "testUrl": "http://127.0.0.1:34771/health",
+        "expectedStatus": "*",
+        "fixed": "",
+        "policy-priority": "dead:3.00;fast:2.00;slow:1.00",
+        "useLightGBM": true,
+        "collectData": true,
+        "sampleRate": 1.0,
+        "preferASN": true,
+        "tolerance": 20,
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": false,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "Smart options serialized",
+      "passed": true,
+      "detail": {
+        "name": "智能选择",
+        "type": "Smart",
+        "all": [
+          "dead",
+          "fast",
+          "slow"
+        ],
+        "now": "Smart - Select",
+        "testUrl": "http://127.0.0.1:34771/health",
+        "expectedStatus": "*",
+        "fixed": "",
+        "policy-priority": "dead:3.00;fast:2.00;slow:1.00",
+        "useLightGBM": true,
+        "collectData": true,
+        "sampleRate": 1.0,
+        "preferASN": true,
+        "tolerance": 20,
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": false,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "auto selection marker",
+      "passed": true,
+      "detail": {
+        "name": "智能选择",
+        "type": "Smart",
+        "all": [
+          "dead",
+          "fast",
+          "slow"
+        ],
+        "now": "Smart - Select",
+        "testUrl": "http://127.0.0.1:34771/health",
+        "expectedStatus": "*",
+        "fixed": "",
+        "policy-priority": "dead:3.00;fast:2.00;slow:1.00",
+        "useLightGBM": true,
+        "collectData": true,
+        "sampleRate": 1.0,
+        "preferASN": true,
+        "tolerance": 20,
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": false,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "ranking requires auth",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "cold ranking empty",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dead proxy fails over during one connection",
+      "passed": true,
+      "detail": [
+        [
+          "fast",
+          "one.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "one.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "one.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "one.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "two.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "one.fixture.test:34771"
+        ],
+        [
+          "slow",
+          "one.fixture.test:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "fast",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "127.0.0.1:34771"
+        ],
+        [
+          "slow",
+          "one.fixture.test:34771"
+        ],
+        [
+          "slow",
+          "one.fixture.test:34771"
+        ]
+      ]
+    },
+    {
+      "name": "learned weights exposed",
+      "passed": true,
+      "detail": [
+        {
+          "Name": "fast",
+          "Rank": "MostUsed",
+          "Weight": 100.0
+        },
+        {
+          "Name": "dead",
+          "Rank": "OccasionalUsed",
+          "Weight": 35.74
+        },
+        {
+          "Name": "slow",
+          "Rank": "RarelyUsed",
+          "Weight": 11.91
+        }
+      ]
+    },
+    {
+      "name": "all groups weight API",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin accepted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "manual pin routes to requested node",
+      "passed": true,
+      "detail": [
+        [
+          "slow",
+          "two.fixture.test:34771"
+        ]
+      ]
+    },
+    {
+      "name": "manual pin reflected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "clear pin accepted",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "clear pin returns auto marker",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "local collector contains traffic samples",
+      "passed": true,
+      "detail": 6
+    },
+    {
+      "name": "real model used for trained observations",
+      "passed": true,
+      "detail": [
+        "formula",
+        "formula",
+        "lightgbm",
+        "lightgbm",
+        "lightgbm",
+        "formula"
+      ]
+    },
+    {
+      "name": "collector size bound",
+      "passed": true,
+      "detail": 2460
+    },
+    {
+      "name": "model file loaded in actual core",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Smart UDP actual forwarding 0",
+      "passed": true,
+      "detail": "udp:packet0"
+    },
+    {
+      "name": "Smart UDP actual forwarding 1",
+      "passed": true,
+      "detail": "udp:packet1"
+    },
+    {
+      "name": "reload through OpenClash API",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP feedback survives reload",
+      "passed": true,
+      "detail": {
+        "weights": [
+          {
+            "Name": "DIRECT",
+            "Rank": "MostUsed",
+            "Weight": 100.0
+          }
+        ]
+      }
+    },
+    {
+      "name": "statistics survive reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "model upgrade follows redirect",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "downloaded model matches published bytes",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reload bad-model URL setting",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid model update returns error",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid model update preserves existing model",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "graceful shutdown persists statistics",
+      "passed": true,
+      "detail": 6
+    },
+    {
+      "name": "statistics survive process restart",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "scoped flush other config succeeds",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "other config flush preserves active data",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "scoped active config flush",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "flush clears weights",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fresh observations after flush",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "global flush succeeds",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "global flush empties weights",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "invalid model keeps adaptive routing usable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "disabled collector does not append samples",
+      "passed": true,
+      "detail": [
+        3775,
+        3775
+      ]
+    }
+  ],
+  "core": "/tmp/mihomo-memory-final",
+  "model_sha256": "23633022a815fb34e510befe1c176ba50af3ced48f08b172454f4cd6b8327788",
+  "proxy_connections": [
+    [
+      "fast",
+      "one.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "one.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "one.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "one.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "two.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "one.fixture.test:34771"
+    ],
+    [
+      "slow",
+      "one.fixture.test:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "fast",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "127.0.0.1:34771"
+    ],
+    [
+      "slow",
+      "one.fixture.test:34771"
+    ],
+    [
+      "slow",
+      "one.fixture.test:34771"
+    ]
+  ],
+  "log": "[Smart] Model file loaded successfully: 557 trees, 30 features\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=11 groups=3 providers=0 controllers=127.0.0.1:35707 bound_listeners=3\n[Smart] Model file loaded successfully: 557 trees, 30 features\n[Smart] Model file loaded successfully: 557 trees, 30 features\n[Smart] Model file loaded successfully: 557 trees, 30 features\n[Smart] Model file loaded successfully: 557 trees, 30 features\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n[Smart] Model file loaded successfully: 557 trees, 30 features\n[Smart] Model file loaded successfully: 557 trees, 30 features\n[Smart] Model file loaded successfully: 557 trees, 30 features\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n[Smart] Model file loaded successfully: 557 trees, 30 features\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n[Smart] Model file loaded successfully: 557 trees, 30 features\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=11 groups=3 providers=0 controllers=127.0.0.1:35707 bound_listeners=3\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n[Smart] model unavailable, using adaptive scoring: expected LightGBM text model\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=2 proxies=11 groups=3 providers=0 controllers=127.0.0.1:35707 bound_listeners=3\nlistener accept error: listener shutdown requested\nlistener accept error: listener shutdown requested\n",
+  "workspace": "/tmp/mihomo-smart-smoke-2g29uxuo"
+}

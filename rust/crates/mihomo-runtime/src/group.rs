@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
-use mihomo_outbound::{GroupDefinition, ProxyProviderDefinition};
 use mihomo_core::Metadata;
+use mihomo_outbound::{GroupDefinition, ProxyProviderDefinition};
 
 use crate::ResolvedGroup;
 
@@ -31,6 +31,7 @@ pub struct RuntimeGroup {
     pub load_balance_strategy: LoadBalanceStrategy,
     pub test_url: String,
     pub expected_status: String,
+    pub smart: Option<crate::smart::SmartGroup>,
     selected: Option<String>,
     fast_node: Option<String>,
     round_robin_index: usize,
@@ -46,6 +47,7 @@ impl RuntimeGroup {
             load_balance_strategy: LoadBalanceStrategy::ConsistentHashing,
             test_url: String::new(),
             expected_status: String::new(),
+            smart: None,
             selected: None,
             fast_node: None,
             round_robin_index: 0,
@@ -77,6 +79,18 @@ impl RuntimeGroup {
             "select" => self.choose_select(proxies),
             "url-test" => self.choose_url_test(proxies),
             "fallback" => self.choose_fallback(proxies),
+            "smart" => {
+                if let Some(smart) = &mut self.smart {
+                    smart.choose(proxies, metadata, self.selected.as_deref())
+                } else {
+                    proxies.iter().find(|candidate| {
+                        candidate.alive
+                            && (!metadata
+                                .is_some_and(|meta| meta.network == mihomo_core::NetworkKind::Udp)
+                                || candidate.supports_udp)
+                    })
+                }
+            }
             "load-balance" => self.choose_load_balance(proxies, metadata),
             _ => proxies.first(),
         }
@@ -94,28 +108,49 @@ impl RuntimeGroup {
             .is_some_and(|proxy| proxy.supports_udp)
     }
 
-    fn choose_select<'a>(&'a mut self, proxies: &'a [ProxyCandidate]) -> Option<&'a ProxyCandidate> {
+    fn choose_select<'a>(
+        &'a mut self,
+        proxies: &'a [ProxyCandidate],
+    ) -> Option<&'a ProxyCandidate> {
         if let Some(selected) = &self.selected {
             if let Some(proxy) = proxies.iter().find(|proxy| proxy.name == *selected) {
                 return Some(proxy);
             }
         }
-        proxies.first()
+        proxies
+            .iter()
+            .find(|proxy| proxy.alive)
+            .or_else(|| proxies.first())
     }
 
-    fn choose_fallback<'a>(&'a mut self, proxies: &'a [ProxyCandidate]) -> Option<&'a ProxyCandidate> {
+    fn choose_fallback<'a>(
+        &'a mut self,
+        proxies: &'a [ProxyCandidate],
+    ) -> Option<&'a ProxyCandidate> {
         if let Some(selected) = &self.selected {
-            if let Some(proxy) = proxies.iter().find(|proxy| proxy.name == *selected && proxy.alive) {
+            if let Some(proxy) = proxies
+                .iter()
+                .find(|proxy| proxy.name == *selected && proxy.alive)
+            {
                 return Some(proxy);
             }
             self.selected = None;
         }
-        proxies.iter().find(|proxy| proxy.alive).or_else(|| proxies.first())
+        proxies
+            .iter()
+            .find(|proxy| proxy.alive)
+            .or_else(|| proxies.first())
     }
 
-    fn choose_url_test<'a>(&'a mut self, proxies: &'a [ProxyCandidate]) -> Option<&'a ProxyCandidate> {
+    fn choose_url_test<'a>(
+        &'a mut self,
+        proxies: &'a [ProxyCandidate],
+    ) -> Option<&'a ProxyCandidate> {
         if let Some(selected) = &self.selected {
-            if let Some(proxy) = proxies.iter().find(|proxy| proxy.name == *selected && proxy.alive) {
+            if let Some(proxy) = proxies
+                .iter()
+                .find(|proxy| proxy.name == *selected && proxy.alive)
+            {
                 return Some(proxy);
             }
         }
@@ -128,8 +163,13 @@ impl RuntimeGroup {
 
         match &self.fast_node {
             Some(current_name) => {
-                if let Some(current) = proxies.iter().find(|proxy| proxy.name == *current_name && proxy.alive) {
-                    if current.last_delay_ms <= fastest.last_delay_ms.saturating_add(self.tolerance_ms) {
+                if let Some(current) = proxies
+                    .iter()
+                    .find(|proxy| proxy.name == *current_name && proxy.alive)
+                {
+                    if current.last_delay_ms
+                        <= fastest.last_delay_ms.saturating_add(self.tolerance_ms)
+                    {
                         return Some(current);
                     }
                 }
@@ -147,13 +187,18 @@ impl RuntimeGroup {
         metadata: Option<&Metadata>,
     ) -> Option<&'a ProxyCandidate> {
         match self.load_balance_strategy {
-            LoadBalanceStrategy::ConsistentHashing => self.choose_consistent_hashing(proxies, metadata),
+            LoadBalanceStrategy::ConsistentHashing => {
+                self.choose_consistent_hashing(proxies, metadata)
+            }
             LoadBalanceStrategy::RoundRobin => self.choose_round_robin(proxies),
             LoadBalanceStrategy::StickySessions => self.choose_sticky_sessions(proxies, metadata),
         }
     }
 
-    fn choose_round_robin<'a>(&'a mut self, proxies: &'a [ProxyCandidate]) -> Option<&'a ProxyCandidate> {
+    fn choose_round_robin<'a>(
+        &'a mut self,
+        proxies: &'a [ProxyCandidate],
+    ) -> Option<&'a ProxyCandidate> {
         if proxies.is_empty() {
             return None;
         }
@@ -188,7 +233,10 @@ impl RuntimeGroup {
             }
             key = key.wrapping_add(1);
         }
-        proxies.iter().find(|proxy| proxy.alive).or_else(|| proxies.first())
+        proxies
+            .iter()
+            .find(|proxy| proxy.alive)
+            .or_else(|| proxies.first())
     }
 
     fn choose_sticky_sessions<'a>(
@@ -201,7 +249,10 @@ impl RuntimeGroup {
         }
         let key = sticky_key(metadata);
         if let Some(name) = self.sticky_sessions.get(&key) {
-            if let Some(proxy) = proxies.iter().find(|proxy| proxy.name == *name && proxy.alive) {
+            if let Some(proxy) = proxies
+                .iter()
+                .find(|proxy| proxy.name == *name && proxy.alive)
+            {
                 return Some(proxy);
             }
         }
@@ -231,6 +282,9 @@ pub fn build_runtime_groups(
             let definition = group_index.get(&resolved.name)?;
             let mut runtime_group = RuntimeGroup::new(resolved.clone());
             runtime_group.disable_udp = definition.disable_udp;
+            if definition.group_type == "smart" {
+                runtime_group.smart = Some(crate::smart::SmartGroup::new(definition));
+            }
             runtime_group.tolerance_ms = definition.tolerance.max(0) as u16;
             runtime_group.load_balance_strategy = parse_load_balance_strategy(&definition.strategy);
             runtime_group.test_url =
@@ -263,7 +317,7 @@ fn determine_group_test_url<'a>(
         }
     }
     match resolved.group_type.as_str() {
-        "url-test" | "fallback" | "load-balance" => DEFAULT_TEST_URL,
+        "url-test" | "fallback" | "load-balance" | "smart" => DEFAULT_TEST_URL,
         _ => "",
     }
 }
@@ -295,10 +349,7 @@ fn sticky_key(metadata: Option<&Metadata>) -> String {
     };
     format!(
         "{}|{}",
-        metadata
-            .src_ip
-            .map(|ip| ip.to_string())
-            .unwrap_or_default(),
+        metadata.src_ip.map(|ip| ip.to_string()).unwrap_or_default(),
         load_balance_key(Some(metadata))
     )
 }
@@ -361,6 +412,17 @@ mod tests {
     }
 
     #[test]
+    fn select_group_prefers_first_alive_candidate_when_unselected() {
+        let mut group = group("selector", "select", &["a", "b", "c"]);
+        let proxies = vec![
+            candidate("a", false, 10),
+            candidate("b", true, 20),
+            candidate("c", true, 5),
+        ];
+        assert_eq!(group.choose(&proxies, None).unwrap().name, "b");
+    }
+
+    #[test]
     fn url_test_group_keeps_current_fast_node_within_tolerance() {
         let mut group = group("auto", "url-test", &["a", "b"]);
         group.tolerance_ms = 15;
@@ -402,8 +464,39 @@ mod tests {
             src_ip: Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2))),
             ..Metadata::default()
         };
-        let first = group.choose(&proxies, Some(&metadata)).unwrap().name.clone();
-        let second = group.choose(&proxies, Some(&metadata)).unwrap().name.clone();
+        let first = group
+            .choose(&proxies, Some(&metadata))
+            .unwrap()
+            .name
+            .clone();
+        let second = group
+            .choose(&proxies, Some(&metadata))
+            .unwrap()
+            .name
+            .clone();
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn smart_group_keeps_repeatable_choice_without_feedback() {
+        let mut group = group("smart", "smart", &["a", "b"]);
+        group.load_balance_strategy = LoadBalanceStrategy::StickySessions;
+        let proxies = vec![candidate("a", true, 10), candidate("b", true, 20)];
+        let metadata = Metadata {
+            host: Some("example.com".into()),
+            src_ip: Some(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2))),
+            ..Metadata::default()
+        };
+        let first = group
+            .choose(&proxies, Some(&metadata))
+            .unwrap()
+            .name
+            .clone();
+        let second = group
+            .choose(&proxies, Some(&metadata))
+            .unwrap()
+            .name
+            .clone();
         assert_eq!(first, second);
     }
 
@@ -504,6 +597,49 @@ mod tests {
 
         definitions[0].strategy = "round-robin".into();
         let rr_group = build_runtime_groups(&resolved, &definitions, &BTreeMap::new());
-        assert_eq!(rr_group[0].load_balance_strategy, LoadBalanceStrategy::RoundRobin);
+        assert_eq!(
+            rr_group[0].load_balance_strategy,
+            LoadBalanceStrategy::RoundRobin
+        );
+    }
+
+    #[test]
+    fn smart_groups_initialize_adaptive_state_and_default_healthcheck() {
+        let resolved = vec![ResolvedGroup {
+            name: "smart".into(),
+            group_type: "smart".into(),
+            proxies: vec!["DIRECT".into()],
+            use_providers: vec![],
+        }];
+        let definitions = vec![GroupDefinition {
+            name: "smart".into(),
+            group_type: "smart".into(),
+            proxies: vec!["DIRECT".into()],
+            use_providers: vec![],
+            url: String::new(),
+            interval: 0,
+            timeout: 0,
+            max_failed_times: 0,
+            lazy: true,
+            disable_udp: false,
+            filter: String::new(),
+            exclude_filter: String::new(),
+            exclude_type: String::new(),
+            expected_status: String::new(),
+            include_all: false,
+            include_all_proxies: false,
+            include_all_providers: false,
+            hidden: false,
+            icon: String::new(),
+            strategy: "sticky-sessions".into(),
+            tolerance: 0,
+            extra: BTreeMap::new(),
+        }];
+
+        let groups = build_runtime_groups(&resolved, &definitions, &BTreeMap::new());
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].test_url, DEFAULT_TEST_URL);
+        assert!(groups[0].smart.is_some());
+        assert!(!groups[0].smart.as_ref().unwrap().options.use_lightgbm);
     }
 }

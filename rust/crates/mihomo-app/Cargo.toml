@@ -12,29 +12,51 @@ ssh-transport-tests = ["ssh-transport", "dep:russh", "dep:ssh-key"]
 
 [dependencies]
 base64 = "0.22"
+blake2 = "0.10"
 blake3 = "1"
-curve25519-dalek = "4"
+bytes = "1"
+curve25519-dalek = "=4.0.0-rc.3"
+getrandom = "0.2"
+h3 = "0.0.8"
+h3-quinn = "0.0.10"
+hex = "0.4"
+http = "1"
 ml-kem = "=0.3.0-rc.1"
+libc = "0.2"
 mihomo-api = { path = "../mihomo-api" }
 mihomo-buf = { path = "../mihomo-buf" }
 mihomo-config = { path = "../mihomo-config" }
+mihomo-ebpf = { path = "../mihomo-ebpf" }
 mihomo-core = { path = "../mihomo-core" }
 mihomo-dns = { path = "../mihomo-dns" }
 mihomo-inbound = { path = "../mihomo-inbound" }
+mihomo-outbound = { path = "../mihomo-outbound" }
 mihomo-runtime = { path = "../mihomo-runtime" }
 mihomo-rules = { path = "../mihomo-rules" }
+mihomo-tun = { path = "../mihomo-tun" }
 mihomo-transport = { path = "../mihomo-transport" }
 rand_core = { version = "0.6", features = ["getrandom"] }
+regex = "1"
 rustls = { version = "0.21", features = ["dangerous_configuration"] }
+rustls-native-certs = "0.6"
 rustls-pemfile = "1"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
 signal-hook = "0.3"
 sha1 = "0.10"
+sha2 = "0.10"
+smoltcp = { version = "0.11.0", default-features = false, features = ["std", "medium-ip", "proto-ipv4", "proto-ipv6", "socket-tcp", "socket-udp", "async"] }
+quinn = { version = "0.11.9", default-features = false, features = ["runtime-tokio", "rustls-aws-lc-rs", "log", "platform-verifier"] }
+quinn-udp = "0.5.14"
+rustls023 = { package = "rustls", version = "0.23.32", features = ["aws_lc_rs"] }
+url = "2"
 russh = { version = "0.60.3", optional = true }
 ssh-key = { version = "0.6", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "io-util", "time"] }
 uuid = { version = "1", features = ["v4"] }
-x25519-dalek = { version = "2", features = ["static_secrets"] }
+webpki-roots = "0.25"
+x25519-dalek = { version = "=2.0.0-rc.3", features = ["static_secrets"] }
 
 [lib]
 path = "src/lib.rs"
@@ -47,5 +69,4 @@ path = "src/main.rs"
 hmac = "0.12"
 rand_010 = { package = "rand", version = "0.10" }
 rcgen = "0.13"
-sha2 = "0.10"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "io-util", "time"] }
+tokio-wireguard = "0.1.3"

@@ -612,6 +612,10 @@ where
     let (mut upstream, plan) = match tunnel.connect_tcp_with_dialer(context.metadata(), dialer) {
         Ok(result) => result,
         Err(err) => {
+            mihomo_core::push_log(
+                mihomo_core::LogLevel::Error,
+                format!("http proxy connect error: {err}"),
+            );
             let _ = write_http_response(&mut *context.stream_mut(), "502 Bad Gateway", None);
             return Err(ListenerRuntimeError::Connect(err));
         }

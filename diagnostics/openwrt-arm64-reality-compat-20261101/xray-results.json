@@ -1,0 +1,19 @@
+{
+  "server": "xray",
+  "server_version": "Xray 26.10.29 (Xray, Penetrates Everything.) Custom (go1.27.3 linux/arm64)",
+  "mlkem": "on",
+  "camouflage_alpn": "h2,http/1.1",
+  "client_alpn": null,
+  "passed": [
+    "reality-udp/plain-http",
+    "reality-udp/TLSv1_2",
+    "reality-udp/TLSv1_3",
+    "reality-udp/server-first",
+    "reality-udp/datagrams",
+    "reality-xudp/datagrams"
+  ],
+  "direct_evidence": [
+    "2026/10/31 16:40:08.680481 [Debug] [4151981293] proxy: Xtls Unpadding new block, content 4096 padding 0 command 2",
+    "2026/10/31 16:40:08.680485 [Debug] [4151981293] proxy: XtlsPadding 510 483 2"
+  ]
+}
