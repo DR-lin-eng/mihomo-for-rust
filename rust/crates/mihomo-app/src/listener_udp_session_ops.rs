@@ -74,14 +74,15 @@ impl UdpSession for SystemUdpSession {
             }
         }
         if metadata.dst_ip.is_none()&&metadata.host.is_some() {
-            let runtime=self.dns_runtime.clone().or_else(||self.tunnel.dns_runtime().map(|runtime|runtime.lock().unwrap().clone()));
+            let runtime=self.tunnel.dns_runtime().map(|runtime|runtime.lock().unwrap().clone()).or_else(||self.dns_runtime.clone());
             if let Some(mut runtime)=runtime {
+                runtime = runtime.without_fake_ip_persistence();
                 self.tunnel.seed_dns_fake_ip_state(&mut runtime);
                 let proxy=if runtime.config.respect_rules{"RULES"}else{"DIRECT"};
                 let transport=crate::dns_transport::TunnelDnsPacketTransport::new(self.tunnel.clone(),Some(runtime.clone()),proxy);
                 let mut upstream=mihomo_dns::NetworkDnsUpstream::new(transport);
                 runtime.resolve_metadata_with_upstream(metadata,&mut upstream).map_err(io::Error::other)?;
-                self.tunnel.capture_dns_fake_ip_state(&runtime);
+                self.tunnel.capture_dns_resolution_cache(&runtime);
                 self.dns_runtime=Some(runtime);
                 if metadata.dst_ip.is_some(){return Ok(());}
             }
@@ -91,7 +92,7 @@ impl UdpSession for SystemUdpSession {
             dns_runtime
                 .resolve_metadata(metadata)
                 .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
-            self.tunnel.capture_dns_fake_ip_state(dns_runtime);
+            self.tunnel.capture_dns_resolution_cache(dns_runtime);
             if metadata.dst_ip.is_some() {
                 return Ok(());
             }

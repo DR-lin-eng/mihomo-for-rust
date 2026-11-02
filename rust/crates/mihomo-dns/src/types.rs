@@ -45,6 +45,7 @@ pub struct DnsRuntime {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DnsRuntimeConfig {
     pub enabled: bool,
+    pub ipv6: bool,
     pub cache_size: usize,
     pub listen: String,
     pub use_hosts: bool,
@@ -87,6 +88,13 @@ pub struct ResolveAnswer {
 pub trait DnsUpstream {
     fn resolve(&mut self, servers: &[String], host: &str) -> Result<Vec<IpAddr>, DnsError>;
 
+    fn resolve_for_type(
+        &mut self, servers: &[String], host: &str, kind: DnsRecordType,
+    ) -> Result<Vec<IpAddr>, DnsError> {
+        Ok(self.resolve(servers, host)?.into_iter()
+            .filter(|ip| crate::support::matches_query_type(*ip, kind)).collect())
+    }
+
     /// For record types the address cache cannot materialize (HTTPS/SVCB,
     /// TXT, PTR, etc.), forward the original DNS wire query unchanged.
     fn exchange(&mut self, _servers: &[String], _packet: &[u8]) -> Result<Vec<u8>, DnsError> {
@@ -115,6 +123,10 @@ impl DnsRecordType {
 
 pub trait DnsPacketTransport {
     fn exchange(&mut self, server: &str, payload: &[u8]) -> Result<Vec<u8>, DnsError>;
+
+    /// Independent I/O state for racing configured resolvers. Stateful test or
+    /// embedding transports may keep the sequential default.
+    fn fork(&self) -> Option<Box<dyn DnsPacketTransport + Send>> { None }
 }
 
 #[derive(Default)]

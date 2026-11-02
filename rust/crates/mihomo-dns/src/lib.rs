@@ -6,6 +6,7 @@ mod runtime;
 mod support;
 mod types;
 mod upstream;
+mod exchange_race;
 
 pub use packet::build_servfail_response;
 
@@ -50,3 +51,5 @@ pub fn parse_dns_response_for_tests(
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod cold_start_tests;

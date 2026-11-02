@@ -189,6 +189,7 @@ fn resolve_host_addrs_via_system_style_upstream_keeps_all_answers_in_order() {
     let document = parse_runtime_config_document(
         r#"
 dns:
+  ipv6: true
   nameserver:
     - 1.1.1.1
 "#,

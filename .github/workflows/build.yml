@@ -24,11 +24,19 @@ concurrency:
 
 env:
   REGISTRY: docker.io
+  CARGO_BUILD_JOBS: 2
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_RELEASE_STRIP: symbols
 
 jobs:
+  verify:
+    uses: ./.github/workflows/test.yml
+
   rust-build:
     runs-on: ${{ matrix.jobs.runner }}
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         jobs:
           - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v1, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
@@ -45,6 +53,8 @@ jobs:
           - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v3, binary_name: mihomo.exe, archive: zip, verify: test, smoke: powershell }
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -57,17 +67,22 @@ jobs:
 
       - name: Set variables
         shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           VERSION="$(printf '%s' "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)"
           VERSION="${VERSION//\//-}"
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION=${{ github.event.inputs.version }}
+          if [ -n "$INPUT_VERSION" ]; then
+            [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo 'Invalid release version' >&2; exit 1; }
+            VERSION="$INPUT_VERSION"
           fi
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "MIHOMO_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "MIHOMO_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Compile Rust tests
         if: ${{ matrix.jobs.verify == 'test' }}
-        run: cargo test --manifest-path rust/Cargo.toml --workspace --no-run
+        run: cargo test --manifest-path rust/Cargo.toml --workspace --no-run --locked
 
       - name: Install musl toolchain
         if: ${{ matrix.jobs.target == 'aarch64-unknown-linux-musl' }}
@@ -78,7 +93,14 @@ jobs:
       - name: Build Rust binary
         env:
           RUSTFLAGS: ${{ matrix.jobs.rustflags }}
-        run: cargo build --manifest-path rust/Cargo.toml -p mihomo-app --bin mihomo --release --target ${{ matrix.jobs.target }}
+        shell: bash
+        run: |
+          if [ "${{ matrix.jobs.target }}" = "aarch64-unknown-linux-musl" ]; then
+            export CC_aarch64_unknown_linux_musl=musl-gcc
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc
+            export RUSTFLAGS="${RUSTFLAGS} -C target-feature=+crt-static"
+          fi
+          cargo build --manifest-path rust/Cargo.toml -p mihomo-app --bin mihomo --release --locked --target ${{ matrix.jobs.target }}
 
       - name: Set up Go for shim smoke
         if: ${{ matrix.jobs.output == 'linux-amd64-v1' }}
@@ -114,7 +136,8 @@ jobs:
           cp rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }} mihomo-${{ matrix.jobs.output }}
           gzip -c mihomo-${{ matrix.jobs.output }} > mihomo-${{ matrix.jobs.output }}-${VERSION}.gz
           rm mihomo-${{ matrix.jobs.output }}
-          echo ${VERSION} > version.txt
+          echo "${VERSION}" > version.txt
+          git rev-parse HEAD > commit.txt
 
       - name: Package Rust artifact zip
         if: ${{ matrix.jobs.archive == 'zip' }}
@@ -124,6 +147,7 @@ jobs:
           Compress-Archive -Path "mihomo-${{ matrix.jobs.output }}.exe" -DestinationPath "mihomo-${{ matrix.jobs.output }}-${env:VERSION}.zip" -Force
           Remove-Item "mihomo-${{ matrix.jobs.output }}.exe"
           Set-Content -Path version.txt -Value $env:VERSION
+          git rev-parse HEAD | Set-Content -Path commit.txt
 
       - name: Archive Rust artifacts
         uses: actions/upload-artifact@v7
@@ -133,17 +157,20 @@ jobs:
             mihomo-${{ matrix.jobs.output }}-*.gz
             mihomo-${{ matrix.jobs.output }}-*.zip
             version.txt
+            commit.txt
+          if-no-files-found: error
 
   upload-prerelease:
     permissions: write-all
     if: ${{ github.event_name != 'workflow_dispatch' && github.ref_type == 'branch' && !startsWith(github.event_name, 'pull_request') }}
-    needs: [rust-build]
+    needs: [rust-build, verify]
     runs-on: ubuntu-latest
     steps:
       - name: Download workflow artifacts
         uses: actions/download-artifact@v8
         with:
           path: bin/
+          pattern: rust-*
           merge-multiple: true
 
       - name: Calculate checksums
@@ -196,13 +223,13 @@ jobs:
   upload-release:
     permissions: write-all
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
-    needs: [rust-build]
+    needs: [rust-build, verify]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          ref: Meta
+          ref: ${{ github.sha }}
           fetch-depth: '0'
           fetch-tags: 'true'
 
@@ -212,49 +239,72 @@ jobs:
           git fetch --tags
           echo "PREVERSION=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
 
-      - name: Refresh Meta branch
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git fetch origin Meta:Meta
+      - name: Tag the tested commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Tag the commit on Meta
         run: |
-          git checkout Meta
-          git tag ${{ github.event.inputs.version }}
-          git push origin ${{ github.event.inputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if git rev-parse "refs/tags/${CURRENTVERSION}" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "${CURRENTVERSION}")" = "$GITHUB_SHA"
+          else
+            git tag "${CURRENTVERSION}" "$GITHUB_SHA"
+            git push origin "refs/tags/${CURRENTVERSION}"
+          fi
 
       - name: Generate release notes
         run: |
           cp ./.github/genReleaseNote.sh ./
           bash ./genReleaseNote.sh -v ${PREVERSION}...${CURRENTVERSION}
           rm ./genReleaseNote.sh
+          cat >> release.md << EOF
+
+          Rust kernels built by GitHub Actions from commit \`${GITHUB_SHA}\`.
+
+          OpenWrt / mobile WiFi ARM64: download \`mihomo-openwrt-arm64-${CURRENTVERSION}.gz\`, decompress it, and rename the executable to \`Clash.Core\` when required by your launcher.
+
+          Verify downloads against \`checksums.txt\`. Platform and CPU variants are included in each filename; AMD64 v1 is the baseline variant.
+
+          Build: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
 
       - uses: actions/download-artifact@v8
         with:
           path: bin/
+          pattern: rust-*
           merge-multiple: true
 
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: bin
+      - name: Verify artifacts and calculate checksums
+        shell: bash
+        run: |
+          test "$(find bin -maxdepth 1 -type f \( -name '*.gz' -o -name '*.zip' \) | wc -l)" -eq 12
+          test "$(tr -d '\r\n' < bin/commit.txt)" = "$GITHUB_SHA"
+          cd bin
+          find . -maxdepth 1 -type f \( -name '*.gz' -o -name '*.zip' \) -print0 | sort -z | xargs -0 sha256sum > checksums.txt
+          sha256sum --check checksums.txt
 
       - name: Upload Release
         uses: softprops/action-gh-release@v3
         if: ${{ success() }}
         with:
           tag_name: ${{ github.event.inputs.version }}
+          target_commitish: ${{ github.sha }}
           files: bin/*
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(github.event.inputs.version, '-') }}
+          draft: true
           body_path: release.md
 
+      - name: Publish completed release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+          PRERELEASE: ${{ contains(github.event.inputs.version, '-') }}
+        run: gh release edit "$RELEASE_VERSION" --draft=false --prerelease="$PRERELEASE"
+
   docker:
-    if: ${{ !startsWith(github.event_name, 'pull_request') }}
+    if: ${{ github.repository == 'MetaCubeX/mihomo' && !startsWith(github.event_name, 'pull_request') }}
     permissions: write-all
-    needs: [rust-build]
+    needs: [rust-build, verify]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

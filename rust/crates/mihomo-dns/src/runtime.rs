@@ -222,7 +222,7 @@ impl DnsRuntime {
         if servers.is_empty() {
             return Ok(None);
         }
-        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false)?
+        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false, self.address_query_type())?
         else {
             return Ok(None);
         };
@@ -241,7 +241,7 @@ impl DnsRuntime {
         if servers.is_empty() {
             return Ok(Vec::new());
         }
-        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false)?
+        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false, self.address_query_type())?
         else {
             return Ok(Vec::new());
         };
@@ -260,7 +260,7 @@ impl DnsRuntime {
         if servers.is_empty() {
             return Ok(None);
         }
-        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false)?
+        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false, self.address_query_type())?
         else {
             return Ok(None);
         };
@@ -279,7 +279,7 @@ impl DnsRuntime {
         if servers.is_empty() {
             return Ok(Vec::new());
         }
-        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false)?
+        let Some(answer) = self.lookup_answer_using_servers(host, upstream, &servers, false, self.address_query_type())?
         else {
             return Ok(Vec::new());
         };
@@ -391,6 +391,9 @@ impl DnsRuntime {
     /// Network I/O is deliberately left to the caller after releasing it.
     pub fn local_query_packet(&mut self, packet: &[u8]) -> Result<Option<Vec<u8>>, DnsError> {
         let query = crate::packet::parse_dns_query_packet(packet)?;
+        if query.query_type == DnsRecordType::Aaaa && !self.config.ipv6 {
+            return Ok(Some(crate::packet::build_dns_response(&query, 60, &[])));
+        }
         if !matches!(query.query_type, DnsRecordType::A | DnsRecordType::Aaaa) {
             return Ok(None);
         }
@@ -495,15 +498,17 @@ impl DnsRuntime {
 
         let key = normalize(host);
         if let Some(cached) = self.cache.get(&key) {
-            return Ok(Some(ResolveAnswer {
-                ips: cached.ips.clone(),
-                servers: cached.servers.clone(),
-                source: ResolveSource::Cache,
-            }));
+            let ips: Vec<_> = cached.ips.iter().copied()
+                .filter(|ip| matches_query_type(*ip, query_type)).collect();
+            if !ips.is_empty() {
+                return Ok(Some(ResolveAnswer {
+                    ips, servers: cached.servers.clone(), source: ResolveSource::Cache,
+                }));
+            }
         }
 
         if self.should_only_query_fallback(host) {
-            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, Some(query_type))? {
                 cache_answer(self, key, &answer);
                 return Ok(Some(ResolveAnswer {
                     source: ResolveSource::Fallback,
@@ -518,7 +523,7 @@ impl DnsRuntime {
         } else {
             self.select_query_relay_nameservers(host)
         };
-        self.lookup_answer_using_servers(host, upstream, &primary_servers, true)
+        self.lookup_answer_using_servers(host, upstream, &primary_servers, true, Some(query_type))
     }
 
     pub fn handle_query_packet_via_system(
@@ -547,7 +552,10 @@ impl DnsRuntime {
             self.config.default_nameserver.clone()
         };
         let mut upstream = NetworkDnsUpstream::new(SystemDnsPacketTransport);
-        let ips = upstream.resolve(&servers, host)?;
+        let ips = match self.address_query_type() {
+            Some(kind) => upstream.resolve_for_type(&servers, host, kind)?,
+            None => upstream.resolve(&servers, host)?,
+        };
         if ips.is_empty() {
             return Err(DnsError::ResolveFailed(host.into()));
         }
@@ -748,6 +756,10 @@ impl DnsRuntime {
         Ok(())
     }
 
+    fn address_query_type(&self) -> Option<DnsRecordType> {
+        (!self.config.ipv6).then_some(DnsRecordType::A)
+    }
+
     fn lookup_real_answer(
         &mut self,
         host: &str,
@@ -775,7 +787,7 @@ impl DnsRuntime {
         }
 
         if self.should_only_query_fallback(host) {
-            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, self.address_query_type())? {
                 cache_answer(self, key, &answer);
                 return Ok(Some(ResolveAnswer {
                     source: ResolveSource::Fallback,
@@ -786,7 +798,7 @@ impl DnsRuntime {
         }
 
         let primary_servers = self.select_nameservers(host);
-        self.lookup_answer_using_servers(host, upstream, &primary_servers, true)
+        self.lookup_answer_using_servers(host, upstream, &primary_servers, true, self.address_query_type())
     }
 
     fn lookup_real_answer_for_query_type(
@@ -803,15 +815,17 @@ impl DnsRuntime {
 
         let key = normalize(host);
         if let Some(cached) = self.cache.get(&key) {
-            return Ok(Some(ResolveAnswer {
-                ips: cached.ips.clone(),
-                servers: cached.servers.clone(),
-                source: ResolveSource::Cache,
-            }));
+            let ips: Vec<_> = cached.ips.iter().copied()
+                .filter(|ip| matches_query_type(*ip, query_type)).collect();
+            if !ips.is_empty() {
+                return Ok(Some(ResolveAnswer {
+                    ips, servers: cached.servers.clone(), source: ResolveSource::Cache,
+                }));
+            }
         }
 
         if self.should_only_query_fallback(host) {
-            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, Some(query_type))? {
                 cache_answer(self, key, &answer);
                 return Ok(Some(ResolveAnswer {
                     source: ResolveSource::Fallback,
@@ -822,7 +836,7 @@ impl DnsRuntime {
         }
 
         let primary_servers = self.select_nameservers(host);
-        self.lookup_answer_using_servers(host, upstream, &primary_servers, true)
+        self.lookup_answer_using_servers(host, upstream, &primary_servers, true, Some(query_type))
     }
 
     fn lookup_answer(
@@ -852,7 +866,7 @@ impl DnsRuntime {
         }
 
         if self.should_only_query_fallback(host) {
-            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, self.address_query_type())? {
                 cache_answer(self, key, &answer);
                 return Ok(Some(ResolveAnswer {
                     source: ResolveSource::Fallback,
@@ -863,7 +877,7 @@ impl DnsRuntime {
         }
 
         let primary_servers = self.select_nameservers(host);
-        self.lookup_answer_using_servers(host, upstream, &primary_servers, true)
+        self.lookup_answer_using_servers(host, upstream, &primary_servers, true, self.address_query_type())
     }
 
     fn lookup_answer_for_query_type(
@@ -878,15 +892,17 @@ impl DnsRuntime {
 
         let key = normalize(host);
         if let Some(cached) = self.cache.get(&key) {
-            return Ok(Some(ResolveAnswer {
-                ips: cached.ips.clone(),
-                servers: cached.servers.clone(),
-                source: ResolveSource::Cache,
-            }));
+            let ips: Vec<_> = cached.ips.iter().copied()
+                .filter(|ip| matches_query_type(*ip, query_type)).collect();
+            if !ips.is_empty() {
+                return Ok(Some(ResolveAnswer {
+                    ips, servers: cached.servers.clone(), source: ResolveSource::Cache,
+                }));
+            }
         }
 
         if self.should_only_query_fallback(host) {
-            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+            if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, Some(query_type))? {
                 cache_answer(self, key, &answer);
                 return Ok(Some(ResolveAnswer {
                     source: ResolveSource::Fallback,
@@ -897,7 +913,7 @@ impl DnsRuntime {
         }
 
         let primary_servers = self.select_nameservers(host);
-        self.lookup_answer_using_servers(host, upstream, &primary_servers, true)
+        self.lookup_answer_using_servers(host, upstream, &primary_servers, true, Some(query_type))
     }
 
     fn lookup_answer_using_servers(
@@ -906,23 +922,25 @@ impl DnsRuntime {
         upstream: &mut impl DnsUpstream,
         primary_servers: &[String],
         allow_fallback: bool,
+        query_type: Option<DnsRecordType>,
     ) -> Result<Option<ResolveAnswer>, DnsError> {
         let key = normalize(host);
-        if let Some(answer) = query_upstream(upstream, &primary_servers, host)? {
+        let primary = query_upstream(upstream, &primary_servers, host, query_type);
+        if let Ok(Some(answer)) = &primary {
             let should_fallback = !self.config.fallback.is_empty()
                 && allow_fallback
                 && answer.ips.iter().any(|ip| self.should_ip_fallback(*ip));
             if !should_fallback {
-                cache_answer(self, key, &answer);
-                return Ok(Some(answer));
+                cache_answer(self, key, answer);
+                return Ok(Some(answer.clone()));
             }
         }
 
         if self.config.fallback.is_empty() || !allow_fallback {
-            return Err(DnsError::ResolveFailed(host.to_owned()));
+            return primary.and_then(|_| Err(DnsError::ResolveFailed(host.to_owned())));
         }
 
-        if let Some(answer) = query_upstream(upstream, &self.config.fallback, host)? {
+        if let Some(answer) = query_upstream(upstream, &self.config.fallback, host, query_type)? {
             cache_answer(self, key, &answer);
             return Ok(Some(ResolveAnswer {
                 source: ResolveSource::Fallback,
@@ -1128,6 +1146,7 @@ impl DnsRuntimeConfig {
     pub(crate) fn from_top_level(config: &TopLevelDnsConfig) -> Self {
         Self {
             enabled: config.enable,
+            ipv6: config.extra.get("ipv6").and_then(|value| value.as_bool()).unwrap_or(false),
             cache_size: config
                 .extra
                 .get("cache-size")

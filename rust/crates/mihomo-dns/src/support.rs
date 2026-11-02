@@ -467,11 +467,15 @@ pub(crate) fn query_upstream(
     upstream: &mut impl crate::DnsUpstream,
     servers: &[String],
     host: &str,
+    query_type: Option<DnsRecordType>,
 ) -> Result<Option<ResolveAnswer>, DnsError> {
     if servers.is_empty() {
         return Ok(None);
     }
-    let ips = upstream.resolve(servers, host)?;
+    let ips = match query_type {
+        Some(kind) => upstream.resolve_for_type(servers, host, kind)?,
+        None => upstream.resolve(servers, host)?,
+    };
     if ips.is_empty() {
         return Ok(None);
     }

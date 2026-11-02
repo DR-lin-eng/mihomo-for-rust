@@ -150,25 +150,44 @@ pub(super) fn dns_loop(
     shutdown: Arc<AtomicBool>,
     tunnel: Arc<RuntimeTunnel>,
 ) {
+    let socket = Arc::new(socket);
+    let in_flight = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     while !shutdown.load(Ordering::Relaxed) {
         let mut buf = [0_u8; 65535];
         match socket.recv_from(&mut buf) {
             Ok((read, peer_addr)) => {
-                let response = crate::dns_transport::relay_shared_query_packet(Arc::clone(&tunnel), &buf[..read]);
-                match response {
-                    Ok(Some(response)) => {
+                // Local fake-IP answers must stay available while an unrelated
+                // HTTPS/SVCB query waits for a remote resolver.
+                let local = tunnel.dns_runtime().map(|runtime| {
+                    runtime.lock().unwrap().local_query_packet(&buf[..read])
+                });
+                if let Some(Ok(Some(response))) = local {
+                    let _ = socket.send_to(&response, peer_addr);
+                    continue;
+                }
+                if in_flight.fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| (n < 64).then_some(n+1)).is_err() {
+                    if let Ok(response) = mihomo_dns::build_servfail_response(&buf[..read]) {
                         let _ = socket.send_to(&response, peer_addr);
                     }
-                    Ok(None) => {}
-                    Err(err) => {
-                        if let Ok(response) = mihomo_dns::build_servfail_response(&buf[..read]) {
-                            let _ = socket.send_to(&response, peer_addr);
-                        }
-                        let message = format!("dns listener error: {err}");
-                        eprintln!("{message}");
-                        push_log(LogLevel::Error, message);
-                    }
+                    continue;
                 }
+                let permit = DnsQueryPermit(in_flight.clone());
+                let payload = buf[..read].to_vec();
+                let socket = socket.clone();
+                let tunnel = tunnel.clone();
+                crate::blocking_executor::spawn_blocking(move || {
+                    let _permit = permit;
+                    match crate::dns_transport::relay_shared_query_packet(tunnel, &payload) {
+                        Ok(Some(response)) => { let _ = socket.send_to(&response, peer_addr); }
+                        Ok(None) => {}
+                        Err(err) => {
+                            if let Ok(response) = mihomo_dns::build_servfail_response(&payload) {
+                                let _ = socket.send_to(&response, peer_addr);
+                            }
+                            push_log(LogLevel::Error, format!("dns listener error: {err}"));
+                        }
+                    }
+                });
             }
             Err(err) if matches!(err.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut) => {}
             Err(err) => {
@@ -179,6 +198,11 @@ pub(super) fn dns_loop(
             }
         }
     }
+}
+
+struct DnsQueryPermit(Arc<std::sync::atomic::AtomicUsize>);
+impl Drop for DnsQueryPermit {
+    fn drop(&mut self) { self.0.fetch_sub(1, Ordering::AcqRel); }
 }
 
 pub(super) fn handle_socks5_udp_associate(

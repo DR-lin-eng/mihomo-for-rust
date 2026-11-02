@@ -33,44 +33,36 @@ impl<T> NetworkDnsUpstream<T> {
 impl<T: DnsPacketTransport> DnsUpstream for NetworkDnsUpstream<T> {
     fn resolve(&mut self, servers: &[String], host: &str) -> Result<Vec<IpAddr>, DnsError> {
         let mut resolved = Vec::new();
-        for server in servers {
-            match query_server(self, server, host) {
-                Ok(ips) if !ips.is_empty() => {
-                    for ip in ips {
-                        if !resolved.contains(&ip) {
-                            resolved.push(ip);
-                        }
-                    }
-                    if !resolved.is_empty() {
-                        return Ok(resolved);
-                    }
-                }
-                Ok(_) => {}
-                Err(DnsError::UnsupportedNameserver(_)) => continue,
-                Err(_) => continue,
+        let mut error = None;
+        for kind in [DnsRecordType::A, DnsRecordType::Aaaa] {
+            match self.resolve_for_type(servers, host, kind) {
+                Ok(ips) => resolved.extend(ips),
+                Err(err) => error = Some(err),
             }
+        }
+        if resolved.is_empty() {
+            if let Some(error) = error { return Err(error); }
         }
         Ok(resolved)
     }
 
+    fn resolve_for_type(&mut self, servers: &[String], host: &str, kind: DnsRecordType) -> Result<Vec<IpAddr>, DnsError> {
+        let request_id = self.next_request_id;
+        self.next_request_id = request_id.wrapping_add(1);
+        let packet = build_dns_query(host, kind, request_id)?;
+        let response = self.exchange(servers, &packet)?;
+        parse_dns_response(&response, request_id, kind)
+    }
+
     fn exchange(&mut self, servers: &[String], packet: &[u8]) -> Result<Vec<u8>, DnsError> {
-        let mut last_error = None;
-        for server in servers {
-            match self.transport.exchange(server, packet) {
-                Ok(response) => match crate::packet::validate_dns_reply(packet, &response) {
-                    Ok(()) => return Ok(response),
-                    Err(err) => last_error = Some(err),
-                },
-                Err(err) => last_error = Some(err),
-            }
-        }
-        Err(last_error.unwrap_or_else(|| {
-            DnsError::ResolveFailed("no DNS upstream servers configured".to_owned())
-        }))
+        crate::exchange_race::exchange(&mut self.transport, servers, packet)
     }
 }
 
 impl crate::DnsPacketTransport for crate::SystemDnsPacketTransport {
+    fn fork(&self) -> Option<Box<dyn DnsPacketTransport + Send>> {
+        Some(Box::new(Self))
+    }
     fn exchange(&mut self, server: &str, payload: &[u8]) -> Result<Vec<u8>, DnsError> {
         match parse_nameserver(server)? {
             NameserverTransport::Udp(endpoint) => exchange_udp(&endpoint, payload),
@@ -83,23 +75,6 @@ impl crate::DnsPacketTransport for crate::SystemDnsPacketTransport {
             NameserverTransport::System => exchange_system(server, payload),
         }
     }
-}
-
-pub(crate) fn query_server<T: DnsPacketTransport>(
-    upstream: &mut NetworkDnsUpstream<T>,
-    server: &str,
-    host: &str,
-) -> Result<Vec<IpAddr>, DnsError> {
-    let mut answers = Vec::new();
-    for query_type in [DnsRecordType::A, DnsRecordType::Aaaa] {
-        let request_id = upstream.next_request_id;
-        upstream.next_request_id = upstream.next_request_id.wrapping_add(1);
-        let payload = build_dns_query(host, query_type, request_id)?;
-        let response = upstream.transport.exchange(server, &payload)?;
-        let mut ips = parse_dns_response(&response, request_id, query_type)?;
-        answers.append(&mut ips);
-    }
-    Ok(answers)
 }
 
 enum NameserverTransport {

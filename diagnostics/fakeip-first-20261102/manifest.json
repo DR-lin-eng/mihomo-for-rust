@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-11-02T00:23:54.929044+00:00",
+  "git_head": "e1fff6cff2547911d5d5c24cceaab1c32564dd1e",
+  "worktree_dirty": true,
+  "target": "aarch64-unknown-linux-musl",
+  "rustc": "1.88.0 (6b00bc388 2025-06-23)",
+  "artifacts": {
+    "bin/Clash.Core": {
+      "sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "size": 28347176
+    },
+    "bin/Clash.Core.gz": {
+      "sha256": "96a53a03369e5c0bea02266eade828dae81155795d9bd8654b8a231b1fb0ee76",
+      "size": 12709231
+    },
+    "bin/Clash.Core.sha256": {
+      "sha256": "a146a5af82e2e22c629456d71ab5d04980a6b102ccb9ebe4cf422fce90c5cbe5",
+      "size": 77
+    },
+    "bin/Clash.Core.before-fakeip-first": {
+      "sha256": "1f68e801f17b7abfe2cee57df4b37133d020f9d1e3e494f41256968df8fc1f46",
+      "size": 28216104
+    },
+    "bin/mihomo-rust-openwrt-arm64-fakeip-first-fix": {
+      "sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "size": 28347176
+    }
+  },
+  "source_sha256": {
+    "rust/crates/mihomo-app/src/dns_transport_core.rs": "a4ede9c317993f1db647299ac0a7904cdd3a55556a17388942edaadaa2745c1c",
+    "rust/crates/mihomo-app/src/listener_service_runtime_udp.rs": "64b30e78aa3477c73f3eab0bf5703347e41337e5885c3cddf8bcb52e01988558",
+    "rust/crates/mihomo-app/src/listener_udp_session_ops.rs": "75a7f673fb992706b86737124b10800702c721e0e191d3cbf223af7f95148423",
+    "rust/crates/mihomo-dns/src/lib.rs": "cccbc50d3ef48efbde23c672813ea5d53e62e5bbd7e48d14fc28d2c0c69b1766",
+    "rust/crates/mihomo-dns/src/runtime.rs": "b1f5dd83a06458aacd430261f44ff204ac1a8a6d53aca4ede43ae9dbef7fe130",
+    "rust/crates/mihomo-dns/src/support.rs": "debf445cfef5063cb4bb791b0eb8b72c5f29b4bdb136ce743707d24af40bf479",
+    "rust/crates/mihomo-dns/src/types.rs": "4baad501cf7eee66d47e996bde3cbbf8142e4cb716043a089347e57f086f6d1f",
+    "rust/crates/mihomo-dns/src/upstream.rs": "d25bde140e01d705c2aabfe7814eca18167172710b3bd1673faefae4b96a99b7",
+    "rust/crates/mihomo-dns/src/exchange_race.rs": "9c7d68a358a9b266a43bd60275d11a96fc120da11da8f5eac3f395c7d7355e81",
+    "rust/crates/mihomo-dns/src/cold_start_tests.rs": "17e819043fbe62e031376bd09a4a99f881453cf6a33982938546536cfcd92a90",
+    "rust/crates/mihomo-dns/src/tests.rs": "9d7e016bf2017b19ec6d260f38279dc2274dd9dc3dfae6708fc665854e6d56a1",
+    "rust/crates/mihomo-runtime/src/tunnel_runtime.rs": "cfeac95fb420abe7b1b5563dffb12e8544bec9dede81a7d9f923b111f34546b7",
+    "scripts/fakeip-first-smoke.py": "6566cc1cacf7128a81467fa54063fc53540ac305b10eb0efb8a6371bd0c4a62b"
+  },
+  "runtime_tests": [
+    {
+      "name": "baseline",
+      "core_sha256": "1f68e801f17b7abfe2cee57df4b37133d020f9d1e3e494f41256968df8fc1f46",
+      "passed": 10,
+      "total": 20,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/baseline.json.gz",
+      "sha256": "54c56258402b9974c9a5a944289f11289535422f873ee324265cf5db6b5ebd2b"
+    },
+    {
+      "name": "final-domain",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 93,
+      "total": 93,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-domain.json.gz",
+      "sha256": "52ef7d318f215879ac808bdfa078885f001fbd949a5cf13ab097fa5909f26397"
+    },
+    {
+      "name": "final-first",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 20,
+      "total": 20,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-first.json.gz",
+      "sha256": "fe7ac8a4ee4245cd703ce913ecb3292faaf850787c48ac3e5130426cf3b46693"
+    },
+    {
+      "name": "final-game-direct",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 10,
+      "total": 10,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-direct.json.gz",
+      "sha256": "a3d6198d1af21564be9bef7c70fe3d139e076c31381e1038eb3646c4fc9d4c6e"
+    },
+    {
+      "name": "final-game-hy2",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 11,
+      "total": 11,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-hy2.json.gz",
+      "sha256": "d1b60b46edde06689fa8b93835736b937759b18e813defb57ece3a8853146f3e"
+    },
+    {
+      "name": "final-game-idle32",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 8,
+      "total": 8,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-idle32.json.gz",
+      "sha256": "c178ec4135572b03c870b9bd36996bb884c1e03d65676506f18cf106b3eb9a78"
+    },
+    {
+      "name": "final-game-socks5",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 10,
+      "total": 10,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-socks5.json.gz",
+      "sha256": "0ff3c309d42037c35ad131a954c2d56062ff87b53e9f06bbaf1d8e4816a43a51"
+    },
+    {
+      "name": "final-game-ss",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 10,
+      "total": 10,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-ss.json.gz",
+      "sha256": "6f22e854ee7b8b5c942d5ecc37ea54e68e66d68228dd4e35e83f738e703ba66d"
+    },
+    {
+      "name": "final-game-switch-route",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 10,
+      "total": 10,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-switch-route.json.gz",
+      "sha256": "0bdc257883494de2d5359d4bed86e1676dae7227b449c1cc70b463daa1cffcf1"
+    },
+    {
+      "name": "final-game-vless",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 10,
+      "total": 10,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-game-vless.json.gz",
+      "sha256": "38d5b6ccfdab88b5139c9bb9ebf530641ee76922f3627f3cce51d9aaed3c76ab"
+    },
+    {
+      "name": "final-lan",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 13,
+      "total": 13,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-lan.json.gz",
+      "sha256": "4d11db8f4729b8ef779bd621e2f624118965a52554e6f75b92b0b8739418a475"
+    },
+    {
+      "name": "final-rules",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 30,
+      "total": 30,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-rules.json.gz",
+      "sha256": "33c87e58c294f13272c568b6ae26b8f2a4742967b58be456e8f09da901ea8585"
+    },
+    {
+      "name": "final-tun",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": 21,
+      "total": 21,
+      "evidence": "diagnostics/fakeip-first-20261102/raw/final-tun.json.gz",
+      "sha256": "f6c752a5ba4f26b743eef99c563c8cd7ea4c2e21d373251d5a68468faa523c0a"
+    }
+  ],
+  "logs": {
+    "arm64-build.log": {
+      "sha256": "cbee1452ccccb430a6bab2a0154cbc69f9aa8fa3b0791fe30af763c4b687081a",
+      "results": []
+    },
+    "app-udp.log": {
+      "sha256": "2110f36169d3344c3eec7325303ad0dc3b19f6477f56ceabbe331ac313208efe",
+      "results": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "app-tun.log": {
+      "sha256": "737395de8bb54150e13cbab99abe1c9b71b63067339b7ba5ece4a716390b2cda",
+      "results": [
+        {
+          "passed": 45,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "libraries.log": {
+      "sha256": "91aecae280f96f531a05fc51bda57b8cc0421d47c1bf350a7e8348f66e3b4a32",
+      "results": [
+        {
+          "passed": 66,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 24,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 58,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 398,
+          "failed": 0,
+          "ignored": 1
+        },
+        {
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "app-dns.log": {
+      "sha256": "1ab1bcef6258c180b3ed5101020a44e3374c15e788bd653de8770401374cc36b",
+      "results": [
+        {
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    }
+  },
+  "reference_server": "Go Mihomo v1.19.33, used for local SS/VLESS/Hysteria2 UDP fixture",
+  "limits": [
+    "Timings are for deterministic Docker loopback DNS failure scenarios, not an Internet benchmark.",
+    "The mobile WiFi device was not accessed; actual websites and games still need device retesting.",
+    "The DoH fixture certificate was trusted through a process-local SSL_CERT_FILE; certificate verification was enabled."
+  ]
+}

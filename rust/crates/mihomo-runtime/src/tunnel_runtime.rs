@@ -592,6 +592,14 @@ impl RuntimeTunnel {
         }
     }
 
+    /// Connection resolver snapshots must never replace newer allocations made
+    /// by the authoritative DNS listener while upstream I/O was in progress.
+    pub fn capture_dns_resolution_cache(&self, runtime: &DnsRuntime) {
+        if let Some(shared) = self.dns_runtime() {
+            shared.lock().unwrap().merge_cache_from(runtime);
+        }
+    }
+
     pub fn replace_registry(&self, mut registry: RuntimeRegistry) {
         self.smart_advanced.invalidate();
         {
@@ -2470,6 +2478,24 @@ rules:
             ..Metadata::default()
         });
         assert_eq!(selected, "matched");
+    }
+
+    #[test]
+    fn connection_dns_snapshot_cannot_erase_new_fake_ip_allocation() {
+        let document = parse_runtime_config_document(
+            "dns:\n  enable: true\n  enhanced-mode: fake-ip\nrules: ['MATCH,DIRECT']\n"
+        ).unwrap();
+        let tunnel = RuntimeTunnel::new(document.mode.clone(), build_runtime_registry(&document).unwrap())
+            .with_dns_runtime(mihomo_dns::DnsRuntime::from_document(&document).unwrap());
+        let shared = tunnel.dns_runtime().unwrap();
+        let mut old = shared.lock().unwrap().clone();
+        tunnel.seed_dns_fake_ip_state(&mut old);
+        let fake = shared.lock().unwrap().resolve_host("new.test").unwrap().unwrap();
+        tunnel.capture_dns_resolution_cache(&old);
+        let mut metadata = Metadata { dst_ip: Some(fake), dst_port: Some(443), ..Metadata::default() };
+        tunnel.preprocess_metadata_for_routing(&mut metadata).unwrap();
+        assert_eq!(metadata.host.as_deref(), Some("new.test"));
+        assert_eq!(metadata.dst_ip, None);
     }
 
     #[test]

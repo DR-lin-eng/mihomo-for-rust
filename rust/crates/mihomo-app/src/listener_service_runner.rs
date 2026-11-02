@@ -382,6 +382,12 @@ fn spawn_provider_healthcheck_workers(
         .collect()
 }
 
+#[cfg(not(target_os = "linux"))]
+fn configure_tun_default_interface(_specs: &[TunRuntimeSpec]) -> Option<String> {
+    None
+}
+
+#[cfg(target_os = "linux")]
 fn configure_tun_default_interface(specs: &[TunRuntimeSpec]) -> Option<String> {
     if !specs.iter().any(|spec| spec.config.auto_detect_interface) {
         return None;

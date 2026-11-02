@@ -24,7 +24,7 @@ pub(crate) fn render_version_output() -> String {
         .join(",");
     format!(
         "Mihomo Meta {} {} {} with {} {} variants={} {}\n",
-        env!("CARGO_PKG_VERSION"),
+        option_env!("MIHOMO_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")),
         std::env::consts::OS,
         std::env::consts::ARCH,
         rust_version,

@@ -211,7 +211,7 @@ fn build_api_snapshot_with_registry(
     Ok(ApiSnapshot {
         version: ApiVersion {
             meta: true,
-            version: env!("CARGO_PKG_VERSION").into(),
+            version: option_env!("MIHOMO_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")).into(),
         },
         general: ApiGeneralSnapshot {
             port: document.port,

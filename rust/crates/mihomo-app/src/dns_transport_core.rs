@@ -22,6 +22,7 @@ use url::Url;
 
 use crate::listener_service::SystemUdpSession;
 
+#[derive(Clone)]
 pub(crate) struct TunnelDnsPacketTransport {
     tunnel: Arc<RuntimeTunnel>,
     dns_runtime: Option<DnsRuntime>,
@@ -43,6 +44,9 @@ impl TunnelDnsPacketTransport {
 }
 
 impl DnsPacketTransport for TunnelDnsPacketTransport {
+    fn fork(&self) -> Option<Box<dyn DnsPacketTransport + Send>> {
+        Some(Box::new(self.clone()))
+    }
     fn exchange(&mut self, server: &str, payload: &[u8]) -> Result<Vec<u8>, DnsError> {
         if server.starts_with("system") || server.starts_with("rcode://") {
             return mihomo_dns::SystemDnsPacketTransport.exchange(server, payload);
