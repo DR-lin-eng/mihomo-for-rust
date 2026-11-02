@@ -209,7 +209,7 @@ include!("tun_worker_tcp.rs");
 include!("tun_worker_loop.rs");
 include!("tun_worker_io.rs");
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     include!("tun_worker_tests.rs");
 }

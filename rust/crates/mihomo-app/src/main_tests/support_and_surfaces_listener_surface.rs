@@ -190,7 +190,7 @@ rules:
     }
 
     #[test]
-    fn sudoku_plain_listener_with_tls_surface_triggers_listener_gap() {
+    fn sudoku_plain_listener_with_ech_surface_triggers_listener_gap() {
         let temp = unique_temp_dir();
         let options = BootOptions {
             home_dir: Some(temp.to_string_lossy().into_owned()),
@@ -208,6 +208,7 @@ listeners:
     table-type: prefer_ascii
     certificate: cert
     private-key: key
+    ech-key: unsupported
 proxies:
   - type: direct
     name: direct

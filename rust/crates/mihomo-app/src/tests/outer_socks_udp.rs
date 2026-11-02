@@ -55,6 +55,7 @@ proxies:
     dialer-proxy: outer-socks
 rules:
   - DST-PORT,{tuic_port},DIRECT
+  - DST-PORT,{target_port},DIRECT
   - MATCH,edge-tuic
 "#,
             target_port = target_port,

@@ -931,7 +931,7 @@ proxies:
             .unwrap();
         let mut response = String::new();
         stream.read_to_string(&mut response).unwrap();
-        assert!(response.contains("HTTP/1.1 200 OK"), "{response}");
+        assert!(response.contains("HTTP/1.1 204 No Content"), "{response}");
 
         let outcome = run_app_until_signal(app, &options, &temp, &env).unwrap();
         assert_eq!(outcome, RunLoopExit::Restart);

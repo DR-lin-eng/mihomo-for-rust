@@ -17,6 +17,7 @@ jobs:
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
     defaults:
       run:
         shell: bash

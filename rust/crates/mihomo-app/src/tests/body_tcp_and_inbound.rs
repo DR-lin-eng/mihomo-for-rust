@@ -20293,6 +20293,11 @@ listeners:
 
             write_anytls_frame(&mut stream, 0x02, 1, b"pong-anytls");
             write_anytls_frame(&mut stream, 0x03, 1, &[]);
+            let (command, stream_id, payload) = read_anytls_frame(&mut stream);
+            assert_eq!(command, 0x03);
+            assert_eq!(stream_id, 1);
+            assert!(payload.is_empty());
+            stream.conn.send_close_notify();
             stream.flush().unwrap();
         });
 
