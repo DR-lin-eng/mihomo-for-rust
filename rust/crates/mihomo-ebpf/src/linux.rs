@@ -16,6 +16,7 @@ use std::sync::{
 };
 
 mod netlink;
+mod direct;
 
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
@@ -88,6 +89,7 @@ impl Drop for Interface {
 pub struct EbpfRuntime {
     interfaces: Mutex<Vec<Interface>>,
     running: AtomicBool,
+    direct: Mutex<Option<direct::DirectRuntime>>,
 }
 impl std::fmt::Debug for EbpfRuntime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -174,13 +176,16 @@ impl EbpfRuntime {
             let interface=load_interface(&name,index,mode,params,&addresses).map_err(|error|io::Error::new(error.kind(),format!("eBPF {mode} on {name}: {error}; Linux with CONFIG_BPF_SYSCALL/NET_CLS_BPF and CAP_BPF (or CAP_SYS_ADMIN) plus CAP_NET_ADMIN is required")))?;
             interfaces.push(interface);
         }
+        let direct = direct::DirectRuntime::install(document,&addresses)?;
         Ok(Some(Self {
             interfaces: Mutex::new(interfaces),
             running: AtomicBool::new(true),
+            direct: Mutex::new(direct),
         }))
     }
     pub fn shutdown(&self) {
         self.running.store(false, Ordering::Release);
+        self.direct.lock().unwrap().take();
         self.interfaces.lock().unwrap().clear();
     }
     pub fn original_destination(
@@ -251,8 +256,19 @@ impl EbpfRuntime {
             supported: true,
             running: self.running.load(Ordering::Acquire),
             interfaces,
+            direct_offload: self.direct.lock().unwrap().as_ref().map(|v|v.status()).unwrap_or_default(),
         }
     }
+    pub fn direct_ready(&self)->bool {self.running.load(Ordering::Acquire)&&self.direct.lock().unwrap().is_some()}
+    pub fn direct_pending(&self,key:&crate::DirectFlowKey)->bool {self.direct.lock().unwrap().as_ref().is_some_and(|v|v.pending(key))}
+    pub fn direct_fragment(&self,key:&crate::DirectFragmentKey)->Option<crate::DirectFlowKey> {self.direct.lock().unwrap().as_ref().and_then(|v|v.fragment(key))}
+    pub fn direct_remember_fragment(&self,fragment:crate::DirectFragmentKey,key:crate::DirectFlowKey){if let Some(v)=self.direct.lock().unwrap().as_mut(){v.remember_fragment(fragment,key);}}
+    pub fn direct_contains(&self,key:&crate::DirectFlowKey)->bool {self.direct.lock().unwrap().as_ref().is_some_and(|v|v.contains(key))}
+    pub fn direct_install(&self,key:crate::DirectFlowKey,target:SocketAddr,id:u64,timeout:u64)->io::Result<bool>{match self.direct.lock().unwrap().as_mut(){Some(v)=>v.install_flow(key,target,id,timeout),None=>Ok(false)}}
+    pub fn direct_samples(&self)->Vec<crate::DirectFlowSample>{self.direct.lock().unwrap().as_ref().map(|v|v.samples()).unwrap_or_default()}
+    pub fn direct_close(&self,key:&crate::DirectFlowKey){if let Some(v)=self.direct.lock().unwrap().as_mut(){v.close(key);}}
+    pub fn direct_forget(&self,key:&crate::DirectFlowKey){if let Some(v)=self.direct.lock().unwrap().as_mut(){v.forget(key);}}
+    pub fn direct_invalidate_udp(&self){if let Some(v)=self.direct.lock().unwrap().as_mut(){v.invalidate_udp();}}
 }
 impl Drop for EbpfRuntime {
     fn drop(&mut self) {

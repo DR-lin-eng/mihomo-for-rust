@@ -16,6 +16,7 @@ use mihomo_runtime::RuntimeTunnel;
 pub(super) type TunUdpEgress = Arc<dyn Fn(&[u8]) -> io::Result<()> + Send + Sync>;
 
 struct ReceiveState {
+    policy: Option<(std::sync::Weak<RuntimeTunnel>, u64)>,
     cancelled: AtomicBool,
     closed: Option<Arc<AtomicBool>>,
     last_activity: Mutex<Instant>,
@@ -28,6 +29,8 @@ struct ReceiveState {
 impl ReceiveState {
     fn stopped(&self) -> bool {
         self.cancelled.load(Ordering::Acquire)
+            || self.policy.as_ref().is_some_and(|(policy, generation)|
+                policy.upgrade().is_none_or(|tunnel| tunnel.udp_policy_generation() != *generation))
             || self
                 .closed
                 .as_ref()
@@ -53,6 +56,7 @@ impl LiveUdpReceiver {
         packet: PacketEnvelope,
         tunnel: Arc<RuntimeTunnel>,
         idle_timeout: Duration,
+        policy_generation: u64,
     ) -> io::Result<Option<Self>> {
         if !session.receive_ready() {
             return Ok(None);
@@ -60,6 +64,7 @@ impl LiveUdpReceiver {
         let mut reader = session.split_for_receive()?;
         let shutdown_handle = reader.receive_shutdown_handle()?;
         let state = Arc::new(ReceiveState {
+            policy: Some((Arc::downgrade(&tunnel), policy_generation)),
             cancelled: AtomicBool::new(false),
             closed: session.receiver_close_signal(),
             last_activity: Mutex::new(Instant::now()),
@@ -262,6 +267,43 @@ mod tests {
     use super::*;
 
     #[test]
+    fn stale_policy_generation_does_not_forward_a_queued_udp_reply() {
+        struct Packet;
+        impl mihomo_core::WriteBack for Packet {
+            fn write_back(&self, _: ByteWindow, _: Option<SocketAddr>) -> io::Result<usize> {
+                panic!("a reply from the old policy must not be forwarded");
+            }
+        }
+        impl mihomo_core::UdpPacket for Packet {
+            fn payload(&self) -> ByteWindow { ByteWindow::freeze(b"request".to_vec()) }
+            fn local_addr(&self) -> SocketAddr { "127.0.0.1:12345".parse().unwrap() }
+        }
+        let document = mihomo_config::parse_runtime_config_document("mode: direct\n").unwrap();
+        let tunnel = Arc::new(RuntimeTunnel::new("direct",
+            mihomo_runtime::build_runtime_registry(&document).unwrap()));
+        let peer = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        let target = peer.local_addr().unwrap();
+        let packet = PacketEnvelope::new(Arc::new(Packet), mihomo_core::Metadata {
+            network: mihomo_core::NetworkKind::Udp,
+            src_ip: Some("127.0.0.1".parse().unwrap()), src_port: Some(12345),
+            dst_ip: Some(target.ip()), dst_port: Some(target.port()),
+            ..Default::default()
+        });
+        let mut session = SystemUdpSession::new(tunnel.clone(), None).unwrap();
+        let generation = tunnel.udp_policy_generation();
+        tunnel.send_udp_packet(&packet, &mut session).unwrap();
+        let mut bytes = [0; 128];
+        let (_, sender) = peer.recv_from(&mut bytes).unwrap();
+        peer.send_to(b"old reply", sender).unwrap();
+        tunnel.set_mode("global").unwrap();
+        let receiver = LiveUdpReceiver::start(&mut session, target, packet, tunnel,
+            Duration::from_secs(30), generation).unwrap().unwrap();
+        assert!(receiver.stopped());
+        drop(receiver);
+    }
+
+    #[test]
     fn stream_frame_prefix_survives_a_socket_timeout_between_fragments() {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let mut client = std::net::TcpStream::connect(listener.local_addr().unwrap()).unwrap();
@@ -270,6 +312,7 @@ mod tests {
             .set_read_timeout(Some(Duration::from_millis(20)))
             .unwrap();
         let state = Arc::new(ReceiveState {
+            policy: None,
             cancelled: AtomicBool::new(false),
             closed: None,
             last_activity: Mutex::new(Instant::now()),

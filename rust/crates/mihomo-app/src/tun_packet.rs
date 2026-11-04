@@ -41,6 +41,7 @@ pub(crate) struct TunUdpSessionPool {
 }
 
 struct TunUdpSessionPoolState {
+    closed: bool,
     sessions: HashMap<TunUdpSessionKey, TunUdpSessionEntry>,
     order: VecDeque<TunUdpSessionKey>,
     max_entries: usize,
@@ -135,6 +136,7 @@ impl TunUdpSessionPool {
     ) -> Self {
         Self {
             state: Mutex::new(TunUdpSessionPoolState {
+                closed: false,
                 sessions: HashMap::new(),
                 order: VecDeque::new(),
                 max_entries: max_entries.max(1),
@@ -167,6 +169,9 @@ impl TunUdpSessionPool {
                 .state
                 .lock()
                 .map_err(|_| io::Error::other("tun udp session cache mutex poisoned"))?;
+            if state.closed {
+                return Err(io::Error::new(io::ErrorKind::Interrupted, "UDP session pool is closed"));
+            }
             let now = Instant::now();
             retired.extend(state.evict_expired(now));
             if let Some(existing) = state.sessions.get_mut(&key) {
@@ -215,6 +220,7 @@ impl TunUdpSessionPool {
     pub(crate) fn shutdown(&self) {
         let sessions = {
             let mut state = self.state.lock().unwrap();
+            state.closed = true;
             state.order.clear();
             std::mem::take(&mut state.sessions)
         };
@@ -241,16 +247,25 @@ impl TunUdpSessionPool {
         let timeout = if spec.config.udp_timeout > 0 {
             Duration::from_secs(spec.config.udp_timeout as u64)
         } else { DEFAULT_TUN_UDP_IDLE_TIMEOUT };
-        self.with_pooled_session(parsed.source, parsed.destination, tunnel.clone(), dns_runtime, |pooled| {
+        self.send_envelope_live(parsed.source, parsed.destination, tunnel, prepared.envelope, dns_runtime, timeout)
+    }
+
+    pub(crate) fn send_envelope_live(
+        &self, source: SocketAddr, destination: SocketAddr,
+        tunnel: Arc<RuntimeTunnel>, envelope: mihomo_core::PacketEnvelope,
+        dns_runtime: Option<mihomo_dns::DnsRuntime>, timeout: Duration,
+    ) -> io::Result<()> {
+        self.with_pooled_session(source, destination, tunnel.clone(), dns_runtime, |pooled| {
             pooled.session.idle_timeout = Some(timeout);
             if pooled.receiver.as_ref().is_some_and(LiveUdpReceiver::stopped) {
                 pooled.receiver.take();
                 pooled.session.invalidate_association();
             }
-            let target = tunnel.send_udp_packet(&prepared.envelope, &mut pooled.session)?;
+            let policy_generation = tunnel.udp_policy_generation();
+            let target = tunnel.send_udp_packet(&envelope, &mut pooled.session)?;
             if pooled.session.is_local_dns() {
                 if let Some((response, remote)) = pooled.session.recv_once()? {
-                    tunnel.write_back_udp(&prepared.envelope, ByteWindow::freeze(response), remote)?;
+                    tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), remote)?;
                 }
                 return Ok(());
             }
@@ -258,9 +273,21 @@ impl TunUdpSessionPool {
                 pooled.receiver.take();
             }
             if let Some(receiver) = &pooled.receiver {
-                receiver.add_mapping(target, prepared.envelope.clone());
-            } else if let Some(receiver) = LiveUdpReceiver::start(&mut pooled.session, target, prepared.envelope.clone(), tunnel.clone(), timeout)? {
-                pooled.receiver = Some(receiver);
+                receiver.add_mapping(target, envelope.clone());
+            } else {
+                let receiver = match LiveUdpReceiver::start(&mut pooled.session, target, envelope.clone(), tunnel.clone(), timeout, policy_generation) {
+                    Ok(receiver) => receiver,
+                    Err(error) => {
+                        mihomo_core::push_log(mihomo_core::LogLevel::Debug,
+                            format!("UDP receive split unavailable, retaining request/reply: {error}"));
+                        None
+                    }
+                };
+                if let Some(receiver) = receiver {
+                    pooled.receiver = Some(receiver);
+                } else if let Some((response, remote)) = pooled.session.recv_once()? {
+                    tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), remote)?;
+                }
             }
             Ok(())
         })

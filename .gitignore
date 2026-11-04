@@ -41,6 +41,11 @@ diagnostics/**/*.dat
 diagnostics/**/raw/
 diagnostics/**/*.bin
 diagnostics/**/traffic-connections-*.json
+diagnostics/**/*.iperf.json
+diagnostics/**/performance/
+diagnostics/**/mihomo-*
+diagnostics/dae-improvements-20261103/tls-tun.json
+diagnostics/dae-improvements-20261103/traffic-*.json
 
 # Local dependency caches
 /.gomodcache/
@@ -53,6 +58,7 @@ test/config/cache*
 .fleet/
 /rust/target
 /rust/target-docker-*
+/rust/target-openwrt-docker/
 /rust/target-ci-*
 /rust/.nextest/
 /rust/coverage/

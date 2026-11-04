@@ -19,9 +19,13 @@ mod support_helpers;
 mod support_protocols;
 mod topology;
 mod tcp;
+#[cfg(target_os = "linux")]
+mod tcp_splice;
 mod traffic;
 mod tun_surface;
 mod tunnel_runtime;
+#[cfg(test)]
+mod reload_tests;
 mod udp;
 
 pub use exports::*;

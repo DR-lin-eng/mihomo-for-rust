@@ -100,6 +100,7 @@ impl RuntimeConfigDocument {
             .redirect_to_tun
             .iter()
             .chain(&self.ebpf.auto_redir)
+            .chain(&self.ebpf.direct_offload)
         {
             if name.is_empty()
                 || name.len() >= 16
@@ -117,7 +118,7 @@ impl RuntimeConfigDocument {
                 )));
             }
         }
-        if !self.ebpf.redirect_to_tun.is_empty() {
+        if !self.ebpf.redirect_to_tun.is_empty() || !self.ebpf.direct_offload.is_empty() {
             if !self.tun.enable || self.tun.config.device.trim().is_empty() {
                 return Err(ConfigValidationError::InvalidEbpfConfig(
                     "redirect-to-tun requires tun.enable and an explicit tun.device".into(),
@@ -133,6 +134,12 @@ impl RuntimeConfigDocument {
                     "redirect-to-tun cannot be combined with tun.auto-redirect".into(),
                 ));
             }
+        }
+        if !self.ebpf.direct_offload.is_empty() && !self.allow_lan {
+            return Err(ConfigValidationError::InvalidEbpfConfig("direct-offload requires allow-lan: true".into()));
+        }
+        if !self.ebpf.direct_offload.is_empty() && self.tun.config.file_descriptor > 0 {
+            return Err(ConfigValidationError::InvalidEbpfConfig("direct-offload requires a named kernel TUN device".into()));
         }
         if self.ebpf.enabled() && self.tun.config.auto_redirect {
             return Err(ConfigValidationError::InvalidEbpfConfig(

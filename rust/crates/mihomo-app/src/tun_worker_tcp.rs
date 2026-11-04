@@ -23,9 +23,7 @@ impl CurrentTcpFlow {
         let mut stack = TunTcpPassiveStack::new(parsed_tcp, spec.config.mtu as usize)?;
         stack.ingest_packet(parsed_tcp)?;
         stack.poll();
-        for packet in stack.drain_outgoing() {
-            write_frame(writer, &packet)?;
-        }
+        write_frames(writer, &stack.drain_outgoing())?;
         let writer = Arc::clone(writer);
         Ok(Self {
             handle: TunTcpStreamHandle::with_egress(
@@ -44,9 +42,7 @@ impl CurrentTcpFlow {
             .map_err(|_| io::Error::other("tun tcp stack mutex poisoned"))?;
         locked.ingest_packet(parsed_tcp)?;
         locked.poll();
-        for packet in locked.drain_outgoing() {
-            write_frame(writer, &packet)?;
-        }
+        write_frames(writer, &locked.drain_outgoing())?;
         Ok(())
     }
 
@@ -75,6 +71,9 @@ impl CurrentTcpFlow {
         let peer = parsed_tcp.source;
         let destination = parsed_tcp.destination;
         let writer = Arc::clone(writer);
+        if crate::blocking_executor::blocking_workers_under_pressure() {
+            tunnel.age_connection_under_pressure();
+        }
         let bridge = TunTcpStreamHandle::with_egress_from_handle(
             &self.handle,
             Arc::new(move |packets| write_frames(&writer, &packets)),

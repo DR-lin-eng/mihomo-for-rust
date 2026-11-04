@@ -224,6 +224,16 @@ impl std::fmt::Display for ParseMetadataError {
 impl std::error::Error for ParseMetadataError {}
 
 pub trait TcpStream: Read + Write + Send + Any {
+    /// Expose a plain TCP direction only when bypassing Read/Write preserves
+    /// its bytes and side effects. Encrypted and framed streams keep None.
+    #[cfg(target_os = "linux")]
+    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> { None }
+    #[cfg(target_os = "linux")]
+    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { None }
+    /// The whole stream is plain TCP after a finite replay prefix. This also
+    /// permits nonblocking prefix writes before splice_read_fd becomes ready.
+    #[cfg(target_os = "linux")]
+    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { None }
     fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
         Err(io::Error::new(io::ErrorKind::Unsupported, "read timeout unavailable"))
     }
@@ -266,6 +276,18 @@ pub trait TcpStream: Read + Write + Send + Any {
 }
 
 impl TcpStream for std::net::TcpStream {
+    #[cfg(target_os = "linux")]
+    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> {
+        Some(std::os::fd::AsRawFd::as_raw_fd(self))
+    }
+    #[cfg(target_os = "linux")]
+    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
+        Some(std::os::fd::AsRawFd::as_raw_fd(self))
+    }
+    #[cfg(target_os = "linux")]
+    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> {
+        Some(std::os::fd::AsRawFd::as_raw_fd(self))
+    }
     fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{std::net::TcpStream::read_timeout(self)}
     fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{std::net::TcpStream::set_read_timeout(self,timeout)}
     fn tcp_stats(&self)->Option<crate::TcpStats>{crate::tcp_stats::read(self)}
@@ -285,6 +307,12 @@ impl TcpStream for std::net::TcpStream {
 }
 
 impl TcpStream for Box<dyn TcpStream> {
+    #[cfg(target_os = "linux")]
+    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_socket_fd() }
+    #[cfg(target_os = "linux")]
+    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_read_fd() }
+    #[cfg(target_os = "linux")]
+    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_write_fd() }
     fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{(**self).read_timeout()}
     fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{(**self).set_read_timeout(timeout)}
     fn tcp_stats(&self)->Option<crate::TcpStats>{(**self).tcp_stats()}

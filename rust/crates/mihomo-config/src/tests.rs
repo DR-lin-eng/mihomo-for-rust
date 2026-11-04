@@ -634,6 +634,15 @@ fn ebpf_configuration_keeps_legacy_names_and_defaults_auto_redir_port(){
  document.validate().unwrap();assert_eq!(document.ebpf.auto_redir,["br-lan"]);assert_eq!(document.redir_port,29810);assert_eq!(document.ebpf.effective_bypass_mark(),0x636c746d);
  let off=parse_runtime_config_document("ebpf: {}\n").unwrap();assert!(!off.ebpf.enabled());assert_eq!(off.redir_port,0);
 }
+
+#[test]
+fn kernel_direct_requires_named_tun_and_valid_lan_interfaces() {
+ let text="allow-lan: true\ntun:\n  enable: true\n  device: Meta\n  auto-redirect: false\nebpf:\n  direct-offload: [br-lan]\n";
+ let d=parse_runtime_config_document(text).unwrap();d.validate().unwrap();assert!(d.ebpf.enabled());
+ for invalid in [text.replace("allow-lan: true","allow-lan: false"),text.replace("device: Meta","device: ''"),text.replace("auto-redirect: false","auto-redirect: true"),text.replace("[br-lan]","[Meta]"),text.replace("[br-lan]","[br-lan, br-lan]")] {
+  assert!(parse_runtime_config_document(&invalid).unwrap().validate().is_err());
+ }
+}
 #[test]
 fn ebpf_rejects_capture_conflicts_and_invalid_interfaces(){
  for yaml in [

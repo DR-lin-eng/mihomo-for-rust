@@ -7,6 +7,9 @@ mod support;
 mod types;
 mod upstream;
 mod exchange_race;
+mod coalescing;
+
+pub use coalescing::SharedDnsQueries;
 
 pub use packet::build_servfail_response;
 

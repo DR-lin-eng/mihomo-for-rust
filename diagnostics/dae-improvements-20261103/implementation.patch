@@ -1,0 +1,2742 @@
+diff --git a/docs/rust-rewrite/dae-inspired-improvements.md b/docs/rust-rewrite/dae-inspired-improvements.md
+new file mode 100644
+--- /dev/null
++++ b/docs/rust-rewrite/dae-inspired-improvements.md
+@@ -0,0 +1,55 @@
++# Linux 运行时：DNS 合并、平滑策略重载与零拷贝
++
++本轮参考 dae 的运行时设计，在既有 Rust Clash/Mihomo 核心中独立实现 DNS 并发查询合并、保持 TCP 的策略重载、Linux TCP splice 转发、透明 UDP 持续收发，以及 TUN 自动路由的归属与崩溃恢复。既有 YAML 和控制器接口继续使用，不增加启用开关。
++
++## DNS 并发查询合并
++
++DNS 入口把同一解析器实例上同时到达的相同请求交给一个上游查询，其余调用共享结果。匹配键保留完整 DNS 请求，包括问题名称大小写、类型、标志和 EDNS 选项；仅事务 ID 不参与匹配。每个响应重新写入原调用的事务 ID。
++
++该机制共享尚未完成的查询，不保存已完成响应，不改变已有 TTL 行为。解析器实例不同的请求不会共享结果，避免 DNS 策略重建后收到前一实例的答案。hosts、fake-IP 等本地回答仍先由权威共享 DNS 状态处理。
++
++最多保留 256 个进行中的键，每个请求最多保留 4096 字节；超过限制的请求走原解析流程。上游失败会传播给等待者，工作线程异常退出也会释放键并唤醒等待者，不会把失败永久缓存。
++
++## 保持连接的策略重载
++
++规则、节点、策略组、provider、模式、日志级别和嗅探设置可以在运行时更新。新配置先完成解析、编译和必要的预热，再发布到当前运行时。规则、注册表和模式的更新与新连接规划使用同一个同步边界，防止匹配到新规则却查找旧节点。
++
++适用条件是监听器、控制器、TUN、eBPF、路由标记、DNS 行为和运行目录保持一致。DNS 编译结果和 TUN 路由集合依赖的数据也参与检查；provider 文件变更会按需要重建网络配置。
++
++符合条件时保留监听 socket、TUN worker、BPF 程序、DNS 分配、已有 TCP 和流量统计。已建立 TCP 继续使用建立时的节点；新连接按新策略选择。UDP 缓存和内核 UDP 流会失效，后续数据重新判定。健康检查和 Smart 后台任务按新配置重新启动，未改变定义的节点保留健康状态。
++
++修改监听地址、网络拓扑或 DNS 行为等设置时仍走原来的重建与回滚流程。这里不承诺该类重载保持已有连接，也不把尚未完成拨号的连接视为已建立 TCP。
++
++## Linux TCP splice
++
++默认 TCP 策略现在会在两端都明确提供纯 TCP 能力时使用 `splice`。能力由流类型显式声明；TLS、代理加密、WebSocket、多路复用及需要拦截读写的统计包装默认不声明该能力。
++
++回放前缀先按正常读写发送，全部发送后才转入 splice，保证嗅探或握手预读的字节不丢失、不重复。双向连接统一设置和恢复 socket 的非阻塞标志，保留 socket 超时与 TCP 半关闭语义；写入背压下可以响应取消。统计按实际写入对端的有效字节更新。
++
++每个方向的管道目标容量为 64 KiB，分配失败或系统不支持时回到有缓冲的转发。管道按连接释放，没有无界的全局管道池。纯 splice 路径不分配用户态复制缓冲；管道使用的内核内存不包含在进程 RSS 中。
++
++这项优化适用于 Linux 的纯 TCP 转发，包括符合条件的 mixed、redir、SOCKS5 等路径。用户态 TUN TCP 协议栈不提供原生 TCP 文件描述符，继续使用既有转发；本轮没有把该协议栈替换成 dae 的内核透明代理入口，也没有增加硬件流量卸载。
++
++## 透明 UDP 会话和持续回包
++
++redir/TPROXY 的 UDP 监听按客户端和目标复用会话，使用有界缓存和独立收包任务。这样 QUIC 为嗅探而缓存的多个数据报发出后，代理关联仍保持有效，后续响应无需等待客户端再发送一个请求。
++
++监听器复用现有 TUN 的 UDP 会话与解码器逻辑；每个监听器最多 256 项，透明 UDP 默认空闲超时 30 秒。关闭监听器会先禁止新建会话，再取消和回收接收任务。策略代次变化后旧接收任务停止，避免回传先前节点的数据。
++
++不支持分离接收或无法创建接收任务时，保留请求/响应处理。该变更不宣称所有入口均采用相同的 UDP 生命周期，也不把会话复用等同于已验证所有协议的 full-cone NAT。
++
++## TUN 自动路由归属和恢复
++
++启用 `tun.auto-route` 时，核心按网络命名空间和路由表取得独占锁，使用协议号 242 标记自己创建的规则和路由。安装前检查冲突；已有外部优先级或相同前缀的路由不会被覆盖。
++
++每个变更先写入原子替换的恢复日志，再执行 `ip`。锁由配置子进程共同持有，避免父进程被强杀后，尚未退出的 `ip` 进程晚于新实例修改路由。下一次同权限启动会回收日志中登记的旧对象，随后安装新配置。
++
++正常退出和启动失败按归属回滚，保留外部规则和路由。日志和锁位于 `/tmp/mihomo-tun-routes-<netns>-<table>.*`；不要为清理本核心而刷新整个路由表或删除整个 TC 配置。
++
++旧版本没有写入这类归属日志，无法据此自动识别旧版本的无标记遗留对象。升级时应正常停止旧核心后替换文件；若旧核心此前被强杀，需要先处理它遗留的规则。
++
++## 验证与交付
++
++本轮在 Docker Linux ARM64 中构建静态 musl 核心，执行工作区测试、真实 LAN/WAN 流量、DNS 事务 ID/EDNS、策略切换、自动路由崩溃恢复、第三方规则保留、内核报文和系统调用检查。
++
++性能数据、二进制校验值、测试脚本和结果见 [本轮验证报告](../../diagnostics/dae-improvements-20261103/REPORT.md)。这些是 Docker 虚拟网络实验；真实 OpenWrt 固件、网卡和长期负载仍需设备侧验证。
+diff --git a/rust/Cargo.lock b/rust/Cargo.lock
+--- a/rust/Cargo.lock
++++ b/rust/Cargo.lock
+@@ -2321,6 +2321,7 @@
+  "base64 0.22.1",
+  "fancy-regex",
+  "httpdate",
++ "libc",
+  "maxminddb",
+  "mihomo-buf",
+  "mihomo-config",
+@@ -2412,6 +2413,8 @@
+  "libc",
+  "mihomo-core",
+  "mihomo-inbound",
++ "serde",
++ "serde_json",
+ ]
+
+ [[package]]
+diff --git a/rust/README.md b/rust/README.md
+--- a/rust/README.md
++++ b/rust/README.md
+@@ -9,6 +9,8 @@
+ Linux TC eBPF capture supports the legacy `redirect-to-tun` and `auto-redir` configuration. See [setup, dependencies, and validation](../docs/rust-rewrite/ebpf-support.md).
+
+ Memory use is reduced through shared configuration snapshots, compact Smart models, bounded DNS/UDP state, and TC loading without the kernel BTF parse. See [measurements and limits](../docs/rust-rewrite/memory-optimization.md).
++
++Linux runtime improvements add concurrent DNS query sharing, policy reloads that preserve established TCP connections, capability-gated TCP splice, persistent transparent UDP sessions, and owned TUN route recovery after a crash. See [behavior, scope, and validation](../docs/rust-rewrite/dae-inspired-improvements.md).
+
+ ## Docker Build
+
+diff --git a/rust/crates/mihomo-api/src/server.rs b/rust/crates/mihomo-api/src/server.rs
+--- a/rust/crates/mihomo-api/src/server.rs
++++ b/rust/crates/mihomo-api/src/server.rs
+@@ -1798,9 +1798,10 @@
+                     Ok(payload) => payload,
+                     Err(_) => return error_response(400, "Body invalid"),
+                 };
+-                if !self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
+-                    && !self.snapshot.groups.iter().any(|entry| entry.name == group_name)
+-                {
++                let exists = self.runtime_tunnel.as_ref().map(|runtime| runtime.has_proxy(&group_name))
++                    .unwrap_or_else(|| self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
++                        || self.snapshot.groups.iter().any(|entry| entry.name == group_name));
++                if !exists {
+                     return self.not_found();
+                 }
+                 let Some(runtime_tunnel) = &self.runtime_tunnel else {
+@@ -1860,17 +1861,17 @@
+     fn handle_delete_request(&self, path: &str) -> ApiHttpResponse {
+         if let Some(raw_name) = path.strip_prefix("/proxies/") {
+             let group_name = percent_decode(raw_name);
+-            if !self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
+-                && !self.snapshot.groups.iter().any(|entry| entry.name == group_name)
++            let snapshot = self.current_snapshot();
++            if !snapshot.proxies.iter().any(|entry| entry.name == group_name)
++                && !snapshot.groups.iter().any(|entry| entry.name == group_name)
+             {
+                 return self.not_found();
+             }
+-            let is_group = self.snapshot.groups.iter().any(|entry| entry.name == group_name);
++            let is_group = snapshot.groups.iter().any(|entry| entry.name == group_name);
+             if !is_group {
+                 return error_response(400, "Must be a Selector");
+             }
+-            if self
+-                .snapshot
++            if snapshot
+                 .groups
+                 .iter()
+                 .find(|entry| entry.name == group_name)
+@@ -5346,6 +5347,45 @@
+     }
+
+     #[test]
++    fn controller_updates_and_unpins_groups_added_by_a_policy_reload() {
++        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
++            "secret: test-secret\n", std::path::Path::new("/tmp"),
++        ).unwrap();
++        let state = mihomo_runtime::BootstrapState {
++            resolved_boot: mihomo_config::BootOptions::default().resolve(
++                std::path::Path::new("/tmp"), &mihomo_config::BootEnvironment::default()),
++            document, provider_sources: Default::default(), registry,
++        };
++        let runtime = Arc::new(state.build_runtime_tunnel().unwrap());
++        let shared = Arc::new(std::sync::Mutex::new(state));
++        let controller = ApiController::from_running_state(shared.clone(), runtime.clone()).unwrap();
++        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
++            "secret: test-secret\nproxy-groups:\n  - {name: added, type: select, proxies: [DIRECT, REJECT]}\n  - {name: added-auto, type: url-test, proxies: [DIRECT, REJECT]}\n",
++            std::path::Path::new("/tmp"),
++        ).unwrap();
++        let mut next = shared.lock().unwrap().clone();
++        next.document = document;
++        next.registry = registry;
++        runtime.apply_prepared_policy(&next.build_runtime_tunnel().unwrap());
++        *shared.lock().unwrap() = next;
++        let update = controller.handle_request(&ApiHttpRequest {
++            method: "PUT".into(), target: "/proxies/added".into(),
++            headers: BTreeMap::from([("authorization".into(), "Bearer test-secret".into())]),
++            body: br#"{"name":"REJECT"}"#.to_vec(),
++        });
++        assert_eq!(update.status_code, 204);
++        assert_eq!(runtime.group_selected("added").as_deref(), Some("REJECT"));
++        runtime.set_group_selected("added-auto", "REJECT").unwrap();
++        let delete = controller.handle_request(&ApiHttpRequest {
++            method: "DELETE".into(), target: "/proxies/added-auto".into(),
++            headers: BTreeMap::from([("authorization".into(), "Bearer test-secret".into())]),
++            body: Vec::new(),
++        });
++        assert_eq!(delete.status_code, 204);
++        assert_eq!(runtime.group_selected("added-auto"), None);
++    }
++
++    #[test]
+     fn controller_put_proxy_updates_runtime_backed_snapshot() {
+         let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+             r#"
+diff --git a/rust/crates/mihomo-app/src/app.rs b/rust/crates/mihomo-app/src/app.rs
+--- a/rust/crates/mihomo-app/src/app.rs
++++ b/rust/crates/mihomo-app/src/app.rs
+@@ -252,12 +252,30 @@
+             .collect();
+         state.apply_selected_proxy_mapping(&selected);
+         // Validate before releasing listeners; rebind only after they close.
+-        state
++        let prepared = state
+             .build_runtime_tunnel()
+             .map_err(|err| ListenerServiceError::Rule(err.to_string()))?;
+         state
+             .build_dns_runtime()
+             .map_err(|err| ListenerServiceError::Rule(err.to_string()))?;
++        prewarm_cold_outbounds(&state)
++            .map_err(|error| ListenerServiceError::Rule(error.to_string()))?;
++        if !self.stopped && self.state.resolved_boot.home_dir == state.resolved_boot.home_dir
++            && supports_policy_reload(&self.state.document, &state.document)
++            && self.listener_service.as_ref().is_some_and(|service| service.can_reload_policy(&state))
++            && self.runtime_tunnel.dns_runtime().zip(prepared.dns_runtime())
++                .is_some_and(|(current, next)| current.lock().unwrap().has_same_policy(&next.lock().unwrap()))
++        {
++            if let Some(service) = &mut self.listener_service { service.stop_background_workers(); }
++            self.runtime_tunnel.apply_prepared_policy(&prepared);
++            mihomo_core::set_log_level(&state.document.log_level);
++            *self.shared_bootstrap_state.lock().unwrap() = state.clone();
++            if let Some(service) = &mut self.listener_service { service.start_background_workers(&state); }
++            self.state = state;
++            mihomo_core::push_log(mihomo_core::LogLevel::Info,
++                "[Config] policy reloaded with existing listeners and TCP connections");
++            return Ok(());
++        }
+         let mut previous = self.shared_bootstrap_state.lock().unwrap().clone();
+         previous.document.mode = self.runtime_tunnel.current_mode();
+         let previous_dns = self
+@@ -299,6 +317,25 @@
+             thread::park_timeout(Duration::from_secs(3600));
+         }
+     }
++}
++
++/// A staged policy swap is valid only while every socket, DNS setting, TUN
++/// option, routing mark and controller setting keeps its existing semantics.
++fn supports_policy_reload(
++    previous: &mihomo_config::RuntimeConfigDocument,
++    next: &mihomo_config::RuntimeConfigDocument,
++) -> bool {
++    let mut fixed = previous.clone();
++    fixed.mode = next.mode.clone();
++    fixed.log_level = next.log_level.clone();
++    fixed.proxies = next.proxies.clone();
++    fixed.proxy_groups = next.proxy_groups.clone();
++    fixed.proxy_providers = next.proxy_providers.clone();
++    fixed.rules = next.rules.clone();
++    fixed.sub_rules = next.sub_rules.clone();
++    fixed.rule_providers = next.rule_providers.clone();
++    fixed.sniffer = next.sniffer.clone();
++    fixed == *next
+ }
+
+ fn prewarm_cold_outbounds(state: &BootstrapState) -> Result<(), mihomo_transport::TransportError> {
+diff --git a/rust/crates/mihomo-app/src/dns_transport_core.rs b/rust/crates/mihomo-app/src/dns_transport_core.rs
+--- a/rust/crates/mihomo-app/src/dns_transport_core.rs
++++ b/rust/crates/mihomo-app/src/dns_transport_core.rs
+@@ -408,17 +408,21 @@
+     tunnel: Arc<RuntimeTunnel>, payload: &[u8],
+ ) -> Result<Option<Vec<u8>>, DnsError> {
+     let shared = tunnel.dns_runtime().ok_or_else(|| DnsError::Io("DNS runtime unavailable".into()))?;
+-    let mut runtime = {
++    {
+         let mut guard = shared.lock().unwrap();
+         if let Some(response) = guard.local_query_packet(payload)? {
+             return Ok(Some(response));
+         }
+-        guard.clone().without_fake_ip_persistence()
+-    };
+-    let default_proxy = if runtime.config.respect_rules { "RULES" } else { "DIRECT" };
+-    let transport = TunnelDnsPacketTransport::new(tunnel, Some(runtime.clone()), default_proxy);
+-    let mut upstream = mihomo_dns::NetworkDnsUpstream::new(transport);
+-    let response = runtime.exchange_query_packet(payload, &mut upstream)?;
+-    shared.lock().unwrap().merge_cache_from(&runtime);
+-    Ok(Some(response))
++    }
++    let scope = Arc::as_ptr(&shared) as usize;
++    let query_tunnel = Arc::clone(&tunnel);
++    tunnel.coalesce_dns_query(scope, payload, || {
++        let mut runtime = shared.lock().unwrap().clone().without_fake_ip_persistence();
++        let default_proxy = if runtime.config.respect_rules { "RULES" } else { "DIRECT" };
++        let transport = TunnelDnsPacketTransport::new(query_tunnel, Some(runtime.clone()), default_proxy);
++        let mut upstream = mihomo_dns::NetworkDnsUpstream::new(transport);
++        let response = runtime.exchange_query_packet(payload, &mut upstream)?;
++        shared.lock().unwrap().merge_cache_from(&runtime);
++        Ok(Some(response))
++    })
+ }
+diff --git a/rust/crates/mihomo-app/src/listener_service_runner.rs b/rust/crates/mihomo-app/src/listener_service_runner.rs
+--- a/rust/crates/mihomo-app/src/listener_service_runner.rs
++++ b/rust/crates/mihomo-app/src/listener_service_runner.rs
+@@ -27,6 +27,9 @@
+     shutdown: Arc<AtomicBool>,
+     udp_queue: Arc<UdpDispatchQueue>,
+     join_handles: Vec<JoinHandle<()>>,
++    background_shutdown: Arc<AtomicBool>,
++    background_handles: Vec<JoinHandle<()>>,
++    route_sources_hash: Option<[u8; 32]>,
+     detected_default_interface: Option<String>,
+     tun_auto_redirect: Option<crate::tun_auto_redirect::TunAutoRedirectGuard>,
+     ebpf: Option<Arc<mihomo_ebpf::EbpfRuntime>>,
+@@ -72,6 +75,9 @@
+             shutdown: Arc::clone(&shutdown),
+             udp_queue: Arc::clone(&udp_queue),
+             join_handles: Vec::new(),
++            background_shutdown: Arc::new(AtomicBool::new(false)),
++            background_handles: Vec::new(),
++            route_sources_hash: None,
+             detected_default_interface: None,
+             tun_auto_redirect: None,
+             ebpf: None,
+@@ -90,6 +96,7 @@
+         join_handles.append(&mut udp_workers);
+         startup_trace::mark("listener-service:udp-workers-ready");
+         let tun_specs = mihomo_runtime::build_tun_runtime_specs(&state.document);
++        service.route_sources_hash = route_sources_hash(&tun_specs, tun_rule_provider_sources.as_ref());
+         let detected_default_interface = configure_tun_default_interface(&tun_specs);
+         let mut tun_workers = crate::tun_worker::spawn_tun_workers(
+             &tun_specs,
+@@ -290,14 +297,14 @@
+         }
+
+         let mut healthcheck_workers =
+-            spawn_provider_healthcheck_workers(state, Arc::clone(&tunnel), Arc::clone(&shutdown));
++            spawn_provider_healthcheck_workers(state, Arc::clone(&tunnel), Arc::clone(&service.background_shutdown));
+         startup_trace::mark("listener-service:healthcheck-workers-ready");
+
+-        join_handles.append(&mut healthcheck_workers);
+-        join_handles.extend(spawn_smart_workers(
++        service.background_handles.append(&mut healthcheck_workers);
++        service.background_handles.extend(spawn_smart_workers(
+             state,
+             Arc::clone(&tunnel),
+-            Arc::clone(&shutdown),
++            Arc::clone(&service.background_shutdown),
+         ));
+         startup_trace::mark("listener-service:done");
+
+@@ -311,11 +318,36 @@
+     }
+
+     pub fn has_background_tasks(&self) -> bool {
+-        !self.join_handles.is_empty()
++        !self.join_handles.is_empty() || !self.background_handles.is_empty()
++    }
++
++    pub(crate) fn stop_background_workers(&mut self) {
++        self.background_shutdown.store(true, Ordering::Release);
++        self.smart_tunnel.stop_smart_probes();
++        for handle in self.background_handles.drain(..) { let _ = handle.join(); }
++    }
++
++    pub(crate) fn can_reload_policy(&self, state: &BootstrapState) -> bool {
++        if self.shutdown.load(Ordering::Acquire) { return false; }
++        let specs = mihomo_runtime::build_tun_runtime_specs(&state.document);
++        let sources = if specs.iter().any(|spec| !spec.config.route_address_set.is_empty()
++            || !spec.config.route_exclude_address_set.is_empty()) {
++            state.provider_sources_for_snapshot().ok()
++        } else { None };
++        self.route_sources_hash.is_some() && self.route_sources_hash == route_sources_hash(&specs, sources.as_ref())
++    }
++
++    pub(crate) fn start_background_workers(&mut self, state: &BootstrapState) {
++        self.background_shutdown = Arc::new(AtomicBool::new(false));
++        self.background_handles = spawn_provider_healthcheck_workers(
++            state, self.smart_tunnel.clone(), self.background_shutdown.clone());
++        self.background_handles.extend(spawn_smart_workers(
++            state, self.smart_tunnel.clone(), self.background_shutdown.clone()));
+     }
+
+     pub fn shutdown(&mut self) {
+         self.shutdown.store(true, Ordering::Relaxed);
++        self.stop_background_workers();
+         if let Some(ebpf) = self.ebpf.take() {
+             ebpf.shutdown();
+         }
+@@ -334,6 +366,37 @@
+             mihomo_transport::clear_default_interface_name();
+         }
+     }
++}
++
++fn route_sources_hash(
++    specs: &[TunRuntimeSpec], sources: Option<&mihomo_runtime::ProviderContentSources>,
++) -> Option<[u8; 32]> {
++    if !specs.iter().any(|spec| !spec.config.route_address_set.is_empty()
++        || !spec.config.route_exclude_address_set.is_empty()) {
++        return Some([0; 32]);
++    }
++    let sources = sources?;
++    use sha2::{Digest, Sha256};
++    let mut hash = Sha256::new();
++    for (kind, entries) in [(b'f', &sources.file_contents), (b'h', &sources.http_contents)] {
++        hash.update([kind]);
++        for (key, value) in entries {
++            hash.update((key.len() as u64).to_le_bytes());
++            hash.update(key.as_bytes());
++            hash.update((value.len() as u64).to_le_bytes());
++            hash.update(value.as_bytes());
++        }
++    }
++    for (kind, entries) in [(b'F', &sources.file_blobs), (b'H', &sources.http_blobs)] {
++        hash.update([kind]);
++        for (key, value) in entries {
++            hash.update((key.len() as u64).to_le_bytes());
++            hash.update(key.as_bytes());
++            hash.update((value.len() as u64).to_le_bytes());
++            hash.update(value);
++        }
++    }
++    Some(hash.finalize().into())
+ }
+
+ impl Drop for RunningListenerService {
+diff --git a/rust/crates/mihomo-app/src/listener_service_runtime_streams.rs b/rust/crates/mihomo-app/src/listener_service_runtime_streams.rs
+--- a/rust/crates/mihomo-app/src/listener_service_runtime_streams.rs
++++ b/rust/crates/mihomo-app/src/listener_service_runtime_streams.rs
+@@ -24,6 +24,15 @@
+ }
+
+ impl mihomo_core::TcpStream for PrefixedStream {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_socket_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
++        (self.prefix.position() as usize >= self.prefix.get_ref().len())
++            .then(|| self.inner.splice_read_fd()).flatten()
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_write_fd() }
+     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+         self.inner.try_clone_box()
+     }
+diff --git a/rust/crates/mihomo-app/src/listener_service_runtime_udp.rs b/rust/crates/mihomo-app/src/listener_service_runtime_udp.rs
+--- a/rust/crates/mihomo-app/src/listener_service_runtime_udp.rs
++++ b/rust/crates/mihomo-app/src/listener_service_runtime_udp.rs
+@@ -60,6 +60,8 @@
+     udp_queue: Arc<UdpDispatchQueue>,
+ ) {
+     let socket = Arc::new(socket);
++    let session_pool = Arc::new(crate::tun_packet::TunUdpSessionPool::new_with_timeout(
++        super::transparent::TRANSPARENT_UDP_IDLE_TIMEOUT));
+     while !shutdown.load(Ordering::Relaxed) {
+         match &listener.handler {
+             ManagedUdpListenerHandler::Redir(config) => {
+@@ -67,6 +69,7 @@
+                     Ok(Some((payload, peer_addr, target_addr))) => {
+                         let inbound_listener_addr = socket.local_addr().unwrap_or(peer_addr);
+                         udp_queue.push(UdpDispatchTask::Transparent {
++                            session_pool: session_pool.clone(),
+                             inbound_listener_addr,
+                             peer_addr,
+                             target_addr,
+@@ -93,6 +96,7 @@
+                     Ok(Some((payload, peer_addr, target_addr))) => {
+                         let inbound_listener_addr = socket.local_addr().unwrap_or(peer_addr);
+                         udp_queue.push(UdpDispatchTask::Transparent {
++                            session_pool: session_pool.clone(),
+                             inbound_listener_addr,
+                             peer_addr,
+                             target_addr,
+@@ -143,6 +147,7 @@
+             }
+         }
+     }
++    session_pool.shutdown();
+ }
+
+ pub(super) fn dns_loop(
+diff --git a/rust/crates/mihomo-app/src/listener_udp_dispatch.rs b/rust/crates/mihomo-app/src/listener_udp_dispatch.rs
+--- a/rust/crates/mihomo-app/src/listener_udp_dispatch.rs
++++ b/rust/crates/mihomo-app/src/listener_udp_dispatch.rs
+@@ -48,6 +48,7 @@
+         dns_runtime: Option<DnsRuntime>,
+     },
+     Transparent {
++        session_pool: Arc<crate::tun_packet::TunUdpSessionPool>,
+         inbound_listener_addr: SocketAddr,
+         peer_addr: SocketAddr,
+         target_addr: SocketAddr,
+@@ -111,6 +112,7 @@
+                 }
+             }
+             Self::Transparent {
++                session_pool,
+                 inbound_listener_addr,
+                 peer_addr,
+                 target_addr,
+@@ -133,6 +135,7 @@
+                     special_rules,
+                     dns_runtime,
+                     session_kind,
++                    session_pool,
+                 ) {
+                     log_listener_error("transparent udp relay error", err);
+                 }
+@@ -426,8 +429,9 @@
+         let document=mihomo_config::parse_runtime_config_document("mode: direct\n").unwrap();
+         let tunnel=Arc::new(RuntimeTunnel::new("direct",mihomo_runtime::build_runtime_registry(&document).unwrap()));
+         let queue=UdpDispatchQueue::new();
++        let session_pool=Arc::new(crate::tun_packet::TunUdpSessionPool::default());
+         for _ in 0..UDP_DISPATCH_QUEUE_LIMIT+64{
+-            queue.push(UdpDispatchTask::Transparent{inbound_listener_addr:"127.0.0.1:1".parse().unwrap(),peer_addr:"127.0.0.1:2".parse().unwrap(),target_addr:"127.0.0.1:3".parse().unwrap(),payload:vec![0;8],tunnel:Arc::clone(&tunnel),inbound_name:String::new(),special_proxy:String::new(),special_rules:String::new(),dns_runtime:None,session_kind:SessionKind::TProxy});
++            queue.push(UdpDispatchTask::Transparent{session_pool:session_pool.clone(),inbound_listener_addr:"127.0.0.1:1".parse().unwrap(),peer_addr:"127.0.0.1:2".parse().unwrap(),target_addr:"127.0.0.1:3".parse().unwrap(),payload:vec![0;8],tunnel:Arc::clone(&tunnel),inbound_name:String::new(),special_proxy:String::new(),special_rules:String::new(),dns_runtime:None,session_kind:SessionKind::TProxy});
+         }
+         assert_eq!(queue.state.lock().unwrap().tasks.len(),UDP_DISPATCH_QUEUE_LIMIT);
+         queue.close();assert!(queue.pop().is_none());assert!(queue.state.lock().unwrap().tasks.is_empty());
+diff --git a/rust/crates/mihomo-app/src/tests/body_tcp_and_inbound.rs b/rust/crates/mihomo-app/src/tests/body_tcp_and_inbound.rs
+--- a/rust/crates/mihomo-app/src/tests/body_tcp_and_inbound.rs
++++ b/rust/crates/mihomo-app/src/tests/body_tcp_and_inbound.rs
+@@ -5220,23 +5220,24 @@
+         write_test_sudoku_mux_frame(&mut *stream, TEST_SUDOKU_MUX_FRAME_DATA, 2, b"helloB");
+         write_test_sudoku_mux_frame(&mut *stream, TEST_SUDOKU_MUX_FRAME_CLOSE, 2, &[]);
+
+-        let (frame_type1, stream_id1, payload1) = read_test_sudoku_mux_frame(&mut *stream);
+-        assert_eq!(frame_type1, TEST_SUDOKU_MUX_FRAME_DATA);
+-        assert_eq!(stream_id1, 1);
+-        assert_eq!(payload1, b"replyA");
+-        let (frame_type1_fin, stream_id1_fin, payload1_fin) = read_test_sudoku_mux_frame(&mut *stream);
+-        assert_eq!(frame_type1_fin, TEST_SUDOKU_MUX_FRAME_CLOSE);
+-        assert_eq!(stream_id1_fin, 1);
+-        assert!(payload1_fin.is_empty());
+-
+-        let (frame_type2, stream_id2, payload2) = read_test_sudoku_mux_frame(&mut *stream);
+-        assert_eq!(frame_type2, TEST_SUDOKU_MUX_FRAME_DATA);
+-        assert_eq!(stream_id2, 2);
+-        assert_eq!(payload2, b"replyB");
+-        let (frame_type2_fin, stream_id2_fin, payload2_fin) = read_test_sudoku_mux_frame(&mut *stream);
+-        assert_eq!(frame_type2_fin, TEST_SUDOKU_MUX_FRAME_CLOSE);
+-        assert_eq!(stream_id2_fin, 2);
+-        assert!(payload2_fin.is_empty());
++        // Different mux streams may reply in either order. Preserve the
++        // per-stream DATA/CLOSE ordering and check every payload and frame.
++        let mut seen = std::collections::HashMap::new();
++        for _ in 0..4 {
++            let (frame_type, stream_id, payload) = read_test_sudoku_mux_frame(&mut *stream);
++            seen.entry(stream_id)
++                .or_insert_with(Vec::new)
++                .push((frame_type, payload));
++        }
++        for (stream_id, expected) in [(1, b"replyA"), (2, b"replyB")] {
++            let frames = seen.remove(&stream_id).expect("expected both mux streams");
++            assert_eq!(frames.len(), 2);
++            assert_eq!(frames[0].0, TEST_SUDOKU_MUX_FRAME_DATA);
++            assert_eq!(frames[0].1, expected);
++            assert_eq!(frames[1].0, TEST_SUDOKU_MUX_FRAME_CLOSE);
++            assert!(frames[1].1.is_empty());
++        }
++        assert!(seen.is_empty());
+
+         upstream_a_worker.join().unwrap();
+         upstream_b_worker.join().unwrap();
+diff --git a/rust/crates/mihomo-app/src/tests/support_servers_and_transparent.rs b/rust/crates/mihomo-app/src/tests/support_servers_and_transparent.rs
+--- a/rust/crates/mihomo-app/src/tests/support_servers_and_transparent.rs
++++ b/rust/crates/mihomo-app/src/tests/support_servers_and_transparent.rs
+@@ -970,17 +970,28 @@
+
+         let upstream = UdpSocket::bind("127.0.0.1:0").unwrap();
+         let upstream_addr = upstream.local_addr().unwrap();
++        // This unit fixture puts the upstream and transparent reply socket in
++        // one namespace. Real LAN/WAN targets live in separate namespaces.
++        // Permit the reply socket to bind this source port while the upstream
++        // remains alive to send its unsolicited second response.
++        let enabled: libc::c_int = 1;
++        assert_eq!(unsafe { libc::setsockopt(std::os::fd::AsRawFd::as_raw_fd(&upstream),
++            libc::SOL_SOCKET, libc::SO_REUSEADDR, &enabled as *const _ as *const libc::c_void,
++            std::mem::size_of_val(&enabled) as libc::socklen_t) }, 0);
+         let upstream_worker = thread::spawn(move || {
+             let mut buf = [0_u8; 2048];
+             let (read, from) = upstream.recv_from(&mut buf).unwrap();
+             assert_eq!(&buf[..read], b"ping-tproxy-udp");
+             upstream.send_to(b"pong-tproxy-udp", from).unwrap();
++            thread::sleep(Duration::from_millis(25));
++            upstream.send_to(b"later-tproxy-udp", from).unwrap();
+         });
+
+         let listener_addr = UdpSocket::bind("127.0.0.1:0")
+             .unwrap()
+             .local_addr()
+             .unwrap();
++        let session_pool = Arc::new(crate::tun_packet::TunUdpSessionPool::default());
+         crate::listener_service::transparent::handle_tproxy_udp_packet(
+             listener_addr,
+             client_addr,
+@@ -992,6 +1003,7 @@
+             String::new(),
+             None,
+             mihomo_core::SessionKind::TProxy,
++            session_pool.clone(),
+         )
+         .unwrap();
+
+@@ -999,7 +1011,11 @@
+         let (read, from) = client.recv_from(&mut buf).unwrap();
+         assert_eq!(&buf[..read], b"pong-tproxy-udp");
+         assert_eq!(from, upstream_addr);
++        let (read, from) = client.recv_from(&mut buf).unwrap();
++        assert_eq!(&buf[..read], b"later-tproxy-udp");
++        assert_eq!(from, upstream_addr);
+         upstream_worker.join().unwrap();
++        session_pool.shutdown();
+     }
+
+     fn unique_temp_dir(prefix: &str) -> PathBuf {
+diff --git a/rust/crates/mihomo-app/src/transparent/mod.rs b/rust/crates/mihomo-app/src/transparent/mod.rs
+--- a/rust/crates/mihomo-app/src/transparent/mod.rs
++++ b/rust/crates/mihomo-app/src/transparent/mod.rs
+@@ -6,6 +6,8 @@
+ use mihomo_core::{Metadata, NetworkKind, PacketEnvelope, SessionKind, UdpPacket, WriteBack};
+ use mihomo_dns::DnsRuntime;
+ use mihomo_runtime::RuntimeTunnel;
++
++pub(crate) const TRANSPARENT_UDP_IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+ #[cfg(any(target_os = "linux", target_os = "android"))]
+ mod linux_android;
+@@ -42,13 +44,14 @@
+     special_rules: String,
+     dns_runtime: Option<DnsRuntime>,
+     session_kind: SessionKind,
++    session_pool: Arc<crate::tun_packet::TunUdpSessionPool>,
+ ) -> io::Result<()> {
+     let packet = Arc::new(TransparentUdpPacket {
+         payload: ByteWindow::freeze(payload),
+         inbound_listener_addr,
+         original_client_addr: peer_addr,
+         original_target_addr: target_addr,
+-        tunnel: Arc::clone(&tunnel),
++        tunnel: Arc::downgrade(&tunnel),
+     });
+     let metadata = Metadata {
+         network: NetworkKind::Udp,
+@@ -63,12 +66,8 @@
+         ..Metadata::default()
+     };
+     let envelope = PacketEnvelope::new(packet, metadata);
+-    let mut session = crate::listener_service::SystemUdpSession::new(tunnel.clone(), dns_runtime)?;
+-    let _ = tunnel.send_udp_packet(&envelope, &mut session)?;
+-    if let Some((response, responder)) = session.recv_once()? {
+-        tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), responder)?;
+-    }
+-    Ok(())
++    session_pool.send_envelope_live(peer_addr, target_addr, tunnel, envelope, dns_runtime,
++        TRANSPARENT_UDP_IDLE_TIMEOUT)
+ }
+
+ struct TransparentUdpPacket {
+@@ -76,13 +75,15 @@
+     inbound_listener_addr: SocketAddr,
+     original_client_addr: SocketAddr,
+     original_target_addr: SocketAddr,
+-    tunnel: Arc<RuntimeTunnel>,
++    tunnel: std::sync::Weak<RuntimeTunnel>,
+ }
+
+ impl WriteBack for TransparentUdpPacket {
+     fn write_back(&self, payload: ByteWindow, source: Option<SocketAddr>) -> io::Result<usize> {
+         let source = source.unwrap_or(self.original_target_addr);
+-        let conn = create_or_get_local_conn(&source, &self.original_client_addr, &self.tunnel)?;
++        let tunnel = self.tunnel.upgrade().ok_or_else(||
++            io::Error::new(io::ErrorKind::Interrupted, "UDP runtime stopped"))?;
++        let conn = create_or_get_local_conn(&source, &self.original_client_addr, &tunnel)?;
+         conn.send(payload.as_slice())
+     }
+ }
+diff --git a/rust/crates/mihomo-app/src/tun_packet.rs b/rust/crates/mihomo-app/src/tun_packet.rs
+--- a/rust/crates/mihomo-app/src/tun_packet.rs
++++ b/rust/crates/mihomo-app/src/tun_packet.rs
+@@ -41,6 +41,7 @@
+ }
+
+ struct TunUdpSessionPoolState {
++    closed: bool,
+     sessions: HashMap<TunUdpSessionKey, TunUdpSessionEntry>,
+     order: VecDeque<TunUdpSessionKey>,
+     max_entries: usize,
+@@ -135,6 +136,7 @@
+     ) -> Self {
+         Self {
+             state: Mutex::new(TunUdpSessionPoolState {
++                closed: false,
+                 sessions: HashMap::new(),
+                 order: VecDeque::new(),
+                 max_entries: max_entries.max(1),
+@@ -167,6 +169,9 @@
+                 .state
+                 .lock()
+                 .map_err(|_| io::Error::other("tun udp session cache mutex poisoned"))?;
++            if state.closed {
++                return Err(io::Error::new(io::ErrorKind::Interrupted, "UDP session pool is closed"));
++            }
+             let now = Instant::now();
+             retired.extend(state.evict_expired(now));
+             if let Some(existing) = state.sessions.get_mut(&key) {
+@@ -215,6 +220,7 @@
+     pub(crate) fn shutdown(&self) {
+         let sessions = {
+             let mut state = self.state.lock().unwrap();
++            state.closed = true;
+             state.order.clear();
+             std::mem::take(&mut state.sessions)
+         };
+@@ -241,16 +247,25 @@
+         let timeout = if spec.config.udp_timeout > 0 {
+             Duration::from_secs(spec.config.udp_timeout as u64)
+         } else { DEFAULT_TUN_UDP_IDLE_TIMEOUT };
+-        self.with_pooled_session(parsed.source, parsed.destination, tunnel.clone(), dns_runtime, |pooled| {
++        self.send_envelope_live(parsed.source, parsed.destination, tunnel, prepared.envelope, dns_runtime, timeout)
++    }
++
++    pub(crate) fn send_envelope_live(
++        &self, source: SocketAddr, destination: SocketAddr,
++        tunnel: Arc<RuntimeTunnel>, envelope: mihomo_core::PacketEnvelope,
++        dns_runtime: Option<mihomo_dns::DnsRuntime>, timeout: Duration,
++    ) -> io::Result<()> {
++        self.with_pooled_session(source, destination, tunnel.clone(), dns_runtime, |pooled| {
+             pooled.session.idle_timeout = Some(timeout);
+             if pooled.receiver.as_ref().is_some_and(LiveUdpReceiver::stopped) {
+                 pooled.receiver.take();
+                 pooled.session.invalidate_association();
+             }
+-            let target = tunnel.send_udp_packet(&prepared.envelope, &mut pooled.session)?;
++            let policy_generation = tunnel.udp_policy_generation();
++            let target = tunnel.send_udp_packet(&envelope, &mut pooled.session)?;
+             if pooled.session.is_local_dns() {
+                 if let Some((response, remote)) = pooled.session.recv_once()? {
+-                    tunnel.write_back_udp(&prepared.envelope, ByteWindow::freeze(response), remote)?;
++                    tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), remote)?;
+                 }
+                 return Ok(());
+             }
+@@ -258,9 +273,21 @@
+                 pooled.receiver.take();
+             }
+             if let Some(receiver) = &pooled.receiver {
+-                receiver.add_mapping(target, prepared.envelope.clone());
+-            } else if let Some(receiver) = LiveUdpReceiver::start(&mut pooled.session, target, prepared.envelope.clone(), tunnel.clone(), timeout)? {
+-                pooled.receiver = Some(receiver);
++                receiver.add_mapping(target, envelope.clone());
++            } else {
++                let receiver = match LiveUdpReceiver::start(&mut pooled.session, target, envelope.clone(), tunnel.clone(), timeout, policy_generation) {
++                    Ok(receiver) => receiver,
++                    Err(error) => {
++                        mihomo_core::push_log(mihomo_core::LogLevel::Debug,
++                            format!("UDP receive split unavailable, retaining request/reply: {error}"));
++                        None
++                    }
++                };
++                if let Some(receiver) = receiver {
++                    pooled.receiver = Some(receiver);
++                } else if let Some((response, remote)) = pooled.session.recv_once()? {
++                    tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), remote)?;
++                }
+             }
+             Ok(())
+         })
+diff --git a/rust/crates/mihomo-app/src/tun_udp_receiver.rs b/rust/crates/mihomo-app/src/tun_udp_receiver.rs
+--- a/rust/crates/mihomo-app/src/tun_udp_receiver.rs
++++ b/rust/crates/mihomo-app/src/tun_udp_receiver.rs
+@@ -16,6 +16,7 @@
+ pub(super) type TunUdpEgress = Arc<dyn Fn(&[u8]) -> io::Result<()> + Send + Sync>;
+
+ struct ReceiveState {
++    policy: Option<(std::sync::Weak<RuntimeTunnel>, u64)>,
+     cancelled: AtomicBool,
+     closed: Option<Arc<AtomicBool>>,
+     last_activity: Mutex<Instant>,
+@@ -28,6 +29,8 @@
+ impl ReceiveState {
+     fn stopped(&self) -> bool {
+         self.cancelled.load(Ordering::Acquire)
++            || self.policy.as_ref().is_some_and(|(policy, generation)|
++                policy.upgrade().is_none_or(|tunnel| tunnel.udp_policy_generation() != *generation))
+             || self
+                 .closed
+                 .as_ref()
+@@ -53,6 +56,7 @@
+         packet: PacketEnvelope,
+         tunnel: Arc<RuntimeTunnel>,
+         idle_timeout: Duration,
++        policy_generation: u64,
+     ) -> io::Result<Option<Self>> {
+         if !session.receive_ready() {
+             return Ok(None);
+@@ -60,6 +64,7 @@
+         let mut reader = session.split_for_receive()?;
+         let shutdown_handle = reader.receive_shutdown_handle()?;
+         let state = Arc::new(ReceiveState {
++            policy: Some((Arc::downgrade(&tunnel), policy_generation)),
+             cancelled: AtomicBool::new(false),
+             closed: session.receiver_close_signal(),
+             last_activity: Mutex::new(Instant::now()),
+@@ -262,6 +267,43 @@
+     use super::*;
+
+     #[test]
++    fn stale_policy_generation_does_not_forward_a_queued_udp_reply() {
++        struct Packet;
++        impl mihomo_core::WriteBack for Packet {
++            fn write_back(&self, _: ByteWindow, _: Option<SocketAddr>) -> io::Result<usize> {
++                panic!("a reply from the old policy must not be forwarded");
++            }
++        }
++        impl mihomo_core::UdpPacket for Packet {
++            fn payload(&self) -> ByteWindow { ByteWindow::freeze(b"request".to_vec()) }
++            fn local_addr(&self) -> SocketAddr { "127.0.0.1:12345".parse().unwrap() }
++        }
++        let document = mihomo_config::parse_runtime_config_document("mode: direct\n").unwrap();
++        let tunnel = Arc::new(RuntimeTunnel::new("direct",
++            mihomo_runtime::build_runtime_registry(&document).unwrap()));
++        let peer = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
++        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
++        let target = peer.local_addr().unwrap();
++        let packet = PacketEnvelope::new(Arc::new(Packet), mihomo_core::Metadata {
++            network: mihomo_core::NetworkKind::Udp,
++            src_ip: Some("127.0.0.1".parse().unwrap()), src_port: Some(12345),
++            dst_ip: Some(target.ip()), dst_port: Some(target.port()),
++            ..Default::default()
++        });
++        let mut session = SystemUdpSession::new(tunnel.clone(), None).unwrap();
++        let generation = tunnel.udp_policy_generation();
++        tunnel.send_udp_packet(&packet, &mut session).unwrap();
++        let mut bytes = [0; 128];
++        let (_, sender) = peer.recv_from(&mut bytes).unwrap();
++        peer.send_to(b"old reply", sender).unwrap();
++        tunnel.set_mode("global").unwrap();
++        let receiver = LiveUdpReceiver::start(&mut session, target, packet, tunnel,
++            Duration::from_secs(30), generation).unwrap().unwrap();
++        assert!(receiver.stopped());
++        drop(receiver);
++    }
++
++    #[test]
+     fn stream_frame_prefix_survives_a_socket_timeout_between_fragments() {
+         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+         let mut client = std::net::TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+@@ -270,6 +312,7 @@
+             .set_read_timeout(Some(Duration::from_millis(20)))
+             .unwrap();
+         let state = Arc::new(ReceiveState {
++            policy: None,
+             cancelled: AtomicBool::new(false),
+             closed: None,
+             last_activity: Mutex::new(Instant::now()),
+diff --git a/rust/crates/mihomo-app/src/tun_worker.rs b/rust/crates/mihomo-app/src/tun_worker.rs
+--- a/rust/crates/mihomo-app/src/tun_worker.rs
++++ b/rust/crates/mihomo-app/src/tun_worker.rs
+@@ -19,6 +19,10 @@
+ use mihomo_tun::{TunRuntimeSpec, TunUdpRuntimeMode};
+ #[cfg(target_os = "linux")]
+ use mihomo_tun::open_linux_tun_device;
++#[cfg(target_os = "linux")]
++type TunRouteGuard = mihomo_tun::LinuxTunRouteGuard;
++#[cfg(not(target_os = "linux"))]
++type TunRouteGuard = ();
+
+ use crate::listener_udp_support::udp_worker_threads;
+ use crate::tun_icmp_packet::parse_tun_icmp_packet;
+diff --git a/rust/crates/mihomo-app/src/tun_worker_io.rs b/rust/crates/mihomo-app/src/tun_worker_io.rs
+--- a/rust/crates/mihomo-app/src/tun_worker_io.rs
++++ b/rust/crates/mihomo-app/src/tun_worker_io.rs
+@@ -57,19 +57,19 @@
+
+ fn open_tun_reader_writer(
+     spec: &TunRuntimeSpec,
+-) -> io::Result<Option<(File, Arc<Mutex<File>>)>> {
++) -> io::Result<Option<(File, Arc<Mutex<File>>, Option<TunRouteGuard>)>> {
+     if spec.config.file_descriptor > 0 {
+         let fd = spec.config.file_descriptor;
+         let reader = clone_fd_as_file(fd)?;
+         let writer = Arc::new(Mutex::new(clone_fd_as_file(fd)?));
+-        return Ok(Some((reader, writer)));
++        return Ok(Some((reader, writer, None)));
+     }
+
+     #[cfg(target_os = "linux")]
+     {
+-        let reader = open_linux_tun_device(spec)?;
++        let (reader, routes) = open_linux_tun_device(spec)?.into_parts();
+         let writer = Arc::new(Mutex::new(reader.try_clone()?));
+-        return Ok(Some((reader, writer)));
++        return Ok(Some((reader, writer, routes)));
+     }
+
+     #[cfg(not(target_os = "linux"))]
+diff --git a/rust/crates/mihomo-app/src/tun_worker_loop.rs b/rust/crates/mihomo-app/src/tun_worker_loop.rs
+--- a/rust/crates/mihomo-app/src/tun_worker_loop.rs
++++ b/rust/crates/mihomo-app/src/tun_worker_loop.rs
+@@ -4,16 +4,22 @@
+     dns_runtime: Option<DnsRuntime>,
+     shutdown: Arc<AtomicBool>,
+ ) -> io::Result<Vec<JoinHandle<()>>> {
+-    let mut handles = Vec::new();
++    let mut opened = Vec::new();
+     for spec in specs {
+-        let Some((reader, writer)) = open_tun_reader_writer(spec)? else {
++        let Some((reader, writer, routes)) = open_tun_reader_writer(spec)? else {
+             continue;
+         };
+-        let spec = spec.clone();
++        opened.push((spec.clone(), reader, writer, routes));
++    }
++    // Prepare every device before spawning workers. If a later device fails,
++    // the earlier route guards roll back synchronously before startup returns.
++    let mut handles = Vec::new();
++    for (spec, reader, writer, routes) in opened {
+         let tunnel = Arc::clone(&tunnel);
+         let dns_runtime = dns_runtime.clone();
+         let shutdown_flag = Arc::clone(&shutdown);
+         handles.push(thread::spawn(move || {
++            let _routes = routes;
+             tun_fd_udp_loop(spec, tunnel, dns_runtime, shutdown_flag, reader, writer);
+         }));
+     }
+@@ -28,13 +34,11 @@
+     mut reader: File,
+     writer: Arc<Mutex<File>>,
+ ) {
+-    let cleanup_name = linux_tun_cleanup_name(&spec);
+     let mut buffer = vec![0_u8; TUN_PACKET_BUFFER_SIZE];
+     let mut tcp_dispatch = match TunTcpDispatch::new(&spec, &tunnel, &writer) {
+         Ok(dispatch) => dispatch,
+         Err(err) => {
+             push_log(LogLevel::Error, format!("TUN TCP worker startup: {err}"));
+-            cleanup_linux_tun_worker(&spec, cleanup_name.as_deref());
+             return;
+         }
+     };
+@@ -174,36 +178,4 @@
+         let _ = worker.join();
+     }
+     udp_session_pool.shutdown();
+-    cleanup_linux_tun_worker(&spec, cleanup_name.as_deref());
+ }
+-
+-#[cfg(target_os = "linux")]
+-fn linux_tun_cleanup_name(spec: &TunRuntimeSpec) -> Option<String> {
+-    mihomo_tun::requested_linux_tun_name(spec)
+-        .ok()
+-        .filter(|name| !name.trim().is_empty())
+-}
+-
+-#[cfg(not(target_os = "linux"))]
+-fn linux_tun_cleanup_name(_spec: &TunRuntimeSpec) -> Option<String> {
+-    None
+-}
+-
+-#[cfg(target_os = "linux")]
+-fn cleanup_linux_tun_worker(spec: &TunRuntimeSpec, device_name: Option<&str>) {
+-    let Some(device_name) = device_name else {
+-        return;
+-    };
+-    if let Err(err) = mihomo_tun::cleanup_linux_tun_interface(spec, device_name) {
+-        push_log(
+-            LogLevel::Warn,
+-            format!(
+-                "tun worker cleanup error inbound={} device={device_name}: {err}",
+-                spec.name
+-            ),
+-        );
+-    }
+-}
+-
+-#[cfg(not(target_os = "linux"))]
+-fn cleanup_linux_tun_worker(_spec: &TunRuntimeSpec, _device_name: Option<&str>) {}
+diff --git a/rust/crates/mihomo-core/src/flow.rs b/rust/crates/mihomo-core/src/flow.rs
+--- a/rust/crates/mihomo-core/src/flow.rs
++++ b/rust/crates/mihomo-core/src/flow.rs
+@@ -224,6 +224,16 @@
+ impl std::error::Error for ParseMetadataError {}
+
+ pub trait TcpStream: Read + Write + Send + Any {
++    /// Expose a plain TCP direction only when bypassing Read/Write preserves
++    /// its bytes and side effects. Encrypted and framed streams keep None.
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> { None }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { None }
++    /// The whole stream is plain TCP after a finite replay prefix. This also
++    /// permits nonblocking prefix writes before splice_read_fd becomes ready.
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { None }
+     fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
+         Err(io::Error::new(io::ErrorKind::Unsupported, "read timeout unavailable"))
+     }
+@@ -266,6 +276,18 @@
+ }
+
+ impl TcpStream for std::net::TcpStream {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> {
++        Some(std::os::fd::AsRawFd::as_raw_fd(self))
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
++        Some(std::os::fd::AsRawFd::as_raw_fd(self))
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> {
++        Some(std::os::fd::AsRawFd::as_raw_fd(self))
++    }
+     fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{std::net::TcpStream::read_timeout(self)}
+     fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{std::net::TcpStream::set_read_timeout(self,timeout)}
+     fn tcp_stats(&self)->Option<crate::TcpStats>{crate::tcp_stats::read(self)}
+@@ -285,6 +307,12 @@
+ }
+
+ impl TcpStream for Box<dyn TcpStream> {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_socket_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_read_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { (**self).splice_write_fd() }
+     fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{(**self).read_timeout()}
+     fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{(**self).set_read_timeout(timeout)}
+     fn tcp_stats(&self)->Option<crate::TcpStats>{(**self).tcp_stats()}
+diff --git a/rust/crates/mihomo-dns/src/coalescing.rs b/rust/crates/mihomo-dns/src/coalescing.rs
+new file mode 100644
+--- /dev/null
++++ b/rust/crates/mihomo-dns/src/coalescing.rs
+@@ -0,0 +1,244 @@
++use std::collections::HashMap;
++use std::sync::{Arc, Condvar, Mutex};
++use std::time::Duration;
++
++use crate::DnsError;
++
++type QueryResult = Result<Option<Vec<u8>>, DnsError>;
++type QueryKey = (usize, Vec<u8>);
++
++#[derive(Default)]
++struct Flight {
++    result: Mutex<Option<QueryResult>>,
++    ready: Condvar,
++}
++
++/// Shares only overlapping queries. The complete wire request, including EDNS,
++/// flags and question case, is part of the key; only the transaction ID differs.
++/// Resolver generations have independent scopes, so a reload cannot reuse an
++/// answer from a previous DNS policy. Completed answers are not cached here.
++#[derive(Default)]
++pub struct SharedDnsQueries {
++    flights: Mutex<HashMap<QueryKey, Arc<Flight>>>,
++}
++
++impl SharedDnsQueries {
++    pub fn resolve(
++        &self,
++        scope: usize,
++        request: &[u8],
++        resolve: impl FnOnce() -> QueryResult,
++    ) -> QueryResult {
++        // Bound retained keys on small routers. Oversized requests and a full
++        // table keep the ordinary resolver behavior without adding state.
++        if !(12..=4096).contains(&request.len()) {
++            return resolve();
++        }
++        let mut packet = request.to_vec();
++        packet[..2].fill(0);
++        let key = (scope, packet);
++        let (flight, leader) = {
++            let mut flights = self.flights.lock().unwrap();
++            if let Some(flight) = flights.get(&key) {
++                (Arc::clone(flight), false)
++            } else if flights.len() >= 256 {
++                drop(flights);
++                return resolve();
++            } else {
++                let flight = Arc::new(Flight::default());
++                flights.insert(key.clone(), Arc::clone(&flight));
++                (flight, true)
++            }
++        };
++
++        let result = if leader {
++            let mut owner = QueryOwner {
++                queries: self,
++                key,
++                flight,
++                completed: false,
++            };
++            let result = resolve().map(|response| {
++                response.map(|mut response| {
++                    if response.len() >= 2 {
++                        response[..2].fill(0);
++                    }
++                    response
++                })
++            });
++            owner.publish(result.clone());
++            result
++        } else {
++            let (state, _) = flight
++                .ready
++                .wait_timeout_while(
++                    flight.result.lock().unwrap(),
++                    Duration::from_secs(30),
++                    |result| result.is_none(),
++                )
++                .unwrap();
++            state.clone().unwrap_or_else(|| {
++                Err(DnsError::Io(
++                    "timed out waiting for the shared DNS query".into(),
++                ))
++            })
++        };
++        result.map(|response| {
++            response.map(|mut response| {
++                if response.len() >= 2 {
++                    response[..2].copy_from_slice(&request[..2]);
++                }
++                response
++            })
++        })
++    }
++}
++
++struct QueryOwner<'a> {
++    queries: &'a SharedDnsQueries,
++    key: QueryKey,
++    flight: Arc<Flight>,
++    completed: bool,
++}
++
++impl QueryOwner<'_> {
++    fn publish(&mut self, result: QueryResult) {
++        *self
++            .flight
++            .result
++            .lock()
++            .unwrap_or_else(|error| error.into_inner()) = Some(result);
++        self.flight.ready.notify_all();
++        self.queries
++            .flights
++            .lock()
++            .unwrap_or_else(|error| error.into_inner())
++            .remove(&self.key);
++        self.completed = true;
++    }
++}
++
++impl Drop for QueryOwner<'_> {
++    fn drop(&mut self) {
++        if !self.completed {
++            // A failed worker must not leave followers waiting or retain its
++            // key forever. No resolver I/O runs while a shared mutex is held.
++            self.publish(Err(DnsError::Io("shared DNS query worker aborted".into())));
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::sync::atomic::{AtomicUsize, Ordering};
++    use std::sync::Barrier;
++    use std::thread;
++
++    #[test]
++    fn concurrent_queries_share_io_and_keep_their_transaction_ids() {
++        let queries = Arc::new(SharedDnsQueries::default());
++        let calls = Arc::new(AtomicUsize::new(0));
++        let barrier = Arc::new(Barrier::new(16));
++        let workers: Vec<_> = (0u16..16)
++            .map(|id| {
++                let (queries, calls, barrier) = (queries.clone(), calls.clone(), barrier.clone());
++                thread::spawn(move || {
++                    let mut request = vec![0; 12];
++                    request[..2].copy_from_slice(&id.to_be_bytes());
++                    barrier.wait();
++                    let response = queries
++                        .resolve(1, &request, || {
++                            calls.fetch_add(1, Ordering::SeqCst);
++                            thread::sleep(Duration::from_millis(100));
++                            Ok(Some(vec![0; 12]))
++                        })
++                        .unwrap()
++                        .unwrap();
++                    assert_eq!(&response[..2], &id.to_be_bytes());
++                })
++            })
++            .collect();
++        for worker in workers {
++            worker.join().unwrap();
++        }
++        assert_eq!(calls.load(Ordering::SeqCst), 1);
++        assert!(queries.flights.lock().unwrap().is_empty());
++    }
++
++    #[test]
++    fn finished_answers_and_errors_are_not_retained_as_a_cache() {
++        let queries = SharedDnsQueries::default();
++        let calls = AtomicUsize::new(0);
++        for _ in 0..2 {
++            assert!(queries
++                .resolve(1, &[0; 12], || {
++                    calls.fetch_add(1, Ordering::SeqCst);
++                    Err(DnsError::Io("upstream unavailable".into()))
++                })
++                .is_err());
++        }
++        assert_eq!(calls.load(Ordering::SeqCst), 2);
++        assert!(queries.flights.lock().unwrap().is_empty());
++    }
++
++    #[test]
++    fn resolver_generation_and_wire_options_do_not_share_answers() {
++        for different_scope in [false, true] {
++            let queries = Arc::new(SharedDnsQueries::default());
++            let barrier = Arc::new(Barrier::new(2));
++            let workers: Vec<_> = (0..2u8)
++                .map(|index| {
++                    let (queries, barrier) = (queries.clone(), barrier.clone());
++                    thread::spawn(move || {
++                        let mut request = vec![0; 12];
++                        if !different_scope {
++                            request.extend_from_slice(&[index]);
++                        }
++                        barrier.wait();
++                        let response = queries
++                            .resolve(
++                                if different_scope { index as usize } else { 0 },
++                                &request,
++                                || {
++                                    thread::sleep(Duration::from_millis(100));
++                                    let mut response = vec![0; 12];
++                                    response.push(index);
++                                    Ok(Some(response))
++                                },
++                            )
++                            .unwrap()
++                            .unwrap();
++                        assert_eq!(response[12], index);
++                    })
++                })
++                .collect();
++            for worker in workers {
++                worker.join().unwrap();
++            }
++        }
++    }
++
++    #[test]
++    fn leader_panic_releases_the_key_and_notifies_followers() {
++        let queries = Arc::new(SharedDnsQueries::default());
++        let started = Arc::new(Barrier::new(2));
++        let leader = {
++            let (queries, started) = (queries.clone(), started.clone());
++            thread::spawn(move || {
++                queries.resolve(1, &[0; 12], || {
++                    started.wait();
++                    thread::sleep(Duration::from_millis(100));
++                    panic!("resolver worker failed");
++                })
++            })
++        };
++        started.wait();
++        let error = queries
++            .resolve(1, &[0; 12], || panic!("must join the leader"))
++            .unwrap_err();
++        assert!(error.to_string().contains("worker aborted"));
++        assert!(leader.join().is_err());
++        assert!(queries.flights.lock().unwrap().is_empty());
++    }
++}
+diff --git a/rust/crates/mihomo-dns/src/lib.rs b/rust/crates/mihomo-dns/src/lib.rs
+--- a/rust/crates/mihomo-dns/src/lib.rs
++++ b/rust/crates/mihomo-dns/src/lib.rs
+@@ -7,6 +7,9 @@
+ mod types;
+ mod upstream;
+ mod exchange_race;
++mod coalescing;
++
++pub use coalescing::SharedDnsQueries;
+
+ pub use packet::build_servfail_response;
+
+diff --git a/rust/crates/mihomo-dns/src/runtime.rs b/rust/crates/mihomo-dns/src/runtime.rs
+--- a/rust/crates/mihomo-dns/src/runtime.rs
++++ b/rust/crates/mihomo-dns/src/runtime.rs
+@@ -22,6 +22,19 @@
+ };
+
+ impl DnsRuntime {
++    /// Compare resolver behavior without allocation, cache or persistence state.
++    /// A policy-only app reload must not retain a resolver compiled from older
++    /// provider data merely because the YAML DNS settings look unchanged.
++    pub fn has_same_policy(&self, other: &Self) -> bool {
++        self.config == other.config
++            && self.hosts == other.hosts
++            && self.fake_ip_matchers == other.fake_ip_matchers
++            && self.fake_ip_rules == other.fake_ip_rules
++            && self.nameserver_policies == other.nameserver_policies
++            && self.proxy_server_nameserver_policies == other.proxy_server_nameserver_policies
++            && self.fallback_domain_matchers == other.fallback_domain_matchers
++            && self.fallback_ip_matchers == other.fallback_ip_matchers
++    }
+     pub fn from_document(document: &RuntimeConfigDocument) -> Result<Self, DnsError> {
+         let empty_sources = BTreeMap::<String, String>::new();
+         Self::from_document_with_rule_providers(document, &empty_sources, &empty_sources)
+diff --git a/rust/crates/mihomo-runtime/Cargo.toml b/rust/crates/mihomo-runtime/Cargo.toml
+--- a/rust/crates/mihomo-runtime/Cargo.toml
++++ b/rust/crates/mihomo-runtime/Cargo.toml
+@@ -30,6 +30,9 @@
+ ureq = "2"
+ url = "2"
+
++[target.'cfg(target_os = "linux")'.dependencies]
++libc = "0.2"
++
+ [dev-dependencies]
+ rcgen = "0.13"
+ rustls = { version = "0.21", features = ["dangerous_configuration"] }
+diff --git a/rust/crates/mihomo-runtime/src/lib.rs b/rust/crates/mihomo-runtime/src/lib.rs
+--- a/rust/crates/mihomo-runtime/src/lib.rs
++++ b/rust/crates/mihomo-runtime/src/lib.rs
+@@ -19,9 +19,13 @@
+ mod support_protocols;
+ mod topology;
+ mod tcp;
++#[cfg(target_os = "linux")]
++mod tcp_splice;
+ mod traffic;
+ mod tun_surface;
+ mod tunnel_runtime;
++#[cfg(test)]
++mod reload_tests;
+ mod udp;
+
+ pub use exports::*;
+diff --git a/rust/crates/mihomo-runtime/src/reload_tests.rs b/rust/crates/mihomo-runtime/src/reload_tests.rs
+new file mode 100644
+--- /dev/null
++++ b/rust/crates/mihomo-runtime/src/reload_tests.rs
+@@ -0,0 +1,39 @@
++use std::sync::Arc;
++
++use mihomo_core::Metadata;
++
++use crate::{build_runtime_registry, RuntimeTunnel};
++
++fn policy(name: &str) -> RuntimeTunnel {
++    let document = mihomo_config::parse_runtime_config_document(&format!(
++        "mode: rule\nproxies:\n  - {{name: {name}, type: direct}}\nrules: ['MATCH,{name}']\n"
++    ))
++    .unwrap();
++    RuntimeTunnel::new(
++        document.mode.clone(),
++        build_runtime_registry(&document).unwrap(),
++    )
++    .with_rule_set(mihomo_rules::compile_rule_set(&document.rules).unwrap())
++}
++
++#[test]
++fn concurrent_reload_never_matches_a_rule_against_another_registry() {
++    let tunnel = Arc::new(policy("first"));
++    let reading = tunnel.clone();
++    let worker = std::thread::spawn(move || {
++        for _ in 0..5000 {
++            let (target, resolved) = reading
++                .selected_target_for_metadata(&Metadata::default())
++                .unwrap();
++            assert_eq!(target, resolved.leaf_name);
++            assert!(matches!(target.as_str(), "first" | "second"));
++        }
++    });
++    let first = policy("first");
++    let second = policy("second");
++    for _ in 0..300 {
++        tunnel.apply_prepared_policy(&second);
++        tunnel.apply_prepared_policy(&first);
++    }
++    worker.join().unwrap();
++}
+diff --git a/rust/crates/mihomo-runtime/src/sniffer.rs b/rust/crates/mihomo-runtime/src/sniffer.rs
+--- a/rust/crates/mihomo-runtime/src/sniffer.rs
++++ b/rust/crates/mihomo-runtime/src/sniffer.rs
+@@ -403,6 +403,15 @@
+     }
+ }
+ impl TcpStream for Replay {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_socket_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
++        (self.prefix.position() as usize >= self.prefix.get_ref().len())
++            .then(|| self.inner.splice_read_fd()).flatten()
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_write_fd() }
+     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+         self.inner.try_clone_box()
+     }
+diff --git a/rust/crates/mihomo-runtime/src/tcp.rs b/rust/crates/mihomo-runtime/src/tcp.rs
+--- a/rust/crates/mihomo-runtime/src/tcp.rs
++++ b/rust/crates/mihomo-runtime/src/tcp.rs
+@@ -1,7 +1,7 @@
+ use std::any::Any;
+ use std::io;
+ use std::io::{Read, Write};
+-use std::sync::atomic::AtomicU64;
++use std::sync::atomic::{AtomicBool, AtomicU64};
+ use std::sync::atomic::Ordering;
+ use std::thread;
+
+@@ -82,7 +82,7 @@
+ pub(crate) fn relay_bidirectional_with_counters<L, R>(
+     left: &mut L,
+     right: &mut R,
+-    _strategy: TcpRelayStrategy,
++    strategy: TcpRelayStrategy,
+     left_to_right_counter: Option<&AtomicU64>,
+     right_to_left_counter: Option<&AtomicU64>,
+     traffic: Option<&crate::traffic::TrafficMeter>,
+@@ -110,26 +110,41 @@
+         );
+     };
+
++    #[cfg(target_os = "linux")]
++    let splice_mode = if strategy != TcpRelayStrategy::BufferedCopy {
++        crate::tcp_splice::NonblockingMode::new(left, right)
++    } else { None };
++    #[cfg(target_os = "linux")]
++    let strategy = if splice_mode.is_some() { strategy } else { TcpRelayStrategy::BufferedCopy };
++    let cancelled = AtomicBool::new(false);
+     let (left_to_right, right_to_left) = thread::scope(|scope| -> io::Result<(u64, u64)> {
+         let right_to_left_worker = scope.spawn(|| -> io::Result<u64> {
+-            let transferred = copy_one_way(
++            let result = copy_one_way_controlled(
+                 right,
+                 &mut *left_writer,
+                 right_to_left_counter,
+                 traffic,
+                 false,
+-            )?;
++                strategy,
++                &cancelled,
++            );
++            if result.is_err() { cancelled.store(true, Ordering::Release); }
++            let transferred = result?;
+             let _ = left_writer.shutdown_write();
+             Ok(transferred)
+         });
+
+-        let left_to_right = copy_one_way(
++        let result = copy_one_way_controlled(
+             left,
+             &mut *right_writer,
+             left_to_right_counter,
+             traffic,
+             true,
+-        )?;
++            strategy,
++            &cancelled,
++        );
++        if result.is_err() { cancelled.store(true, Ordering::Release); }
++        let left_to_right = result?;
+         let _ = right_writer.shutdown_write();
+         let right_to_left = join_copy_worker(right_to_left_worker)?;
+         Ok((left_to_right, right_to_left))
+@@ -189,10 +204,65 @@
+     R: Read + ?Sized,
+     W: Write + ?Sized,
+ {
++    copy_one_way_impl(reader, writer, counter, traffic, upload, |_, _| None, |_, _, _, error| Err(error))
++}
++
++fn copy_one_way_controlled<R: TcpStream + ?Sized, W: TcpStream + ?Sized>(
++    reader: &mut R,
++    writer: &mut W,
++    counter: Option<&AtomicU64>,
++    traffic: Option<&crate::traffic::TrafficMeter>,
++    upload: bool,
++    strategy: TcpRelayStrategy,
++    cancelled: &AtomicBool,
++) -> io::Result<u64> {
++    copy_one_way_impl(reader, writer, counter, traffic, upload, |reader, writer| {
++        #[cfg(target_os = "linux")]
++        if strategy != TcpRelayStrategy::BufferedCopy {
++            return crate::tcp_splice::try_copy(reader, writer, cancelled, |written| {
++                if let Some(traffic) = traffic {
++                    traffic.record(upload, written as u64, counter);
++                } else if let Some(counter) = counter {
++                    counter.fetch_add(written as u64, Ordering::Relaxed);
++                }
++            });
++        }
++        #[cfg(not(target_os = "linux"))]
++        let _ = (strategy, cancelled);
++        None
++    }, |reader, writer, reading, error| {
++        #[cfg(target_os = "linux")]
++        if strategy != TcpRelayStrategy::BufferedCopy {
++            let fd = if reading { reader.splice_read_fd() } else { writer.splice_write_fd() };
++            if let Some(fd) = fd { return crate::tcp_splice::wait_for_io(fd, reading, cancelled); }
++        }
++        #[cfg(not(target_os = "linux"))]
++        let _ = (reader, writer, reading);
++        Err(error)
++    })
++}
++
++fn copy_one_way_impl<R: Read + ?Sized, W: Write + ?Sized>(
++    reader: &mut R, writer: &mut W, counter: Option<&AtomicU64>,
++    traffic: Option<&crate::traffic::TrafficMeter>, upload: bool,
++    mut fast_copy: impl FnMut(&mut R, &mut W) -> Option<io::Result<u64>>,
++    mut blocked: impl FnMut(&mut R, &mut W, bool, io::Error) -> io::Result<()>,
++) -> io::Result<u64> {
+     let mut total = 0_u64;
+-    let mut buf = [0_u8; 64 * 1024];
++    let mut buf = Vec::new();
+     loop {
+-        let read = reader.read(&mut buf)?;
++        if let Some(result) = fast_copy(reader, writer) {
++            return result.map(|transferred| total + transferred);
++        }
++        if buf.is_empty() { buf.resize(64 * 1024, 0); }
++        let read = match reader.read(&mut buf) {
++            Ok(read) => read,
++            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
++                blocked(reader, writer, true, error)?;
++                continue;
++            }
++            Err(error) => return Err(error),
++        };
+         if read == 0 {
+             writer.flush()?;
+             return Ok(total);
+@@ -208,6 +278,10 @@
+                 }
+                 Ok(written) => written,
+                 Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
++                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
++                    blocked(reader, writer, false, error)?;
++                    continue;
++                }
+                 Err(error) => return Err(error),
+             };
+             offset += written;
+diff --git a/rust/crates/mihomo-runtime/src/tcp_splice.rs b/rust/crates/mihomo-runtime/src/tcp_splice.rs
+new file mode 100644
+--- /dev/null
++++ b/rust/crates/mihomo-runtime/src/tcp_splice.rs
+@@ -0,0 +1,473 @@
++use std::io;
++use std::os::fd::RawFd;
++use std::sync::atomic::{AtomicBool, Ordering};
++use std::time::{Duration, Instant};
++
++use mihomo_core::TcpStream;
++
++struct Pipe([RawFd; 2]);
++const PIPE_CAPACITY: usize = 64 * 1024;
++
++/// Keep nonblocking socket flags for the entire duplex relay. A per-direction
++/// guard could restore blocking mode while the other direction is still using
++/// splice, leaving a congested socket impossible to cancel.
++pub(crate) struct NonblockingMode(Vec<(RawFd, libc::c_int)>);
++
++impl NonblockingMode {
++    pub(crate) fn new<L: TcpStream + ?Sized, R: TcpStream + ?Sized>(
++        left: &L,
++        right: &R,
++    ) -> Option<Self> {
++        let descriptors = [
++            left.splice_socket_fd()?,
++            left.splice_write_fd()?,
++            right.splice_socket_fd()?,
++            right.splice_write_fd()?,
++        ];
++        let mut flags = Vec::new();
++        for fd in descriptors {
++            if flags.iter().any(|(previous, _)| *previous == fd) {
++                continue;
++            }
++            let original = unsafe { libc::fcntl(fd, libc::F_GETFL) };
++            if original < 0 {
++                return None;
++            }
++            flags.push((fd, original));
++        }
++        let guard = Self(flags);
++        for (fd, original) in &guard.0 {
++            if unsafe { libc::fcntl(*fd, libc::F_SETFL, original | libc::O_NONBLOCK) } < 0 {
++                return None;
++            }
++        }
++        Some(guard)
++    }
++}
++
++impl Drop for NonblockingMode {
++    fn drop(&mut self) {
++        for (fd, original) in &self.0 {
++            unsafe {
++                libc::fcntl(*fd, libc::F_SETFL, *original);
++            }
++        }
++    }
++}
++
++impl Pipe {
++    fn new() -> io::Result<Self> {
++        let mut fds = [-1; 2];
++        if unsafe { libc::pipe2(fds.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) } < 0 {
++            return Err(io::Error::last_os_error());
++        }
++        // Best effort. The kernel can retain its smaller default; neither
++        // correctness nor fallback depends on permission to enlarge a pipe.
++        unsafe {
++            libc::fcntl(fds[1], libc::F_SETPIPE_SZ, PIPE_CAPACITY as libc::c_int);
++        }
++        Ok(Self(fds))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::io::{Read, Write};
++    use std::net::{Shutdown, TcpListener, TcpStream as Socket};
++    use std::sync::mpsc;
++    use std::sync::Arc;
++    use std::thread;
++
++    fn pair() -> (Socket, Socket) {
++        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
++        let client = Socket::connect(listener.local_addr().unwrap()).unwrap();
++        let (server, _) = listener.accept().unwrap();
++        (client, server)
++    }
++
++    #[test]
++    fn fast_relay_preserves_half_close_bytes_and_counters() {
++        let (mut left, mut inbound) = pair();
++        let (mut outbound, mut right) = pair();
++        let worker = thread::spawn(move || {
++            crate::tcp::relay_bidirectional(
++                &mut inbound,
++                &mut outbound,
++                crate::TcpRelayStrategy::ZeroCopyPreferred,
++            )
++            .unwrap()
++        });
++        let payload = vec![0x5a; 256 * 1024];
++        left.write_all(&payload).unwrap();
++        left.shutdown(Shutdown::Write).unwrap();
++        let mut received = Vec::new();
++        right.read_to_end(&mut received).unwrap();
++        assert_eq!(received, payload);
++        right.write_all(b"response").unwrap();
++        right.shutdown(Shutdown::Write).unwrap();
++        received.clear();
++        left.read_to_end(&mut received).unwrap();
++        assert_eq!(received, b"response");
++        let stats = worker.join().unwrap();
++        assert_eq!(
++            (stats.left_to_right, stats.right_to_left),
++            (payload.len() as u64, 8)
++        );
++    }
++
++    #[test]
++    fn fast_read_respects_socket_timeout() {
++        let (_client, source) = pair();
++        let (destination, _peer) = pair();
++        source
++            .set_read_timeout(Some(Duration::from_millis(40)))
++            .unwrap();
++        let _mode = NonblockingMode::new(&source, &destination).unwrap();
++        let started = Instant::now();
++        let error = try_copy(&source, &destination, &AtomicBool::new(false), |_| {})
++            .unwrap()
++            .unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
++        assert!(started.elapsed() < Duration::from_secs(2));
++    }
++
++    #[test]
++    fn replayed_prefix_is_sent_once_before_splice_and_flags_are_restored() {
++        struct Replay {
++            prefix: std::io::Cursor<Vec<u8>>,
++            inner: Socket,
++        }
++        impl Read for Replay {
++            fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
++                let count = self.prefix.read(bytes)?;
++                if count > 0 {
++                    Ok(count)
++                } else {
++                    self.inner.read(bytes)
++                }
++            }
++        }
++        impl Write for Replay {
++            fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
++                self.inner.write(bytes)
++            }
++            fn flush(&mut self) -> io::Result<()> {
++                self.inner.flush()
++            }
++        }
++        impl TcpStream for Replay {
++            fn splice_socket_fd(&self) -> Option<RawFd> {
++                self.inner.splice_socket_fd()
++            }
++            fn splice_write_fd(&self) -> Option<RawFd> {
++                self.inner.splice_write_fd()
++            }
++            fn splice_read_fd(&self) -> Option<RawFd> {
++                (self.prefix.position() as usize == self.prefix.get_ref().len())
++                    .then(|| self.inner.splice_read_fd())
++                    .flatten()
++            }
++            fn try_clone_box(&self) -> io::Result<mihomo_core::BoxedTcpStream> {
++                Ok(Box::new(self.inner.try_clone()?))
++            }
++            fn shutdown_write(&mut self) -> io::Result<()> {
++                self.inner.shutdown(Shutdown::Write)
++            }
++        }
++        let (mut client, mut incoming) = pair();
++        let (mut outgoing, mut target) = pair();
++        let inspect_incoming = incoming.try_clone().unwrap();
++        let inspect_outgoing = outgoing.try_clone().unwrap();
++        let mut sending = client.try_clone().unwrap();
++        let payload = vec![0x7e; 256 * 1024];
++        let expected = payload.clone();
++        let producer = thread::spawn(move || {
++            sending.write_all(&payload).unwrap();
++            sending.shutdown(Shutdown::Write).unwrap();
++        });
++        let mut prefix = vec![0; 1024];
++        incoming.read_exact(&mut prefix).unwrap();
++        let mut incoming = Replay {
++            prefix: std::io::Cursor::new(prefix),
++            inner: incoming,
++        };
++        let copy = thread::spawn(move || {
++            crate::tcp::relay_bidirectional(
++                &mut incoming,
++                &mut outgoing,
++                crate::TcpRelayStrategy::ZeroCopyPreferred,
++            )
++            .unwrap()
++        });
++        let mut actual = Vec::new();
++        target.read_to_end(&mut actual).unwrap();
++        assert_eq!(actual, expected);
++        target.write_all(b"done").unwrap();
++        target.shutdown(Shutdown::Write).unwrap();
++        actual.clear();
++        client.read_to_end(&mut actual).unwrap();
++        assert_eq!(actual, b"done");
++        let stats = copy.join().unwrap();
++        assert_eq!(
++            (stats.left_to_right, stats.right_to_left),
++            (expected.len() as u64, 4)
++        );
++        producer.join().unwrap();
++        for socket in [inspect_incoming, inspect_outgoing] {
++            let flags = unsafe { libc::fcntl(socket.splice_socket_fd().unwrap(), libc::F_GETFL) };
++            assert_eq!(flags & libc::O_NONBLOCK, 0);
++        }
++    }
++
++    #[test]
++    fn blocked_destination_can_be_cancelled_without_losing_a_worker() {
++        let (mut producer, source) = pair();
++        let (destination, peer) = pair();
++        let size: libc::c_int = 4096;
++        unsafe {
++            libc::setsockopt(
++                destination.splice_write_fd().unwrap(),
++                libc::SOL_SOCKET,
++                libc::SO_SNDBUF,
++                &size as *const _ as *const libc::c_void,
++                std::mem::size_of_val(&size) as _,
++            );
++        }
++        let cancelled = Arc::new(AtomicBool::new(false));
++        let copy_cancelled = cancelled.clone();
++        let (done, receive) = mpsc::channel();
++        let worker = thread::spawn(move || {
++            let _mode = NonblockingMode::new(&source, &destination).unwrap();
++            let result = try_copy(&source, &destination, &copy_cancelled, |_| {}).unwrap();
++            done.send(result).unwrap();
++        });
++        let sender = thread::spawn(move || {
++            let _ = producer.write_all(&vec![0x33; 8 * 1024 * 1024]);
++        });
++        thread::sleep(Duration::from_millis(100));
++        cancelled.store(true, Ordering::Release);
++        let result = receive.recv_timeout(Duration::from_secs(2));
++        drop(peer);
++        let error = result
++            .expect("blocked splice must observe cancellation")
++            .unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::Interrupted);
++        worker.join().unwrap();
++        sender.join().unwrap();
++    }
++}
++
++impl Drop for Pipe {
++    fn drop(&mut self) {
++        for fd in self.0 {
++            unsafe {
++                libc::close(fd);
++            }
++        }
++    }
++}
++
++fn socket_timeout(fd: RawFd, option: libc::c_int) -> Option<Duration> {
++    let mut value: libc::timeval = unsafe { std::mem::zeroed() };
++    let mut len = std::mem::size_of_val(&value) as libc::socklen_t;
++    let result = unsafe {
++        libc::getsockopt(
++            fd,
++            libc::SOL_SOCKET,
++            option,
++            &mut value as *mut _ as *mut libc::c_void,
++            &mut len,
++        )
++    };
++    if result == 0 && (value.tv_sec > 0 || value.tv_usec > 0) {
++        Some(
++            Duration::from_secs(value.tv_sec.max(0) as u64)
++                + Duration::from_micros(value.tv_usec.max(0) as u64),
++        )
++    } else {
++        None
++    }
++}
++
++fn wait(
++    fd: RawFd,
++    events: libc::c_short,
++    deadline: Option<Instant>,
++    cancel: &AtomicBool,
++) -> io::Result<()> {
++    loop {
++        if cancel.load(Ordering::Acquire) {
++            return Err(io::Error::new(
++                io::ErrorKind::Interrupted,
++                "TCP relay cancelled",
++            ));
++        }
++        let timeout = match deadline {
++            Some(deadline) => {
++                let remaining = deadline.saturating_duration_since(Instant::now());
++                if remaining.is_zero() {
++                    return Err(io::Error::new(
++                        io::ErrorKind::TimedOut,
++                        "TCP relay socket timed out",
++                    ));
++                }
++                remaining.as_millis().clamp(1, 100) as i32
++            }
++            None => 100,
++        };
++        let mut poll = libc::pollfd {
++            fd,
++            events,
++            revents: 0,
++        };
++        let result = unsafe { libc::poll(&mut poll, 1, timeout) };
++        if result > 0 {
++            if poll.revents & libc::POLLNVAL != 0 {
++                return Err(io::Error::new(
++                    io::ErrorKind::BrokenPipe,
++                    "TCP relay socket closed",
++                ));
++            }
++            // HUP/ERR must reach splice too, so EOF and the socket's actual
++            // error are reported rather than repeatedly polling a dead peer.
++            return Ok(());
++        }
++        if result < 0 {
++            let error = io::Error::last_os_error();
++            if error.kind() != io::ErrorKind::Interrupted {
++                return Err(error);
++            }
++        }
++    }
++}
++
++pub(crate) fn wait_for_io(fd: RawFd, reading: bool, cancel: &AtomicBool) -> io::Result<()> {
++    let timeout = socket_timeout(
++        fd,
++        if reading {
++            libc::SO_RCVTIMEO
++        } else {
++            libc::SO_SNDTIMEO
++        },
++    );
++    wait(
++        fd,
++        if reading { libc::POLLIN } else { libc::POLLOUT },
++        timeout.map(|duration| Instant::now() + duration),
++        cancel,
++    )
++}
++
++/// None means no bytes were consumed and the ordinary copy is still safe.
++/// Callers retain both streams throughout; descriptors are never unwrapped
++/// through a TLS, framing or accounting layer without that layer opting in.
++pub(crate) fn try_copy<R: TcpStream + ?Sized, W: TcpStream + ?Sized>(
++    reader: &R,
++    writer: &W,
++    cancel: &AtomicBool,
++    mut record: impl FnMut(usize),
++) -> Option<io::Result<u64>> {
++    let (source, destination) = (reader.splice_read_fd()?, writer.splice_write_fd()?);
++    for fd in [source, destination] {
++        let flags = unsafe { libc::fcntl(fd, libc::F_GETFL) };
++        if flags < 0 || flags & libc::O_NONBLOCK == 0 {
++            return None;
++        }
++    }
++    let pipe = Pipe::new().ok()?;
++    let read_timeout = socket_timeout(source, libc::SO_RCVTIMEO);
++    let write_timeout = socket_timeout(destination, libc::SO_SNDTIMEO);
++    let mut total = 0;
++    let mut consumed = false;
++    let result = (|| {
++        loop {
++            let deadline = read_timeout.map(|duration| Instant::now() + duration);
++            let received = loop {
++                if cancel.load(Ordering::Acquire) {
++                    return Err(io::Error::new(
++                        io::ErrorKind::Interrupted,
++                        "TCP relay cancelled",
++                    ));
++                }
++                let count = unsafe {
++                    libc::splice(
++                        source,
++                        std::ptr::null_mut(),
++                        pipe.0[1],
++                        std::ptr::null_mut(),
++                        PIPE_CAPACITY,
++                        libc::SPLICE_F_MOVE | libc::SPLICE_F_NONBLOCK,
++                    )
++                };
++                if count >= 0 {
++                    break count as usize;
++                }
++                let error = io::Error::last_os_error();
++                match error.kind() {
++                    io::ErrorKind::Interrupted => continue,
++                    io::ErrorKind::WouldBlock => wait(source, libc::POLLIN, deadline, cancel)?,
++                    _ => return Err(error),
++                }
++            };
++            if received == 0 {
++                return Ok(total);
++            }
++            consumed = true;
++            let mut remaining = received;
++            let mut deadline = write_timeout.map(|duration| Instant::now() + duration);
++            while remaining > 0 {
++                if cancel.load(Ordering::Acquire) {
++                    return Err(io::Error::new(
++                        io::ErrorKind::Interrupted,
++                        "TCP relay cancelled",
++                    ));
++                }
++                // Do not use SPLICE_F_MORE: short request/response exchanges
++                // must not wait for a later write to uncork their data.
++                let count = unsafe {
++                    libc::splice(
++                        pipe.0[0],
++                        std::ptr::null_mut(),
++                        destination,
++                        std::ptr::null_mut(),
++                        remaining,
++                        libc::SPLICE_F_MOVE | libc::SPLICE_F_NONBLOCK,
++                    )
++                };
++                if count > 0 {
++                    remaining -= count as usize;
++                    total += count as u64;
++                    record(count as usize);
++                    deadline = write_timeout.map(|duration| Instant::now() + duration);
++                } else if count == 0 {
++                    return Err(io::Error::new(
++                        io::ErrorKind::WriteZero,
++                        "TCP splice returned zero",
++                    ));
++                } else {
++                    let error = io::Error::last_os_error();
++                    match error.kind() {
++                        io::ErrorKind::Interrupted => continue,
++                        io::ErrorKind::WouldBlock => {
++                            wait(destination, libc::POLLOUT, deadline, cancel)?
++                        }
++                        _ => return Err(error),
++                    }
++                }
++            }
++        }
++    })();
++    if !consumed
++        && result.as_ref().err().is_some_and(|error| {
++            matches!(
++                error.raw_os_error(),
++                Some(libc::EINVAL | libc::ENOSYS | libc::EOPNOTSUPP)
++            )
++        })
++    {
++        None
++    } else {
++        Some(result)
++    }
++}
+diff --git a/rust/crates/mihomo-runtime/src/tunnel_runtime.rs b/rust/crates/mihomo-runtime/src/tunnel_runtime.rs
+--- a/rust/crates/mihomo-runtime/src/tunnel_runtime.rs
++++ b/rust/crates/mihomo-runtime/src/tunnel_runtime.rs
+@@ -8,7 +8,7 @@
+
+ use mihomo_buf::ByteWindow;
+ use mihomo_core::{BoxedTcpStream, ConnectionContext, DnsMode, Metadata, PacketEnvelope, TcpStream, Tunnel, UdpSession};
+-use mihomo_dns::DnsRuntime;
++use mihomo_dns::{DnsError, DnsRuntime};
+ use mihomo_rules::{RuleSet, RuntimeRuleSnapshot};
+ use mihomo_transport::{
+     GrpcOptions as TransportGrpcOptions,
+@@ -41,6 +41,7 @@
+     rules: RwLock<Arc<RuleSet>>,
+     pub(crate) sniffer: RwLock<Arc<crate::sniffer::Sniffer>>,
+     dns_runtime: RwLock<Option<Arc<Mutex<DnsRuntime>>>>,
++    dns_queries: mihomo_dns::SharedDnsQueries,
+     pub(crate) candidate_states: Mutex<BTreeMap<String, CandidateState>>,
+     udp_relay: Mutex<QueuedUdpRelay>,
+     last_error: Mutex<Option<String>>,
+@@ -472,6 +473,7 @@
+             rules: RwLock::new(Arc::new(RuleSet::default())),
+             sniffer: RwLock::new(Arc::new(crate::sniffer::Sniffer::default())),
+             dns_runtime: RwLock::new(None),
++            dns_queries: mihomo_dns::SharedDnsQueries::default(),
+             candidate_states: Mutex::new(BTreeMap::new()),
+             udp_relay: Mutex::new(QueuedUdpRelay::default()),
+             last_error: Mutex::new(None),
+@@ -526,6 +528,19 @@
+         self.dns_runtime.read().unwrap().as_ref().map(Arc::clone)
+     }
+
++    pub fn udp_policy_generation(&self) -> u64 {
++        self.kernel_policy_generation.load(Ordering::Acquire)
++    }
++
++    pub fn coalesce_dns_query(
++        &self,
++        scope: usize,
++        packet: &[u8],
++        resolve: impl FnOnce() -> Result<Option<Vec<u8>>, DnsError>,
++    ) -> Result<Option<Vec<u8>>, DnsError> {
++        self.dns_queries.resolve(scope, packet, resolve)
++    }
++
+     pub fn current_mode(&self) -> String {
+         self.mode.lock().unwrap().clone()
+     }
+@@ -615,8 +630,12 @@
+         }
+     }
+
+-    pub fn replace_registry(&self, mut registry: RuntimeRegistry) {
++    pub fn replace_registry(&self, registry: RuntimeRegistry) {
+         let _gate=self.kernel_policy_gate.lock().unwrap();
++        self.replace_registry_locked(registry);
++    }
++
++    fn replace_registry_locked(&self, mut registry: RuntimeRegistry) {
+         self.invalidate_kernel_udp();
+         self.smart_advanced.invalidate();
+         {
+@@ -643,6 +662,27 @@
+             }
+         }
+         *self.registry.lock().unwrap() = registry;
++    }
++
++    /// Publish prepared policy while keeping live TCP streams, their tracking
++    /// records, DNS allocations, TUN workers and kernel TCP flow permissions.
++    pub fn apply_prepared_policy(&self, prepared: &RuntimeTunnel) {
++        let _gate = self.kernel_policy_gate.lock().unwrap();
++        let registry = prepared.registry_snapshot();
++        let unchanged = {
++            let current = self.registry.lock().unwrap();
++            registry.proxies.keys().filter(|name|
++                current.proxies.contains_key(*name)
++                    && current.proxy_definitions.get(*name) == registry.proxy_definitions.get(*name))
++                .cloned().collect::<std::collections::BTreeSet<_>>()
++        };
++        self.replace_registry_locked(registry);
++        *self.rules.write().unwrap() = Arc::clone(&prepared.rules.read().unwrap());
++        *self.sniffer.write().unwrap() = Arc::clone(&prepared.sniffer.read().unwrap());
++        *self.mode.lock().unwrap() = prepared.current_mode();
++        *self.smart_context.lock().unwrap() = prepared.smart_context.lock().unwrap().clone();
++        self.candidate_states.lock().unwrap().retain(|name, _| unchanged.contains(name));
++        self.proxy_health.lock().unwrap().retain(|name, _| unchanged.contains(name));
+     }
+
+     pub fn registry_snapshot(&self) -> RuntimeRegistry {
+@@ -733,6 +773,7 @@
+     ) -> Result<(String, crate::ResolvedProxyPath), ExecutionError> {
+         let mut metadata = metadata.clone();
+         self.preprocess_metadata_for_routing(&mut metadata)?;
++        let _gate = self.kernel_policy_gate.lock().unwrap();
+         if metadata.smart_rule.is_none() {
+             metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
+         }
+@@ -762,6 +803,7 @@
+         }
+         let mut metadata = metadata.clone();
+         self.preprocess_metadata_for_routing(&mut metadata)?;
++        let _gate = self.kernel_policy_gate.lock().unwrap();
+         let mode = self.mode.lock().unwrap().clone();
+         if mode == "direct" && metadata.special_proxy.trim().is_empty() {
+             let _ = metadata
+@@ -1589,6 +1631,7 @@
+     pub fn selected_target(&self, metadata: &Metadata) -> String {
+         let mut metadata = metadata.clone();
+         let _ = self.preprocess_metadata_for_routing(&mut metadata);
++        let _gate = self.kernel_policy_gate.lock().unwrap();
+         let mode = self.mode.lock().unwrap().clone();
+         let registry = self.registry.lock().unwrap();
+         let rules = Arc::clone(&self.rules.read().unwrap());
+@@ -1615,10 +1658,11 @@
+         if let Some(result) = self.try_connect_direct_tcp(&metadata, &mut dialer)? {
+             return Ok(result);
+         }
+-        metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
+         let mut executor = mihomo_transport::TcpTransportExecutor::new(dialer);
+         let mut attempts = 0;
+         loop {
++            let policy_gate = self.kernel_policy_gate.lock().unwrap();
++            metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
+             let states = self.candidate_states.lock().unwrap().clone();
+             let mode = self.mode.lock().unwrap().clone();
+             let rules = Arc::clone(&self.rules.read().unwrap());
+@@ -1628,6 +1672,7 @@
+                 let plan = build_execution_plan(&mut registry, &target, Some(&metadata), &states)?;
+                 if plan.hops.len() == 1 && matches!(plan.hops[0].spec, ExecutionHopSpec::Dns(_)) {
+                     drop(registry);
++                    drop(policy_gate);
+                     return self.connect_dns_tcp().map(|stream| (stream, plan));
+                 }
+                 let transport = crate::build_transport_plan_from_execution_plan(&plan, &metadata)?;
+@@ -1635,6 +1680,7 @@
+                 let pinned = plan.selected_path.iter().any(|name| registry.groups.get(name).is_some_and(|view|view.runtime.smart.is_some() && view.runtime.selected().is_some()));
+                 (plan, transport, smart_route, pinned)
+             };
++            drop(policy_gate);
+             if smart_route && metadata.kind != mihomo_core::SessionKind::Inner {
+                 if let Some(result)=self.connect_smart_race(&metadata,&plan,executor.dialer()) {return result;}
+             }
+diff --git a/rust/crates/mihomo-transport/src/stream_prefix.rs b/rust/crates/mihomo-transport/src/stream_prefix.rs
+--- a/rust/crates/mihomo-transport/src/stream_prefix.rs
++++ b/rust/crates/mihomo-transport/src/stream_prefix.rs
+@@ -34,6 +34,15 @@
+ }
+
+ impl TcpStream for PrefixedTcpStream {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_socket_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
++        (self.prefix.position() as usize >= self.prefix.get_ref().len())
++            .then(|| self.inner.splice_read_fd()).flatten()
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_write_fd() }
+     fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+     fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
+
+@@ -82,6 +91,16 @@
+ }
+
+ impl TcpStream for HttpResponsePrefixedTcpStream {
++    #[cfg(target_os = "linux")]
++    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> {
++        self.header_sent.then(|| self.inner.splice_socket_fd()).flatten()
++    }
++    #[cfg(target_os = "linux")]
++    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_read_fd() }
++    #[cfg(target_os = "linux")]
++    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> {
++        self.header_sent.then(|| self.inner.splice_write_fd()).flatten()
++    }
+     fn tcp_stats(&self)->Option<mihomo_core::TcpStats>{self.inner.tcp_stats()}
+     fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
+
+diff --git a/rust/crates/mihomo-tun/Cargo.toml b/rust/crates/mihomo-tun/Cargo.toml
+--- a/rust/crates/mihomo-tun/Cargo.toml
++++ b/rust/crates/mihomo-tun/Cargo.toml
+@@ -10,6 +10,8 @@
+ mihomo-core = { path = "../mihomo-core" }
+ mihomo-inbound = { path = "../mihomo-inbound" }
+ ipnet = "2"
++serde = { version = "1", features = ["derive"] }
++serde_json = "1"
+
+ [lib]
+ path = "src/lib.rs"
+diff --git a/rust/crates/mihomo-tun/src/lib.rs b/rust/crates/mihomo-tun/src/lib.rs
+--- a/rust/crates/mihomo-tun/src/lib.rs
++++ b/rust/crates/mihomo-tun/src/lib.rs
+@@ -12,6 +12,7 @@
+ pub use linux::{
+     cleanup_linux_tun_interface, linux_tun_setup_commands, open_linux_tun_device,
+     requested_linux_tun_name,
++    LinuxTunDevice, LinuxTunRouteGuard,
+ };
+ pub use runtime_spec::{TunRuntimeSpec, TunUdpRuntimeMode};
+
+diff --git a/rust/crates/mihomo-tun/src/linux.rs b/rust/crates/mihomo-tun/src/linux.rs
+--- a/rust/crates/mihomo-tun/src/linux.rs
++++ b/rust/crates/mihomo-tun/src/linux.rs
+@@ -15,6 +15,34 @@
+ const DEFAULT_IPROUTE2_TABLE_INDEX: i32 = 2022;
+ const DEFAULT_IPROUTE2_RULE_INDEX: i32 = 9000;
+
++#[path = "linux_routes.rs"]
++mod routes;
++pub use routes::LinuxTunRouteGuard;
++
++pub struct LinuxTunDevice {
++    file: File,
++    routes: Option<LinuxTunRouteGuard>,
++}
++
++impl LinuxTunDevice {
++    pub fn into_parts(self) -> (File, Option<LinuxTunRouteGuard>) {
++        (self.file, self.routes)
++    }
++}
++
++impl std::ops::Deref for LinuxTunDevice {
++    type Target = File;
++    fn deref(&self) -> &File { &self.file }
++}
++
++impl std::ops::DerefMut for LinuxTunDevice {
++    fn deref_mut(&mut self) -> &mut File { &mut self.file }
++}
++
++impl AsRawFd for LinuxTunDevice {
++    fn as_raw_fd(&self) -> std::os::fd::RawFd { self.file.as_raw_fd() }
++}
++
+ #[repr(C)]
+ union LinuxIfReqData {
+     flags: libc::c_short,
+@@ -27,7 +55,7 @@
+     data: LinuxIfReqData,
+ }
+
+-pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<File> {
++pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<LinuxTunDevice> {
+     let file = OpenOptions::new()
+         .read(true)
+         .write(true)
+@@ -50,6 +78,11 @@
+         data: LinuxIfReqData { pad: [0; 24] },
+     };
+     let requested_name = requested_linux_tun_name(spec)?;
++    // Claim the route lease before binding a new interface. An ip child from
++    // a killed predecessor may still hold the old device until exec/exit.
++    let mut routes = if spec.config.auto_route {
++        Some(LinuxTunRouteGuard::acquire(spec, &requested_name)?)
++    } else { None };
+     for (index, byte) in requested_name.bytes().enumerate() {
+         ifreq.name[index] = byte as libc::c_char;
+     }
+@@ -76,14 +109,21 @@
+     }
+     let actual_name = linux_ifreq_name(&ifreq);
+     if !actual_name.is_empty() {
+-        configure_linux_tun_interface(spec, &actual_name)?;
++        if let Some(owner) = routes.as_mut() {
++            owner.set_device(&actual_name);
++            for command in linux_tun_setup_commands(spec, &actual_name) {
++                owner.configure(command)?;
++            }
++        } else {
++            configure_linux_tun_interface(spec, &actual_name)?;
++        }
+         let message = format!(
+             "[TUN] interface {actual_name} started ipv4={:?} ipv6={:?} auto-route={}",
+             spec.config.inet4_address, spec.config.inet6_address, spec.config.auto_route);
+         eprintln!("{message}");
+         mihomo_core::push_log(mihomo_core::LogLevel::Info, message);
+     }
+-    Ok(file)
++    Ok(LinuxTunDevice { file, routes })
+ }
+
+ pub fn requested_linux_tun_name(spec: &TunRuntimeSpec) -> io::Result<String> {
+@@ -727,11 +767,8 @@
+ }
+
+ fn render_u32_range(start: u32, end: u32) -> String {
+-    if start == end {
+-        start.to_string()
+-    } else {
+-        format!("{start}-{end}")
+-    }
++    // iproute2 requires START-END for uidrange, including singleton UIDs.
++    format!("{start}-{end}")
+ }
+
+ fn collect_u16_ranges(values: &[u16], ranges: &[String]) -> Vec<(u16, u16)> {
+diff --git a/rust/crates/mihomo-tun/src/linux_routes.rs b/rust/crates/mihomo-tun/src/linux_routes.rs
+new file mode 100644
+--- /dev/null
++++ b/rust/crates/mihomo-tun/src/linux_routes.rs
+@@ -0,0 +1,387 @@
++use super::*;
++use std::collections::BTreeSet;
++use std::io::{Read, Write};
++use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
++use std::os::unix::process::CommandExt;
++use std::time::{Duration, Instant};
++
++use serde::{Deserialize, Serialize};
++
++// This protocol identifies our policy rules and routes. Priority and table
++// collisions are rejected before any global routing change is made.
++const OWNED_PROTOCOL: &str = "242";
++const MAX_JOURNAL_BYTES: u64 = 1024 * 1024;
++
++#[derive(Deserialize, Serialize)]
++#[serde(deny_unknown_fields)]
++struct Journal {
++    version: u32,
++    namespace: u64,
++    table: i32,
++    device: String,
++    undo: Vec<Vec<String>>,
++}
++
++/// A lock and write-ahead journal for the routes installed by one TUN.
++/// SIGKILL releases the lock but leaves enough information for its successor
++/// to recover. Normal drop rolls back only protocol-tagged owned objects.
++pub struct LinuxTunRouteGuard {
++    _lock: File,
++    path: std::path::PathBuf,
++    journal: Journal,
++}
++
++fn output(args: &[&str]) -> io::Result<serde_json::Value> {
++    for binary in ["/sbin/ip", "/usr/sbin/ip", "ip"] {
++        match Command::new(binary).args(args).output() {
++            Ok(result) if result.status.success() => {
++                return serde_json::from_slice(&result.stdout).map_err(io::Error::other);
++            }
++            Ok(result) => {
++                let error = String::from_utf8_lossy(&result.stderr);
++                if error.contains("FIB table does not exist") {
++                    return Ok(serde_json::json!([]));
++                }
++                return Err(io::Error::other(error.into_owned()));
++            }
++            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
++            Err(error) => return Err(error),
++        }
++    }
++    Err(io::Error::new(
++        io::ErrorKind::NotFound,
++        "ip utility unavailable",
++    ))
++}
++
++fn command_kind(command: &[String]) -> Option<(usize, &str)> {
++    let offset = usize::from(command.first().is_some_and(|value| value == "-6"));
++    match command.get(offset).map(String::as_str) {
++        Some("route") => Some((offset, "route")),
++        Some("rule") => Some((offset, "rule")),
++        _ => None,
++    }
++}
++
++impl LinuxTunRouteGuard {
++    pub(super) fn acquire(spec: &TunRuntimeSpec, device: &str) -> io::Result<Self> {
++        let namespace = std::fs::metadata("/proc/self/ns/net")?.ino();
++        let table = iproute2_table_index(spec);
++        let path = format!("/tmp/mihomo-tun-routes-{namespace}-{table}.lock");
++        let lock = OpenOptions::new()
++            .read(true)
++            .write(true)
++            .create(true)
++            .truncate(false)
++            .mode(0o600)
++            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
++            .open(&path)?;
++        let metadata = lock.metadata()?;
++        if !metadata.is_file()
++            || metadata.uid() != unsafe { libc::geteuid() }
++            || metadata.nlink() != 1
++            || metadata.mode() & 0o077 != 0
++        {
++            return Err(io::Error::new(
++                io::ErrorKind::PermissionDenied,
++                "unsafe TUN route journal",
++            ));
++        }
++        let deadline = Instant::now() + Duration::from_millis(500);
++        loop {
++            if unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
++                break;
++            }
++            let error = io::Error::last_os_error();
++            if error.kind() != io::ErrorKind::WouldBlock {
++                return Err(error);
++            }
++            if Instant::now() >= deadline {
++                return Err(io::Error::new(
++                    io::ErrorKind::AddrInUse,
++                    format!("TUN routing table {table} is already owned by another active core"),
++                ));
++            }
++            std::thread::sleep(Duration::from_millis(10));
++        }
++        let path =
++            std::path::PathBuf::from(format!("/tmp/mihomo-tun-routes-{namespace}-{table}.json"));
++        let mut bytes = Vec::new();
++        match OpenOptions::new()
++            .read(true)
++            .custom_flags(libc::O_NOFOLLOW)
++            .open(&path)
++        {
++            Ok(mut file) => {
++                let metadata = file.metadata()?;
++                if !metadata.is_file()
++                    || metadata.uid() != unsafe { libc::geteuid() }
++                    || metadata.nlink() != 1
++                    || metadata.mode() & 0o077 != 0
++                    || metadata.len() > MAX_JOURNAL_BYTES
++                {
++                    return Err(io::Error::new(
++                        io::ErrorKind::InvalidData,
++                        "unsafe TUN route ownership journal",
++                    ));
++                }
++                file.read_to_end(&mut bytes)?;
++            }
++            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
++            Err(error) => return Err(error),
++        }
++        let journal = if bytes.is_empty() {
++            Journal {
++                version: 1,
++                namespace,
++                table,
++                device: device.into(),
++                undo: Vec::new(),
++            }
++        } else {
++            let journal: Journal = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
++            if journal.version != 1
++                || journal.namespace != namespace
++                || journal.table != table
++                || journal.undo.iter().any(|command| {
++                    let Some((offset, kind)) = command_kind(command) else {
++                        return true;
++                    };
++                    command.get(offset + 1).map(String::as_str) != Some("del")
++                        || !command
++                            .windows(2)
++                            .any(|pair| pair[0] == "protocol" && pair[1] == OWNED_PROTOCOL)
++                        || !matches!(kind, "route" | "rule")
++                })
++            {
++                return Err(io::Error::new(
++                    io::ErrorKind::InvalidData,
++                    "invalid TUN route ownership journal",
++                ));
++            }
++            journal
++        };
++        let mut owner = Self {
++            _lock: lock,
++            path,
++            journal,
++        };
++        owner.cleanup()?;
++        owner.journal.device = device.into();
++        owner.reject_foreign_conflicts(spec, device)?;
++        Ok(owner)
++    }
++
++    fn save(&mut self) -> io::Result<()> {
++        let bytes = serde_json::to_vec(&self.journal).map_err(io::Error::other)?;
++        if bytes.len() as u64 > MAX_JOURNAL_BYTES {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "TUN routing configuration is too large",
++            ));
++        }
++        // Replace the journal atomically. Overwriting a shorter JSON document
++        // in place could leave an unreadable tail if SIGKILL arrives before
++        // truncation, precisely when recovery is needed.
++        let unique = std::time::SystemTime::now()
++            .duration_since(std::time::UNIX_EPOCH)
++            .unwrap_or_default()
++            .as_nanos();
++        let temporary = self
++            .path
++            .with_extension(format!("tmp-{}-{unique}", std::process::id()));
++        let mut file = OpenOptions::new()
++            .write(true)
++            .create_new(true)
++            .mode(0o600)
++            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
++            .open(&temporary)?;
++        let result = (|| {
++            file.write_all(&bytes)?;
++            file.sync_data()?;
++            std::fs::rename(&temporary, &self.path)
++        })();
++        if result.is_err() {
++            let _ = std::fs::remove_file(&temporary);
++        }
++        result
++    }
++
++    fn reject_foreign_conflicts(&self, spec: &TunRuntimeSpec, device: &str) -> io::Result<()> {
++        let planned = linux_tun_auto_route_commands(spec, device);
++        for ipv6 in [false, true] {
++            let commands: Vec<_> = planned
++                .iter()
++                .filter(|command| command.first().is_some_and(|value| value == "-6") == ipv6)
++                .collect();
++            if commands.is_empty() {
++                continue;
++            }
++            let priorities: BTreeSet<_> = commands
++                .iter()
++                .filter_map(|command| {
++                    command
++                        .windows(2)
++                        .find(|pair| pair[0] == "priority")
++                        .and_then(|pair| pair[1].parse::<u64>().ok())
++                })
++                .collect();
++            let args: Vec<_> = if ipv6 {
++                vec!["-6", "-j", "rule", "show"]
++            } else {
++                vec!["-j", "rule", "show"]
++            };
++            let existing = output(&args)?;
++            if existing.as_array().is_some_and(|rules| {
++                rules.iter().any(|rule| {
++                    rule.get("priority")
++                        .and_then(serde_json::Value::as_u64)
++                        .is_some_and(|priority| priorities.contains(&priority))
++                })
++            }) {
++                return Err(io::Error::new(io::ErrorKind::AddrInUse,
++                    "TUN rule priorities conflict with existing unowned rules; choose a different iproute2-rule-index"));
++            }
++            let table = self.journal.table.to_string();
++            let args = if ipv6 {
++                vec!["-6", "-j", "route", "show", "table", table.as_str()]
++            } else {
++                vec!["-j", "route", "show", "table", table.as_str()]
++            };
++            let existing = output(&args)?;
++            for command in commands {
++                if let Some((offset, "route")) = command_kind(command) {
++                    let prefix = &command[offset + 2];
++                    let destination = if prefix == "0.0.0.0/0" || prefix == "::/0" {
++                        "default"
++                    } else {
++                        prefix
++                    };
++                    if existing.as_array().is_some_and(|routes| {
++                        routes.iter().any(|route| {
++                            route.get("dst").and_then(serde_json::Value::as_str)
++                                == Some(destination)
++                        })
++                    }) {
++                        return Err(io::Error::new(io::ErrorKind::AddrInUse,
++                            format!("TUN route {prefix} conflicts with an unowned route in table {table}")));
++                    }
++                }
++            }
++        }
++        Ok(())
++    }
++
++    pub(super) fn configure(&mut self, mut command: Vec<String>) -> io::Result<()> {
++        let Some((offset, _)) = command_kind(&command) else {
++            return self.run_owned_command(&command);
++        };
++        // `add` cannot overwrite a route owned by another application.
++        command[offset + 1] = "add".into();
++        command.extend(["protocol".into(), OWNED_PROTOCOL.into()]);
++        let mut undo = command.clone();
++        undo[offset + 1] = "del".into();
++        self.journal.undo.push(undo);
++        self.save()?;
++        self.run_owned_command(&command)
++    }
++
++    pub(super) fn set_device(&mut self, device: &str) {
++        self.journal.device = device.into();
++    }
++
++    fn run_owned_command(&self, args: &[String]) -> io::Result<()> {
++        for binary in ["/sbin/ip", "/usr/sbin/ip", "ip"] {
++            let mut command = Command::new(binary);
++            command.args(args);
++            let lock_fd = self._lock.as_raw_fd();
++            // Keep the lease in the ip child too. Otherwise SIGKILL between
++            // spawn and netlink completion could let a late child modify
++            // routing after the successor has already replayed the journal.
++            // dup is async-signal-safe; only this child inherits the duplicate.
++            unsafe {
++                command.pre_exec(move || {
++                    if libc::dup(lock_fd) < 0 {
++                        Err(io::Error::last_os_error())
++                    } else {
++                        Ok(())
++                    }
++                });
++            }
++            match command.output() {
++                Ok(result) if result.status.success() => return Ok(()),
++                Ok(result) => {
++                    return Err(io::Error::other(format!(
++                        "TUN owned ip command {}: {}",
++                        args.join(" "),
++                        String::from_utf8_lossy(&result.stderr).trim()
++                    )))
++                }
++                Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
++                Err(error) => return Err(error),
++            }
++        }
++        Err(io::Error::new(
++            io::ErrorKind::NotFound,
++            "ip utility unavailable",
++        ))
++    }
++
++    fn cleanup(&mut self) -> io::Result<()> {
++        while let Some(command) = self.journal.undo.last() {
++            let cleanup = if command_kind(command).is_some_and(|(_, kind)| kind == "rule") {
++                // Priorities were exclusively reserved before installation.
++                // Delete one owned rule per journal entry, even when a nop
++                // rule shares a priority with a long include/exclude list.
++                // Detached iif names after SIGKILL need no name resolution.
++                let priority = command
++                    .windows(2)
++                    .find(|pair| pair[0] == "priority")
++                    .ok_or_else(|| io::Error::other("owned rule has no priority"))?;
++                let mut cleanup = if command[0] == "-6" {
++                    vec!["-6".into()]
++                } else {
++                    Vec::new()
++                };
++                cleanup.extend([
++                    "rule".into(),
++                    "del".into(),
++                    "priority".into(),
++                    priority[1].clone(),
++                    "protocol".into(),
++                    OWNED_PROTOCOL.into(),
++                ]);
++                cleanup
++            } else {
++                command.clone()
++            };
++            if let Err(error) = self.run_owned_command(&cleanup) {
++                let message = error.to_string();
++                if !message.contains("Cannot find device")
++                    && !message.contains("No such process")
++                    && !message.contains("No such file or directory")
++                {
++                    return Err(error);
++                }
++            }
++            self.journal.undo.pop();
++            self.save()?;
++        }
++        match std::fs::remove_file(&self.path) {
++            Ok(()) => Ok(()),
++            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
++            Err(error) => Err(error),
++        }
++    }
++}
++
++impl Drop for LinuxTunRouteGuard {
++    fn drop(&mut self) {
++        if let Err(error) = self.cleanup() {
++            mihomo_core::push_log(
++                mihomo_core::LogLevel::Warn,
++                format!("TUN owned route cleanup: {error}"),
++            );
++        }
++    }
++}
+diff --git a/rust/crates/mihomo-tun/src/tests.rs b/rust/crates/mihomo-tun/src/tests.rs
+--- a/rust/crates/mihomo-tun/src/tests.rs
++++ b/rust/crates/mihomo-tun/src/tests.rs
+@@ -211,18 +211,18 @@
+     assert!(rendered.contains(&"rule add sport 1000-2000 goto 9010 priority 9000".to_owned()));
+     assert!(rendered.contains(&"rule add dport 443 goto 9010 priority 9001".to_owned()));
+     assert!(rendered.contains(&"rule add dport 8000-8100 goto 9010 priority 9001".to_owned()));
+-    assert!(rendered.contains(&"rule add uidrange 3000 goto 9010 priority 9002".to_owned()));
++    assert!(rendered.contains(&"rule add uidrange 3000-3000 goto 9010 priority 9002".to_owned()));
+     assert!(rendered.contains(&"rule add uidrange 4000-4999 goto 9010 priority 9002".to_owned()));
+     assert!(rendered.contains(&"rule add iif br-lan goto 9005 priority 9003".to_owned()));
+     assert!(rendered.contains(&"rule add goto 9010 priority 9004".to_owned()));
+     assert!(rendered.contains(&"rule add priority 9005".to_owned()));
+-    assert!(rendered.contains(&"rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
++    assert!(rendered.contains(&"rule add uidrange 1000-1000 goto 9008 priority 9006".to_owned()));
+     assert!(rendered.contains(&"rule add uidrange 2000-2999 goto 9008 priority 9006".to_owned()));
+     assert!(rendered.contains(&"rule add goto 9010 priority 9007".to_owned()));
+     assert!(rendered.contains(&"rule add priority 9008".to_owned()));
+     assert!(rendered.contains(&"rule add priority 9010".to_owned()));
+     assert!(rendered.contains(&"-6 rule add sport 53 goto 9010 priority 9000".to_owned()));
+     assert!(rendered.contains(&"-6 rule add dport 443 goto 9010 priority 9001".to_owned()));
+-    assert!(rendered.contains(&"-6 rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
++    assert!(rendered.contains(&"-6 rule add uidrange 1000-1000 goto 9008 priority 9006".to_owned()));
+     assert!(rendered.contains(&"-6 rule add priority 9010".to_owned()));
+ }
+diff --git a/scripts/domain-routing-smoke.py b/scripts/domain-routing-smoke.py
+--- a/scripts/domain-routing-smoke.py
++++ b/scripts/domain-routing-smoke.py
+@@ -108,7 +108,9 @@
+ elif job['mode']=='udp':
+  s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.settimeout(5);s.connect((job['ip'],job['port']))
+  for part in job['packets']:s.send(bytes.fromhex(part));time.sleep(.025)
+- data=s.recv(65535);print(data.decode(),flush=True);s.close()
++ replies=[json.loads(s.recv(65535)) for _ in job['packets']]
++ result=replies[0];result['reply_sha256']=[reply['sha256'] for reply in replies]
++ print(json.dumps(result),flush=True);s.close()
+ else:
+  s=socket.create_connection((job['ip'],job['port']),timeout=6);s.settimeout(6)
+  if job.get('tls'):s=ssl._create_unverified_context().wrap_socket(s,server_hostname=job['host'])
+@@ -231,6 +233,7 @@
+         wait_for(lambda:len([hit for hit in hits if hit['kind']=='udp'])>=before+len(case['packets']))
+         sent=[hit for hit in hits if hit['kind']=='udp'][before:];expected=[hashlib.sha256(bytes.fromhex(packet)).hexdigest() for packet in case['packets']]
+         check('QUIC exact datagrams '+case['domain'],[hit['sha256'] for hit in sent]==expected,sent)
++        check('QUIC all echoed datagrams '+case['domain'],sorted(result['reply_sha256'])==sorted(expected),result)
+     check('wire HTTPS query still forwarded',('hints.test',65) in dns_hits,dns_hits)
+     try:
+         client(dict(mode='tcp',ip='203.0.113.214',port=443,host='eof.test',tls=True,request=b'GET / HTTP/1.1\r\nHost: eof.test\r\n\r\n'.hex()))

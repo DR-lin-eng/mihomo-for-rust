@@ -1,0 +1,62 @@
+{
+  "before": {
+    "verified_echo_bytes": 4194304,
+    "calls": {
+      "recvfrom": 144,
+      "recvmsg": 2,
+      "sendto": 131
+    },
+    "core_alive": true,
+    "dns": {
+      "initial": "203.0.113.30",
+      "after_ttl": [
+        "203.0.113.31"
+      ],
+      "refreshed_after_ttl": true,
+      "ttl_upstream_requests": 2,
+      "concurrent_clients": 16,
+      "burst_upstream_requests": 16,
+      "burst_all_correct": true
+    },
+    "reload": {
+      "existing_tcp_preserved": false,
+      "new_tcp_works": true,
+      "error": "BrokenPipeError(32, 'Broken pipe')",
+      "elapsed_seconds": 0.6165608339942992,
+      "command": {
+        "returncode": 0
+      }
+    }
+  },
+  "after": {
+    "verified_echo_bytes": 4194304,
+    "calls": {
+      "recvmsg": 2,
+      "splice": 324,
+      "recvfrom": 12,
+      "sendto": 2,
+      "write": 2
+    },
+    "core_alive": true,
+    "dns": {
+      "initial": "203.0.113.30",
+      "after_ttl": [
+        "203.0.113.31"
+      ],
+      "refreshed_after_ttl": true,
+      "ttl_upstream_requests": 2,
+      "concurrent_clients": 16,
+      "burst_upstream_requests": 1,
+      "burst_all_correct": true
+    },
+    "reload": {
+      "existing_tcp_preserved": true,
+      "new_tcp_works": true,
+      "error": null,
+      "elapsed_seconds": 0.40143920900300145,
+      "command": {
+        "returncode": 0
+      }
+    }
+  }
+}

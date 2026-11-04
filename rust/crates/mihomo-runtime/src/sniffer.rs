@@ -403,6 +403,15 @@ impl Write for Replay {
     }
 }
 impl TcpStream for Replay {
+    #[cfg(target_os = "linux")]
+    fn splice_socket_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_socket_fd() }
+    #[cfg(target_os = "linux")]
+    fn splice_read_fd(&self) -> Option<std::os::fd::RawFd> {
+        (self.prefix.position() as usize >= self.prefix.get_ref().len())
+            .then(|| self.inner.splice_read_fd()).flatten()
+    }
+    #[cfg(target_os = "linux")]
+    fn splice_write_fd(&self) -> Option<std::os::fd::RawFd> { self.inner.splice_write_fd() }
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         self.inner.try_clone_box()
     }

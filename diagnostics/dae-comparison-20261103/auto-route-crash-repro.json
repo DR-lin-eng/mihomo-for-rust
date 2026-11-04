@@ -1,0 +1,9 @@
+{
+  "auto_route": true,
+  "first_start_ready": true,
+  "rules_after_sigkill": "0:\tfrom all lookup local\n8999:\tfrom all fwmark 0x636c746d lookup main\n9000:\tfrom all to 198.18.0.0/30 lookup 2022\n9001:\tnot from all dport 53 lookup main suppress_prefixlength 0\n9002:\tfrom all iif ar-tun [detached] lookup main\n9003:\tnot from all iif lo lookup 2022\n9004:\tfrom 0.0.0.0 iif lo lookup 2022\n9005:\tfrom 198.18.0.0/30 iif lo lookup 2022\n9010:\tfrom all lookup main\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n",
+  "restart_ready": false,
+  "restart_exit_code": 1,
+  "rules_after_restart": "0:\tfrom all lookup local\n8999:\tfrom all fwmark 0x636c746d lookup main\n9000:\tfrom all to 198.18.0.0/30 lookup 2022\n9001:\tnot from all dport 53 lookup main suppress_prefixlength 0\n9002:\tfrom all iif ar-tun [detached] lookup main\n9003:\tnot from all iif lo lookup 2022\n9004:\tfrom 0.0.0.0 iif lo lookup 2022\n9005:\tfrom 198.18.0.0/30 iif lo lookup 2022\n9010:\tfrom all lookup main\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n",
+  "core_log": "[TUN] interface ar-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[] auto-route=true\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=0 proxies=6 groups=1 providers=0 controllers=127.0.0.1:19091\napp start error: failed to start tun workers: failed to configure linux tun interface with `/sbin/ip rule add to 198.18.0.0/30 lookup 2022 priority 9000`: RTNETLINK answers: File exists\n"
+}

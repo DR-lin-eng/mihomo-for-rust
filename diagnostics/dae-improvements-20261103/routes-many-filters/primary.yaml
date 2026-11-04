@@ -1,0 +1,14 @@
+allow-lan: true
+ipv6: false
+external-controller: 127.0.0.1:19091
+log-level: warning
+tun:
+  enable: true
+  device: ar-tun
+  stack: mixed
+  auto-route: true
+  include-uid: [1000, 1002, 1004, 1006, 1008, 1010, 1012, 1014, 1016, 1018, 1020, 1022, 1024, 1026, 1028, 1030, 1032, 1034, 1036, 1038, 1040, 1042, 1044, 1046]
+  auto-redirect: false
+ebpf:
+  direct-offload: [ar-lan]
+rules: ['MATCH,DIRECT']

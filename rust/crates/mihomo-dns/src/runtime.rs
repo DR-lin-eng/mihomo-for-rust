@@ -22,6 +22,19 @@ use crate::{
 };
 
 impl DnsRuntime {
+    /// Compare resolver behavior without allocation, cache or persistence state.
+    /// A policy-only app reload must not retain a resolver compiled from older
+    /// provider data merely because the YAML DNS settings look unchanged.
+    pub fn has_same_policy(&self, other: &Self) -> bool {
+        self.config == other.config
+            && self.hosts == other.hosts
+            && self.fake_ip_matchers == other.fake_ip_matchers
+            && self.fake_ip_rules == other.fake_ip_rules
+            && self.nameserver_policies == other.nameserver_policies
+            && self.proxy_server_nameserver_policies == other.proxy_server_nameserver_policies
+            && self.fallback_domain_matchers == other.fallback_domain_matchers
+            && self.fallback_ip_matchers == other.fallback_ip_matchers
+    }
     pub fn from_document(document: &RuntimeConfigDocument) -> Result<Self, DnsError> {
         let empty_sources = BTreeMap::<String, String>::new();
         Self::from_document_with_rule_providers(document, &empty_sources, &empty_sources)

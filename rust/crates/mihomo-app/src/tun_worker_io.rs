@@ -8,10 +8,13 @@ fn write_frame(writer: &Arc<Mutex<File>>, frame: &[u8]) -> io::Result<()> {
 }
 
 fn write_frames(writer: &Arc<Mutex<File>>, frames: &[Vec<u8>]) -> io::Result<()> {
+    if frames.is_empty() { return Ok(()); }
+    let mut file = writer.lock().map_err(|_| io::Error::other("tun worker write mutex poisoned"))?;
     for frame in frames {
-        write_frame(writer, frame)?;
+        trace_tun_tcp_frame("egress", frame);
+        file.write_all(frame)?;
     }
-    Ok(())
+    file.flush()
 }
 
 fn tun_tcp_trace_enabled() -> bool {
@@ -54,19 +57,19 @@ fn trace_tun_tcp_event(inbound_name: &str, event: &str) {
 
 fn open_tun_reader_writer(
     spec: &TunRuntimeSpec,
-) -> io::Result<Option<(File, Arc<Mutex<File>>)>> {
+) -> io::Result<Option<(File, Arc<Mutex<File>>, Option<TunRouteGuard>)>> {
     if spec.config.file_descriptor > 0 {
         let fd = spec.config.file_descriptor;
         let reader = clone_fd_as_file(fd)?;
         let writer = Arc::new(Mutex::new(clone_fd_as_file(fd)?));
-        return Ok(Some((reader, writer)));
+        return Ok(Some((reader, writer, None)));
     }
 
     #[cfg(target_os = "linux")]
     {
-        let reader = open_linux_tun_device(spec)?;
+        let (reader, routes) = open_linux_tun_device(spec)?.into_parts();
         let writer = Arc::new(Mutex::new(reader.try_clone()?));
-        return Ok(Some((reader, writer)));
+        return Ok(Some((reader, writer, routes)));
     }
 
     #[cfg(not(target_os = "linux"))]

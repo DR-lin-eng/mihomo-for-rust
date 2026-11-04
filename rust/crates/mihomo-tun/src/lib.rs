@@ -12,6 +12,7 @@ mod tests;
 pub use linux::{
     cleanup_linux_tun_interface, linux_tun_setup_commands, open_linux_tun_device,
     requested_linux_tun_name,
+    LinuxTunDevice, LinuxTunRouteGuard,
 };
 pub use runtime_spec::{TunRuntimeSpec, TunUdpRuntimeMode};
 

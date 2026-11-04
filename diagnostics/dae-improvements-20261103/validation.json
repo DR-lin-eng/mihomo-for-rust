@@ -1,0 +1,141 @@
+{
+  "core": "/results/mihomo-after",
+  "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15",
+  "status": [
+    {
+      "name": "behavior",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 60,
+      "checks": 60,
+      "seconds": 6.9429947540629655,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-crash",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 9,
+      "checks": 9,
+      "seconds": 0.37552616698667407,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-concurrent",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 8,
+      "checks": 8,
+      "seconds": 0.8982797929784283,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-foreign-rule",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 5,
+      "checks": 5,
+      "seconds": 0.12039229203946888,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-startup-failure",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 9,
+      "checks": 9,
+      "seconds": 0.32770566595718265,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-many-filters",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 6,
+      "checks": 6,
+      "seconds": 0.34251874999608845,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "routes-interrupted-startup",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 10,
+      "checks": 10,
+      "seconds": 1.5689511250238866,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "kernel",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 69,
+      "checks": 69,
+      "seconds": 12.996163629926741,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "traffic-mixed",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 110,
+      "checks": 110,
+      "seconds": 61.50804981903639,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "traffic-redir",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 110,
+      "checks": 110,
+      "seconds": 61.87501815299038,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "tls-tun",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 11,
+      "checks": 11,
+      "seconds": 3.880815834971145,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "smart",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 39,
+      "checks": 39,
+      "seconds": 14.943124505924061,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "direct-packets",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 35,
+      "checks": 35,
+      "seconds": 0.12427008303347975,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "legacy-packets",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 33,
+      "checks": 33,
+      "seconds": 0.07471316598821431,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    },
+    {
+      "name": "domain",
+      "returncode": 0,
+      "passed": true,
+      "passed_checks": 100,
+      "checks": 100,
+      "seconds": 8.332012046012096,
+      "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+    }
+  ]
+}

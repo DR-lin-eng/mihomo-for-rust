@@ -1,0 +1,65 @@
+{
+  "environment": {
+    "kernel": "6.12.76-linuxkit",
+    "machine": "aarch64",
+    "affinity": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "cpu_max": "400000 100000",
+    "iperf_version": "iperf 3.12 (cJSON 1.7.15)"
+  },
+  "modes": [
+    {
+      "mode": "rust-redir-socks",
+      "benchmarks": [],
+      "functional": {
+        "tcp_512k_integrity": true,
+        "server_observed_peer": "203.0.113.30",
+        "expected_peer": "203.0.113.30",
+        "path_verified": true,
+        "connect_and_echo_ms": {
+          "median": 201.10600005136803,
+          "p95": 202.7277919696644
+        },
+        "process": {
+          "VmHWM": 10344,
+          "VmRSS": 10344,
+          "Threads": 15,
+          "user_seconds": 0.01,
+          "system_seconds": 0.08,
+          "bpf_memlock_bytes": 8394880
+        }
+      },
+      "dns": {
+        "initial": "203.0.113.30",
+        "after_ttl": [
+          "203.0.113.31"
+        ],
+        "refreshed_after_ttl": true,
+        "ttl_upstream_requests": 2,
+        "concurrent_clients": 16,
+        "burst_upstream_requests": 16,
+        "burst_all_correct": true
+      },
+      "reload": {
+        "existing_tcp_preserved": false,
+        "new_tcp_works": true,
+        "error": "BrokenPipeError(32, 'Broken pipe')",
+        "elapsed_seconds": 0.6165608339942992,
+        "command": {
+          "returncode": 0
+        }
+      },
+      "completed": true
+    }
+  ],
+  "versions": {
+    "dae": "dae version 0.0.0.nightly.20261031.r865.29a702\ngo runtime go1.27.3-X:heapminimum512kib,newinliner,simd linux/arm64\nCopyright (c) 2022-2026 @daeuniverse\nLicense GNU AGPLv3 <https://github.com/daeuniverse/dae/blob/main/LICENSE>",
+    "rust": "Mihomo Meta 0.1.0 linux aarch64 with rustc 1.88.0 (6b00bc388 2025-06-23) unknown time variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload smart ebpf",
+    "dae_sha256": "a863ced782cc770bb67a90c6e1a1c68c7311ba795ee4da2c09cfabb83a8748db",
+    "rust_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562"
+  }
+}

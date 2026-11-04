@@ -60,6 +60,8 @@ pub(super) fn udp_loop(
     udp_queue: Arc<UdpDispatchQueue>,
 ) {
     let socket = Arc::new(socket);
+    let session_pool = Arc::new(crate::tun_packet::TunUdpSessionPool::new_with_timeout(
+        super::transparent::TRANSPARENT_UDP_IDLE_TIMEOUT));
     while !shutdown.load(Ordering::Relaxed) {
         match &listener.handler {
             ManagedUdpListenerHandler::Redir(config) => {
@@ -67,6 +69,7 @@ pub(super) fn udp_loop(
                     Ok(Some((payload, peer_addr, target_addr))) => {
                         let inbound_listener_addr = socket.local_addr().unwrap_or(peer_addr);
                         udp_queue.push(UdpDispatchTask::Transparent {
+                            session_pool: session_pool.clone(),
                             inbound_listener_addr,
                             peer_addr,
                             target_addr,
@@ -93,6 +96,7 @@ pub(super) fn udp_loop(
                     Ok(Some((payload, peer_addr, target_addr))) => {
                         let inbound_listener_addr = socket.local_addr().unwrap_or(peer_addr);
                         udp_queue.push(UdpDispatchTask::Transparent {
+                            session_pool: session_pool.clone(),
                             inbound_listener_addr,
                             peer_addr,
                             target_addr,
@@ -143,6 +147,7 @@ pub(super) fn udp_loop(
             }
         }
     }
+    session_pool.shutdown();
 }
 
 pub(super) fn dns_loop(
@@ -220,6 +225,10 @@ pub(super) fn handle_socks5_udp_associate(
     udp_socket.set_read_timeout(Some(LISTENER_POLL_TIMEOUT))?;
     let bind_addr = udp_socket.local_addr()?;
     write_socks5_udp_associate_reply(&mut *associate.stream, bind_addr)?;
+    // The accept path arms a short handshake deadline. The control channel is
+    // established now and may legitimately remain idle while UDP packets use
+    // the associated socket.
+    let _ = associate.stream.set_timeouts(None, None);
 
     let stop = Arc::new(AtomicBool::new(false));
     let udp_socket = Arc::new(udp_socket);

@@ -1,14 +1,23 @@
 //! Live byte totals and a shared one-second throughput sample. Sampling is
 //! based on monotonic time, never on how often an API consumer polls.
 use crate::TrafficSnapshot;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
 
 #[derive(Debug)]
 pub(crate) struct TrafficMeter {
     started: Instant,
-    window: Mutex<Window>,
+    windows: Vec<Shard>,
+}
+
+// Keep independently updated windows off the same CPU cache line.
+#[derive(Debug)]
+#[repr(align(128))]
+struct Shard(Mutex<Window>);
+static NEXT_RECORDER: AtomicUsize = AtomicUsize::new(0);
+thread_local! {
+    static RECORDER: usize = NEXT_RECORDER.fetch_add(1, Ordering::Relaxed);
 }
 #[derive(Debug, Default)]
 struct Window {
@@ -21,7 +30,13 @@ impl Default for TrafficMeter {
     fn default() -> Self {
         Self {
             started: Instant::now(),
-            window: Mutex::new(Window::default()),
+            windows: (0..std::thread::available_parallelism()
+                .map(usize::from)
+                .unwrap_or(1)
+                .saturating_mul(4)
+                .clamp(4, 64))
+                .map(|_| Shard(Mutex::new(Window::default())))
+                .collect(),
         }
     }
 }
@@ -63,7 +78,8 @@ impl TrafficMeter {
         if bytes == 0 {
             return;
         }
-        let mut window = self.window.lock().unwrap();
+        let index = RECORDER.with(|index| *index % self.windows.len());
+        let mut window = self.windows[index].0.lock().unwrap();
         if let Some(counter) = counter {
             counter.fetch_add(bytes, Ordering::Relaxed);
         }
@@ -74,9 +90,30 @@ impl TrafficMeter {
     }
 
     pub(crate) fn with_snapshot<T>(&self, sample: impl FnOnce(TrafficSnapshot) -> T) -> T {
-        let mut window = self.window.lock().unwrap();
-        let snapshot = window.snapshot(self.started.elapsed().as_secs());
-        sample(snapshot)
+        // Freeze all recorders through the callback so /connections still sees
+        // byte totals and per-flow counters at one consistent point in time.
+        let mut windows: Vec<_> = self
+            .windows
+            .iter()
+            .map(|shard| shard.0.lock().unwrap())
+            .collect();
+        let epoch = self.started.elapsed().as_secs();
+        let mut total = TrafficSnapshot {
+            up: 0,
+            down: 0,
+            up_total: 0,
+            down_total: 0,
+        };
+        for window in &mut windows {
+            let snapshot = window.snapshot(epoch);
+            total.up = total.up.saturating_add(snapshot.up);
+            total.down = total.down.saturating_add(snapshot.down);
+            total.up_total = total.up_total.saturating_add(snapshot.up_total);
+            total.down_total = total.down_total.saturating_add(snapshot.down_total);
+        }
+        let result = sample(total);
+        drop(windows);
+        result
     }
 }
 
@@ -109,6 +146,34 @@ mod tests {
         });
         assert_eq!(meter.snapshot().up_total, 310_000);
         assert_eq!(meter.snapshot().down_total, 730_000);
+    }
+
+    #[test]
+    fn parallel_recorders_preserve_exact_totals_while_sampling() {
+        let meter = TrafficMeter::default();
+        let counters: Vec<_> = (0..16).map(|_| AtomicU64::new(0)).collect();
+        std::thread::scope(|scope| {
+            for counter in &counters {
+                let meter = &meter;
+                scope.spawn(move || {
+                    for _ in 0..2000 {
+                        meter.record(false, 16384, Some(counter));
+                    }
+                });
+            }
+            for _ in 0..100 {
+                meter.with_snapshot(|sample| {
+                    assert_eq!(
+                        sample.down_total,
+                        counters
+                            .iter()
+                            .map(|counter| counter.load(Ordering::Relaxed))
+                            .sum::<u64>()
+                    )
+                });
+            }
+        });
+        assert_eq!(meter.snapshot().down_total, 16 * 2000 * 16384);
     }
 
     #[test]

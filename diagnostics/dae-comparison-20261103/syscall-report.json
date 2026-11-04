@@ -1,0 +1,86 @@
+{
+  "environment": {
+    "kernel": "6.12.76-linuxkit",
+    "machine": "aarch64",
+    "affinity": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "cpu_max": "400000 100000",
+    "iperf_version": "iperf 3.12 (cJSON 1.7.15)"
+  },
+  "modes": [
+    {
+      "mode": "dae-socks",
+      "benchmarks": [],
+      "functional": {
+        "tcp_512k_integrity": true,
+        "server_observed_peer": "203.0.113.30",
+        "expected_peer": "203.0.113.30",
+        "path_verified": true,
+        "connect_and_echo_ms": {
+          "median": 1.6908334218896925,
+          "p95": 3.9961669826880097
+        },
+        "process": {
+          "VmHWM": 54876,
+          "VmRSS": 43376,
+          "Threads": 11,
+          "user_seconds": 0.08,
+          "system_seconds": 0.19,
+          "bpf_memlock_bytes": 5683488
+        }
+      },
+      "syscalls": {
+        "verified_echo_bytes": 4194304,
+        "calls": {
+          "splice": 139,
+          "read": 5,
+          "write": 3
+        },
+        "core_alive": true
+      },
+      "completed": true
+    },
+    {
+      "mode": "rust-redir-socks",
+      "benchmarks": [],
+      "functional": {
+        "tcp_512k_integrity": true,
+        "server_observed_peer": "203.0.113.30",
+        "expected_peer": "203.0.113.30",
+        "path_verified": true,
+        "connect_and_echo_ms": {
+          "median": 200.70312498137355,
+          "p95": 219.10037496127188
+        },
+        "process": {
+          "VmHWM": 9976,
+          "VmRSS": 5936,
+          "Threads": 15,
+          "user_seconds": 0.0,
+          "system_seconds": 0.09,
+          "bpf_memlock_bytes": 8394880
+        }
+      },
+      "syscalls": {
+        "verified_echo_bytes": 4194304,
+        "calls": {
+          "recvfrom": 153,
+          "sendto": 137,
+          "recvmsg": 2
+        },
+        "core_alive": true
+      },
+      "completed": true
+    }
+  ],
+  "versions": {
+    "dae": "dae version 0.0.0.nightly.20261031.r865.29a702\ngo runtime go1.27.3-X:heapminimum512kib,newinliner,simd linux/arm64\nCopyright (c) 2022-2026 @daeuniverse\nLicense GNU AGPLv3 <https://github.com/daeuniverse/dae/blob/main/LICENSE>",
+    "rust": "Mihomo Meta 0.1.0 linux aarch64 with rustc 1.88.0 (6b00bc388 2025-06-23) unknown time variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload smart ebpf",
+    "dae_sha256": "a863ced782cc770bb67a90c6e1a1c68c7311ba795ee4da2c09cfabb83a8748db",
+    "rust_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562"
+  }
+}

@@ -1,0 +1,22 @@
+global {
+  lan_interface: cmp-lan
+  log_level: info
+  disable_waiting_network: true
+  auto_config_kernel_parameter: true
+  dial_mode: ip
+  so_mark_from_dae: 0
+  bpf_conn_state_map_size: 4096
+  tcp_check_url: 'http://203.0.113.30:18080,203.0.113.30'
+  udp_check_dns: '203.0.113.30:53,203.0.113.30'
+  check_interval: 1h
+}
+dns {
+  optimistic_cache: true
+  optimistic_cache_ttl: 3
+  upstream { local: 'udp://203.0.113.30:53' }
+  routing { request { fallback: local } }
+}
+routing {
+  dport(53) -> direct
+  fallback: direct
+}

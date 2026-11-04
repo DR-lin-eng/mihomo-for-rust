@@ -10,6 +10,8 @@ Linux TC eBPF capture supports the legacy `redirect-to-tun` and `auto-redir` con
 
 Memory use is reduced through shared configuration snapshots, compact Smart models, bounded DNS/UDP state, and TC loading without the kernel BTF parse. See [measurements and limits](../docs/rust-rewrite/memory-optimization.md).
 
+Linux runtime improvements add concurrent DNS query sharing, policy reloads that preserve established TCP connections, capability-gated TCP splice, persistent transparent UDP sessions, and owned TUN route recovery after a crash. See [behavior, scope, and validation](../docs/rust-rewrite/dae-inspired-improvements.md).
+
 ## Docker Build
 
 Current dependencies require a newer stable Rust than the original scaffold documentation assumed.

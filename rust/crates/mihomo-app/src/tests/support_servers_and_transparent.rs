@@ -970,17 +970,28 @@ rules:
 
         let upstream = UdpSocket::bind("127.0.0.1:0").unwrap();
         let upstream_addr = upstream.local_addr().unwrap();
+        // This unit fixture puts the upstream and transparent reply socket in
+        // one namespace. Real LAN/WAN targets live in separate namespaces.
+        // Permit the reply socket to bind this source port while the upstream
+        // remains alive to send its unsolicited second response.
+        let enabled: libc::c_int = 1;
+        assert_eq!(unsafe { libc::setsockopt(std::os::fd::AsRawFd::as_raw_fd(&upstream),
+            libc::SOL_SOCKET, libc::SO_REUSEADDR, &enabled as *const _ as *const libc::c_void,
+            std::mem::size_of_val(&enabled) as libc::socklen_t) }, 0);
         let upstream_worker = thread::spawn(move || {
             let mut buf = [0_u8; 2048];
             let (read, from) = upstream.recv_from(&mut buf).unwrap();
             assert_eq!(&buf[..read], b"ping-tproxy-udp");
             upstream.send_to(b"pong-tproxy-udp", from).unwrap();
+            thread::sleep(Duration::from_millis(25));
+            upstream.send_to(b"later-tproxy-udp", from).unwrap();
         });
 
         let listener_addr = UdpSocket::bind("127.0.0.1:0")
             .unwrap()
             .local_addr()
             .unwrap();
+        let session_pool = Arc::new(crate::tun_packet::TunUdpSessionPool::default());
         crate::listener_service::transparent::handle_tproxy_udp_packet(
             listener_addr,
             client_addr,
@@ -992,6 +1003,7 @@ rules:
             String::new(),
             None,
             mihomo_core::SessionKind::TProxy,
+            session_pool.clone(),
         )
         .unwrap();
 
@@ -999,7 +1011,11 @@ rules:
         let (read, from) = client.recv_from(&mut buf).unwrap();
         assert_eq!(&buf[..read], b"pong-tproxy-udp");
         assert_eq!(from, upstream_addr);
+        let (read, from) = client.recv_from(&mut buf).unwrap();
+        assert_eq!(&buf[..read], b"later-tproxy-udp");
+        assert_eq!(from, upstream_addr);
         upstream_worker.join().unwrap();
+        session_pool.shutdown();
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {

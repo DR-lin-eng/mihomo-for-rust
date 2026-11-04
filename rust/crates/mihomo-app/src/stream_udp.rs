@@ -27,6 +27,9 @@ where
         + Sync
         + 'static,
 {
+    // The listener accept path arms a short deadline for protocol setup. Once
+    // the stream decoder has been negotiated, UDP-over-TCP may remain idle.
+    let _ = stream.set_timeouts(None, None);
     let local_addr = SocketAddr::from(([0, 0, 0, 0], 0));
     let peer_addr = peer_addr.unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 0)));
     let stream = Arc::new(Mutex::new(stream));

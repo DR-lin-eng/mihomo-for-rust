@@ -3,6 +3,9 @@ use serde::Serialize;
 use std::io;
 use std::net::SocketAddr;
 
+mod direct_types;
+pub use direct_types::*;
+
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
@@ -13,6 +16,7 @@ pub struct EbpfStatus {
     pub supported: bool,
     pub running: bool,
     pub interfaces: Vec<InterfaceStatus>,
+    pub direct_offload: DirectOffloadStatus,
 }
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct InterfaceStatus {
@@ -37,6 +41,16 @@ pub struct Counters {
 pub struct EbpfRuntime;
 #[cfg(not(target_os = "linux"))]
 impl EbpfRuntime {
+    pub fn direct_ready(&self) -> bool { false }
+    pub fn direct_pending(&self, _key: &DirectFlowKey) -> bool { false }
+    pub fn direct_fragment(&self, _key: &DirectFragmentKey) -> Option<DirectFlowKey> { None }
+    pub fn direct_remember_fragment(&self, _fragment: DirectFragmentKey, _key: DirectFlowKey) {}
+    pub fn direct_contains(&self, _key: &DirectFlowKey) -> bool { false }
+    pub fn direct_install(&self, _key: DirectFlowKey, _target: SocketAddr, _id: u64, _timeout_secs: u64) -> io::Result<bool> { Ok(false) }
+    pub fn direct_samples(&self) -> Vec<DirectFlowSample> { Vec::new() }
+    pub fn direct_close(&self, _key: &DirectFlowKey) {}
+    pub fn direct_forget(&self, _key: &DirectFlowKey) {}
+    pub fn direct_invalidate_udp(&self) {}
     pub fn install(document: &RuntimeConfigDocument) -> io::Result<Option<Self>> {
         if document.ebpf.enabled() {
             Err(io::Error::new(

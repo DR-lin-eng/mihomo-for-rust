@@ -1,0 +1,22 @@
+allow-lan: true
+ipv6: false
+log-level: warning
+external-controller: 127.0.0.1:19090
+redir-port: 17892
+mode: rule
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  enhanced-mode: redir-host
+  nameserver: [udp://203.0.113.30:53]
+tun:
+  enable: true
+  device: cmp-tun
+  stack: mixed
+  mtu: 1500
+  auto-route: false
+  auto-redirect: false
+  dns-hijack: [any:53]
+proxies:
+  - {name: bench, type: socks5, server: 203.0.113.30, port: 1080, udp: true}
+rules: ['MATCH,bench']

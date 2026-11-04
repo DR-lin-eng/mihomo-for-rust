@@ -408,17 +408,21 @@ pub(crate) fn relay_shared_query_packet(
     tunnel: Arc<RuntimeTunnel>, payload: &[u8],
 ) -> Result<Option<Vec<u8>>, DnsError> {
     let shared = tunnel.dns_runtime().ok_or_else(|| DnsError::Io("DNS runtime unavailable".into()))?;
-    let mut runtime = {
+    {
         let mut guard = shared.lock().unwrap();
         if let Some(response) = guard.local_query_packet(payload)? {
             return Ok(Some(response));
         }
-        guard.clone().without_fake_ip_persistence()
-    };
-    let default_proxy = if runtime.config.respect_rules { "RULES" } else { "DIRECT" };
-    let transport = TunnelDnsPacketTransport::new(tunnel, Some(runtime.clone()), default_proxy);
-    let mut upstream = mihomo_dns::NetworkDnsUpstream::new(transport);
-    let response = runtime.exchange_query_packet(payload, &mut upstream)?;
-    shared.lock().unwrap().merge_cache_from(&runtime);
-    Ok(Some(response))
+    }
+    let scope = Arc::as_ptr(&shared) as usize;
+    let query_tunnel = Arc::clone(&tunnel);
+    tunnel.coalesce_dns_query(scope, payload, || {
+        let mut runtime = shared.lock().unwrap().clone().without_fake_ip_persistence();
+        let default_proxy = if runtime.config.respect_rules { "RULES" } else { "DIRECT" };
+        let transport = TunnelDnsPacketTransport::new(query_tunnel, Some(runtime.clone()), default_proxy);
+        let mut upstream = mihomo_dns::NetworkDnsUpstream::new(transport);
+        let response = runtime.exchange_query_packet(payload, &mut upstream)?;
+        shared.lock().unwrap().merge_cache_from(&runtime);
+        Ok(Some(response))
+    })
 }

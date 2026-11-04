@@ -54,6 +54,19 @@ impl RuleSet {
             .map(|matched| matched.to_definition())
     }
 
+    /// Whether a missing real destination could change the ordered decision.
+    /// Stop at an already definitive earlier rule to avoid unnecessary DNS.
+    pub fn needs_destination_ip(&self, metadata:&Metadata)->bool {
+        if metadata.dst_ip.is_some(){return false;}
+        let selected=self.sub_rules.get(metadata.special_rules.as_str()).map(Vec::as_slice).unwrap_or(&self.rules);
+        for rule in selected {
+            if rule.runtime.disabled.load(Ordering::Relaxed){continue;}
+            if rule.matcher.needs_destination_ip() || matches!(rule.action,RuleAction::SubRule(_)){return true;}
+            if self.matching_rule(rule,metadata,false).is_some(){return false;}
+        }
+        false
+    }
+
     /// Identity of the actual matched rule and its collection size. This uses
     /// the compiled matcher, including sub-rules and disabled-rule state.
     pub fn smart_rule_identity(&self,metadata:&Metadata)->Option<(String,usize)> {
@@ -313,6 +326,19 @@ pub(crate) enum RuleMatcher {
     Or(Vec<RuleMatcher>),
     Not(Box<RuleMatcher>),
     Match,
+}
+
+impl RuleMatcher {
+    fn needs_destination_ip(&self)->bool {
+        match self {
+            Self::IpCidr(_)=>true,
+            Self::And(v)|Self::Or(v)=>v.iter().any(Self::needs_destination_ip),
+            Self::Not(v)=>v.needs_destination_ip(),
+            Self::RuleSet(CompiledRuleProvider::IpCidr(_)|CompiledRuleProvider::IpMrs(_))=>true,
+            Self::RuleSet(CompiledRuleProvider::Classical(v))=>v.iter().any(Self::needs_destination_ip),
+            _=>false,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

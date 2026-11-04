@@ -1,0 +1,156 @@
+{
+  "dae_release": {
+    "tag_name": "nightly",
+    "target_commitish": "29a70280fd7e0e73233e623d6dcd004c245882e2",
+    "published_at": "2026-09-25T02:45:46Z",
+    "html_url": "https://github.com/daeuniverse/dae/releases/tag/nightly"
+  },
+  "dae_asset": {
+    "name": "dae-linux-arm64.tar.xz",
+    "digest": "sha256:ddef354f4d73a7e75ff4a7df338376a1e81d26ffceeddac6cf0dfa4381b72d58",
+    "size": 10546512,
+    "updated_at": "2026-10-31T12:18:50Z",
+    "browser_download_url": "https://github.com/daeuniverse/dae/releases/download/nightly/dae-linux-arm64.tar.xz"
+  },
+  "rust_binary_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+  "rust_source_checks": [
+    {
+      "path": "rust/crates/mihomo-config/src/document.rs",
+      "expected": "f1925d0e02d5958211b4c4dcf496265454cf59a551e51c685c73f33ead712f6a",
+      "actual": "f1925d0e02d5958211b4c4dcf496265454cf59a551e51c685c73f33ead712f6a",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-config/src/validation.rs",
+      "expected": "d05b6aa90ff1ecbfcb0a78a7f9a01753881e4288e0a747581a05ebcd68bc22f2",
+      "actual": "d05b6aa90ff1ecbfcb0a78a7f9a01753881e4288e0a747581a05ebcd68bc22f2",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-config/src/tests.rs",
+      "expected": "044c3465132100ffa474d996567c6c2a5e1d5a45330ca252abdc1b72fb2565b8",
+      "actual": "044c3465132100ffa474d996567c6c2a5e1d5a45330ca252abdc1b72fb2565b8",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/src/lib.rs",
+      "expected": "4fcae0a5a88fa67251859dd866da7f2274ffc52576322e0c0e0386315ee04ce8",
+      "actual": "4fcae0a5a88fa67251859dd866da7f2274ffc52576322e0c0e0386315ee04ce8",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/src/direct_types.rs",
+      "expected": "fe10a5b90e7b65ecaba21552ce54a961d06e67fbcf6d8b5406f1ec1af81d8fd9",
+      "actual": "fe10a5b90e7b65ecaba21552ce54a961d06e67fbcf6d8b5406f1ec1af81d8fd9",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/src/linux.rs",
+      "expected": "5af1ca829fc72a4db47e75fad6cc4c3c9e93b9e0803bfe773b3e73d8c6403f89",
+      "actual": "5af1ca829fc72a4db47e75fad6cc4c3c9e93b9e0803bfe773b3e73d8c6403f89",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/src/linux/direct.rs",
+      "expected": "ff1cce9c49506da3e6c8484bd463a81973d216b7490320eac29de7e48bf96857",
+      "actual": "ff1cce9c49506da3e6c8484bd463a81973d216b7490320eac29de7e48bf96857",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/bpf/direct.c",
+      "expected": "912ca70e46c47b1b222828e3658f8d4f92d025ba0434a01c736923cc898c7837",
+      "actual": "912ca70e46c47b1b222828e3658f8d4f92d025ba0434a01c736923cc898c7837",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/bpf/direct.bpfel.o",
+      "expected": "b1c330d85857660eb0a6d0ed721cf0374818cf07ef30d711f0e0061494ab7f7b",
+      "actual": "b1c330d85857660eb0a6d0ed721cf0374818cf07ef30d711f0e0061494ab7f7b",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-ebpf/bpf/direct.bpfeb.o",
+      "expected": "8e042207f0ae83b8174c2144dc15cdaa1a0c970b6994236f53d71c99859dc3ad",
+      "actual": "8e042207f0ae83b8174c2144dc15cdaa1a0c970b6994236f53d71c99859dc3ad",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-app/src/tun_kernel_direct.rs",
+      "expected": "3eac77c0c8d4921642461271d10eb5161a1364a55e1308b15dba662d021c20e2",
+      "actual": "3eac77c0c8d4921642461271d10eb5161a1364a55e1308b15dba662d021c20e2",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-app/src/tun_worker_loop.rs",
+      "expected": "e506491ad298b612794c3399f5858bd1ac8fe5a0c43cc6a6c54e8e65ccf68120",
+      "actual": "e506491ad298b612794c3399f5858bd1ac8fe5a0c43cc6a6c54e8e65ccf68120",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-app/src/listener_service_runner.rs",
+      "expected": "961454dd8dccea4718e78691458b0f0f4b0c6e74628b3842eba0d0312bd5ce5a",
+      "actual": "961454dd8dccea4718e78691458b0f0f4b0c6e74628b3842eba0d0312bd5ce5a",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-runtime/src/kernel_direct.rs",
+      "expected": "b0a87043226c6c573bb1fb8b445696a0b433fcdb7f1ed7956bca1b3ee78d7cbe",
+      "actual": "b0a87043226c6c573bb1fb8b445696a0b433fcdb7f1ed7956bca1b3ee78d7cbe",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-runtime/src/tunnel_runtime.rs",
+      "expected": "1cfdc51cb3324d6c7b64ee0f39ce3fa28738d24a669995cbb99de9cc33e490a6",
+      "actual": "1cfdc51cb3324d6c7b64ee0f39ce3fa28738d24a669995cbb99de9cc33e490a6",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-rules/src/engine.rs",
+      "expected": "b97bf22979b2a7deca890fc7a38c4762b69692bf791acb0826ff2ec691177226",
+      "actual": "b97bf22979b2a7deca890fc7a38c4762b69692bf791acb0826ff2ec691177226",
+      "matches": true
+    },
+    {
+      "path": "rust/crates/mihomo-api/src/server.rs",
+      "expected": "34d1bdc701aebd4a7739f30e548c6ab33bba9eef17978affdefb95c801131895",
+      "actual": "34d1bdc701aebd4a7739f30e548c6ab33bba9eef17978affdefb95c801131895",
+      "matches": true
+    },
+    {
+      "path": "scripts/kernel-direct-smoke.py",
+      "expected": "eb22885b79f2973e7fe27aa642c666003f1f2f928ccd037b196cc3b58dcc5cc7",
+      "actual": "eb22885b79f2973e7fe27aa642c666003f1f2f928ccd037b196cc3b58dcc5cc7",
+      "matches": true
+    },
+    {
+      "path": "scripts/kernel-direct-packet-tests.py",
+      "expected": "4f6e6eb9a7e55d2890502fcce3bb268491c2a1ee221d7b006de4dd0f1a7de6f9",
+      "actual": "4f6e6eb9a7e55d2890502fcce3bb268491c2a1ee221d7b006de4dd0f1a7de6f9",
+      "matches": true
+    },
+    {
+      "path": "scripts/build-ebpf.sh",
+      "expected": "27f4a03fb98f4c6664a0991ac3e10fc4331c03d4f7120d0e0a077ddbed1181ab",
+      "actual": "27f4a03fb98f4c6664a0991ac3e10fc4331c03d4f7120d0e0a077ddbed1181ab",
+      "matches": true
+    }
+  ],
+  "docker": {
+    "base_image": "sha256:0e2bcaef56d041a486784e54104a81aebe0da44bd03019bd70bc0401e42e4a97",
+    "cpuset": "4-7",
+    "cpu_quota": 4,
+    "memory_bytes": 3221225472,
+    "network": "bridge",
+    "privileged": true,
+    "bpftool": "v7.1.0 libbpf v1.1",
+    "strace": "6.1"
+  },
+  "dae_archive_local_path": "/private/tmp/dae-study.c5yARI/dae-linux-arm64.tar.xz",
+  "diagnostic_scripts_sha256": {
+    "crash-repro.py": "3eb7f7c8c6682b52d91455a072f2b0eca9b891b4e4b4fc27e5ce8af46ba85517",
+    "summarize.py": "af762db9029bc05d50156861964864cf607d9ca654901d4b74a1ecf27c39ccd1",
+    "regressions.py": "5ea4edc54cd3d73d1eccf092ba0d38744fbe5a17a41b113aabbe52d3fc9d0a3b",
+    "compare.py": "549e07c4218508a59a8ad690b8705cc0d696635401d72cde9c7feb74e85e1fa6",
+    "fixtures.py": "08dff094c77fa76fed6b9636749b23893c57ef58dcc00118b50dd00da548d0d0"
+  }
+}

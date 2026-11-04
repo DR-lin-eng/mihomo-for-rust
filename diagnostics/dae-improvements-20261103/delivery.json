@@ -1,0 +1,27 @@
+[
+  {
+    "path": "bin/mihomo-rust-openwrt-arm64-dae-improved",
+    "size": 28740392,
+    "sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+  },
+  {
+    "path": "bin/mihomo-rust-openwrt-arm64-dae-improved.gz",
+    "size": 12860173,
+    "sha256": "018f394eb466e130a7606709b90f8e1ebbe06720631aec8a76014b4dbfa4a640"
+  },
+  {
+    "path": "bin/Clash.Core",
+    "size": 28740392,
+    "sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+  },
+  {
+    "path": "bin/Clash.Core.gz",
+    "size": 12860173,
+    "sha256": "018f394eb466e130a7606709b90f8e1ebbe06720631aec8a76014b4dbfa4a640"
+  },
+  {
+    "path": "bin/Clash.Core.before-dae-improvements",
+    "size": 28543784,
+    "sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562"
+  }
+]

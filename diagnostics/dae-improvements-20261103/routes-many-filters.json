@@ -1,0 +1,477 @@
+{
+  "passed": true,
+  "case": "many-filters",
+  "checks": [
+    {
+      "name": "primary core starts",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "owned routes and rules carry protocol 242",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 8999,
+            "src": "all",
+            "fwmark": "0x636c746d",
+            "table": "main"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1000,
+            "uid_end": 1000,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1002,
+            "uid_end": 1002,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1004,
+            "uid_end": 1004,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1006,
+            "uid_end": 1006,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1008,
+            "uid_end": 1008,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1010,
+            "uid_end": 1010,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1012,
+            "uid_end": 1012,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1014,
+            "uid_end": 1014,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1016,
+            "uid_end": 1016,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1018,
+            "uid_end": 1018,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1020,
+            "uid_end": 1020,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1022,
+            "uid_end": 1022,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1024,
+            "uid_end": 1024,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1026,
+            "uid_end": 1026,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1028,
+            "uid_end": 1028,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1030,
+            "uid_end": 1030,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1032,
+            "uid_end": 1032,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1034,
+            "uid_end": 1034,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1036,
+            "uid_end": 1036,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1038,
+            "uid_end": 1038,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1040,
+            "uid_end": 1040,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1042,
+            "uid_end": 1042,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1044,
+            "uid_end": 1044,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "uid_start": 1046,
+            "uid_end": 1046,
+            "goto": 9002,
+            "protocol": "242"
+          },
+          {
+            "priority": 9001,
+            "src": "all",
+            "goto": 9010,
+            "protocol": "242"
+          },
+          {
+            "priority": 9002,
+            "src": "all",
+            "table": "main",
+            "protocol": "242"
+          },
+          {
+            "priority": 9003,
+            "src": "all",
+            "dst": "198.18.0.0",
+            "dstlen": 30,
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9004,
+            "not": null,
+            "src": "all",
+            "dport": 53,
+            "table": "main",
+            "suppress_prefixlen": 0,
+            "protocol": "242"
+          },
+          {
+            "priority": 9005,
+            "src": "all",
+            "iif": "ar-tun",
+            "table": "main",
+            "protocol": "242"
+          },
+          {
+            "priority": 9006,
+            "not": null,
+            "src": "all",
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9007,
+            "src": "0.0.0.0",
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9008,
+            "src": "198.18.0.0",
+            "srclen": 30,
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9010,
+            "src": "all",
+            "table": "main",
+            "protocol": "242"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "default",
+            "dev": "ar-tun",
+            "protocol": "242",
+            "scope": "link",
+            "flags": []
+          },
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "normal cleanup preserves foreign rules",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "normal cleanup preserves foreign routes",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned rules are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned routes are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    }
+  ],
+  "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+}

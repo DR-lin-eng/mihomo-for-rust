@@ -1,0 +1,288 @@
+{
+  "passed": true,
+  "case": "crash",
+  "checks": [
+    {
+      "name": "primary core starts",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "owned routes and rules carry protocol 242",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 8999,
+            "src": "all",
+            "fwmark": "0x636c746d",
+            "table": "main"
+          },
+          {
+            "priority": 9000,
+            "src": "all",
+            "dst": "198.18.0.0",
+            "dstlen": 30,
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9001,
+            "not": null,
+            "src": "all",
+            "dport": 53,
+            "table": "main",
+            "suppress_prefixlen": 0,
+            "protocol": "242"
+          },
+          {
+            "priority": 9002,
+            "src": "all",
+            "iif": "ar-tun",
+            "table": "main",
+            "protocol": "242"
+          },
+          {
+            "priority": 9003,
+            "not": null,
+            "src": "all",
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9004,
+            "src": "0.0.0.0",
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9005,
+            "src": "198.18.0.0",
+            "srclen": 30,
+            "iif": "lo",
+            "table": "2022",
+            "protocol": "242"
+          },
+          {
+            "priority": 9010,
+            "src": "all",
+            "table": "main",
+            "protocol": "242"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "default",
+            "dev": "ar-tun",
+            "protocol": "242",
+            "scope": "link",
+            "flags": []
+          },
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "active routes have a recovery journal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "SIGKILL leaves the recovery journal",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "same configuration restarts after SIGKILL",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal cleanup preserves foreign rules",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "normal cleanup preserves foreign routes",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned rules are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned routes are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    }
+  ],
+  "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+}

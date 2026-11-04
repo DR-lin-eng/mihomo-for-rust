@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::io;
 use std::io::{Read, Write};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::atomic::Ordering;
 use std::thread;
 
@@ -76,16 +76,17 @@ where
     L: TcpStream + ?Sized,
     R: TcpStream + ?Sized,
 {
-    relay_bidirectional_with_counters(left, right, strategy, None, None, None)
+    relay_bidirectional_with_counters(left, right, strategy, None, None, None, None)
 }
 
 pub(crate) fn relay_bidirectional_with_counters<L, R>(
     left: &mut L,
     right: &mut R,
-    _strategy: TcpRelayStrategy,
+    strategy: TcpRelayStrategy,
     left_to_right_counter: Option<&AtomicU64>,
     right_to_left_counter: Option<&AtomicU64>,
     traffic: Option<&crate::traffic::TrafficMeter>,
+    activity: Option<&AtomicU64>,
 ) -> io::Result<TcpRelayStats>
 where
     L: TcpStream + ?Sized,
@@ -98,6 +99,7 @@ where
             left_to_right_counter,
             right_to_left_counter,
             traffic,
+            activity,
         );
     };
     let Ok(mut right_writer) = right.try_clone_box() else {
@@ -107,29 +109,47 @@ where
             left_to_right_counter,
             right_to_left_counter,
             traffic,
+            activity,
         );
     };
 
+    #[cfg(target_os = "linux")]
+    let splice_mode = if strategy != TcpRelayStrategy::BufferedCopy {
+        crate::tcp_splice::NonblockingMode::new(left, right)
+    } else { None };
+    #[cfg(target_os = "linux")]
+    let strategy = if splice_mode.is_some() { strategy } else { TcpRelayStrategy::BufferedCopy };
+    let cancelled = AtomicBool::new(false);
     let (left_to_right, right_to_left) = thread::scope(|scope| -> io::Result<(u64, u64)> {
         let right_to_left_worker = scope.spawn(|| -> io::Result<u64> {
-            let transferred = copy_one_way(
+            let result = copy_one_way_controlled(
                 right,
                 &mut *left_writer,
                 right_to_left_counter,
                 traffic,
                 false,
-            )?;
+                strategy,
+                &cancelled,
+                activity,
+            );
+            if result.is_err() { cancelled.store(true, Ordering::Release); }
+            let transferred = result?;
             let _ = left_writer.shutdown_write();
             Ok(transferred)
         });
 
-        let left_to_right = copy_one_way(
+        let result = copy_one_way_controlled(
             left,
             &mut *right_writer,
             left_to_right_counter,
             traffic,
             true,
-        )?;
+            strategy,
+            &cancelled,
+            activity,
+        );
+        if result.is_err() { cancelled.store(true, Ordering::Release); }
+        let left_to_right = result?;
         let _ = right_writer.shutdown_write();
         let right_to_left = join_copy_worker(right_to_left_worker)?;
         Ok((left_to_right, right_to_left))
@@ -146,14 +166,15 @@ fn relay_bidirectional_fallback<L, R>(
     left_to_right_counter: Option<&AtomicU64>,
     right_to_left_counter: Option<&AtomicU64>,
     traffic: Option<&crate::traffic::TrafficMeter>,
+    activity: Option<&AtomicU64>,
 ) -> io::Result<TcpRelayStats>
 where
     L: TcpStream + ?Sized,
     R: TcpStream + ?Sized,
 {
-    let left_to_right = copy_one_way(left, right, left_to_right_counter, traffic, true)?;
+    let left_to_right = copy_one_way(left, right, left_to_right_counter, traffic, true, activity)?;
     let _ = right.shutdown_write();
-    let right_to_left = copy_one_way(right, left, right_to_left_counter, traffic, false)?;
+    let right_to_left = copy_one_way(right, left, right_to_left_counter, traffic, false, activity)?;
     let _ = left.shutdown_write();
     Ok(TcpRelayStats {
         left_to_right,
@@ -184,15 +205,75 @@ fn copy_one_way<R, W>(
     counter: Option<&AtomicU64>,
     traffic: Option<&crate::traffic::TrafficMeter>,
     upload: bool,
+    activity: Option<&AtomicU64>,
 ) -> io::Result<u64>
 where
     R: Read + ?Sized,
     W: Write + ?Sized,
 {
+    copy_one_way_impl(reader, writer, counter, traffic, upload, activity, |_, _| None, |_, _, _, error| Err(error))
+}
+
+fn copy_one_way_controlled<R: TcpStream + ?Sized, W: TcpStream + ?Sized>(
+    reader: &mut R,
+    writer: &mut W,
+    counter: Option<&AtomicU64>,
+    traffic: Option<&crate::traffic::TrafficMeter>,
+    upload: bool,
+    strategy: TcpRelayStrategy,
+    cancelled: &AtomicBool,
+    activity: Option<&AtomicU64>,
+) -> io::Result<u64> {
+    copy_one_way_impl(reader, writer, counter, traffic, upload, activity, |reader, writer| {
+        #[cfg(target_os = "linux")]
+        if strategy != TcpRelayStrategy::BufferedCopy {
+            return crate::tcp_splice::try_copy(reader, writer, cancelled, |written| {
+                if let Some(traffic) = traffic {
+                    traffic.record(upload, written as u64, counter);
+                } else if let Some(counter) = counter {
+                    counter.fetch_add(written as u64, Ordering::Relaxed);
+                }
+                if let Some(activity) = activity {
+                    activity.store(traffic.map_or(0, |meter| meter.elapsed_ms()), Ordering::Relaxed);
+                }
+            });
+        }
+        #[cfg(not(target_os = "linux"))]
+        let _ = (strategy, cancelled);
+        None
+    }, |reader, writer, reading, error| {
+        #[cfg(target_os = "linux")]
+        if strategy != TcpRelayStrategy::BufferedCopy {
+            let fd = if reading { reader.splice_read_fd() } else { writer.splice_write_fd() };
+            if let Some(fd) = fd { return crate::tcp_splice::wait_for_io(fd, reading, cancelled); }
+        }
+        #[cfg(not(target_os = "linux"))]
+        let _ = (reader, writer, reading);
+        Err(error)
+    })
+}
+
+fn copy_one_way_impl<R: Read + ?Sized, W: Write + ?Sized>(
+    reader: &mut R, writer: &mut W, counter: Option<&AtomicU64>,
+    traffic: Option<&crate::traffic::TrafficMeter>, upload: bool, activity: Option<&AtomicU64>,
+    mut fast_copy: impl FnMut(&mut R, &mut W) -> Option<io::Result<u64>>,
+    mut blocked: impl FnMut(&mut R, &mut W, bool, io::Error) -> io::Result<()>,
+) -> io::Result<u64> {
     let mut total = 0_u64;
-    let mut buf = [0_u8; 64 * 1024];
+    let mut buf = Vec::new();
     loop {
-        let read = reader.read(&mut buf)?;
+        if let Some(result) = fast_copy(reader, writer) {
+            return result.map(|transferred| total + transferred);
+        }
+        if buf.is_empty() { buf.resize(64 * 1024, 0); }
+        let read = match reader.read(&mut buf) {
+            Ok(read) => read,
+            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                blocked(reader, writer, true, error)?;
+                continue;
+            }
+            Err(error) => return Err(error),
+        };
         if read == 0 {
             writer.flush()?;
             return Ok(total);
@@ -208,6 +289,10 @@ where
                 }
                 Ok(written) => written,
                 Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    blocked(reader, writer, false, error)?;
+                    continue;
+                }
                 Err(error) => return Err(error),
             };
             offset += written;
@@ -216,6 +301,9 @@ where
                 traffic.record(upload, written as u64, counter);
             } else if let Some(counter) = counter {
                 counter.fetch_add(written as u64, Ordering::Relaxed);
+            }
+            if let (Some(activity), Some(traffic)) = (activity, traffic) {
+                activity.store(traffic.elapsed_ms(), Ordering::Relaxed);
             }
         }
     }
@@ -316,6 +404,7 @@ mod tests {
             Some(&connection),
             Some(&traffic),
             true,
+            None,
         )
         .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
@@ -337,7 +426,8 @@ mod tests {
                 },
                 None,
                 Some(&traffic),
-                false
+                false,
+                None
             )
             .unwrap(),
             8
@@ -351,6 +441,7 @@ mod tests {
             None,
             Some(&traffic),
             false,
+            None,
         )
         .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::WriteZero);
@@ -382,6 +473,7 @@ mod tests {
             None,
             Some(&traffic),
             true,
+            None,
         )
         .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);

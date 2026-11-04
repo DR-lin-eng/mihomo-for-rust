@@ -48,6 +48,7 @@ pub(super) enum UdpDispatchTask {
         dns_runtime: Option<DnsRuntime>,
     },
     Transparent {
+        session_pool: Arc<crate::tun_packet::TunUdpSessionPool>,
         inbound_listener_addr: SocketAddr,
         peer_addr: SocketAddr,
         target_addr: SocketAddr,
@@ -111,6 +112,7 @@ impl UdpDispatchTask {
                 }
             }
             Self::Transparent {
+                session_pool,
                 inbound_listener_addr,
                 peer_addr,
                 target_addr,
@@ -133,6 +135,7 @@ impl UdpDispatchTask {
                     special_rules,
                     dns_runtime,
                     session_kind,
+                    session_pool,
                 ) {
                     log_listener_error("transparent udp relay error", err);
                 }
@@ -426,8 +429,9 @@ mod memory_tests {
         let document=mihomo_config::parse_runtime_config_document("mode: direct\n").unwrap();
         let tunnel=Arc::new(RuntimeTunnel::new("direct",mihomo_runtime::build_runtime_registry(&document).unwrap()));
         let queue=UdpDispatchQueue::new();
+        let session_pool=Arc::new(crate::tun_packet::TunUdpSessionPool::default());
         for _ in 0..UDP_DISPATCH_QUEUE_LIMIT+64{
-            queue.push(UdpDispatchTask::Transparent{inbound_listener_addr:"127.0.0.1:1".parse().unwrap(),peer_addr:"127.0.0.1:2".parse().unwrap(),target_addr:"127.0.0.1:3".parse().unwrap(),payload:vec![0;8],tunnel:Arc::clone(&tunnel),inbound_name:String::new(),special_proxy:String::new(),special_rules:String::new(),dns_runtime:None,session_kind:SessionKind::TProxy});
+            queue.push(UdpDispatchTask::Transparent{session_pool:session_pool.clone(),inbound_listener_addr:"127.0.0.1:1".parse().unwrap(),peer_addr:"127.0.0.1:2".parse().unwrap(),target_addr:"127.0.0.1:3".parse().unwrap(),payload:vec![0;8],tunnel:Arc::clone(&tunnel),inbound_name:String::new(),special_proxy:String::new(),special_rules:String::new(),dns_runtime:None,session_kind:SessionKind::TProxy});
         }
         assert_eq!(queue.state.lock().unwrap().tasks.len(),UDP_DISPATCH_QUEUE_LIMIT);
         queue.close();assert!(queue.pop().is_none());assert!(queue.state.lock().unwrap().tasks.is_empty());

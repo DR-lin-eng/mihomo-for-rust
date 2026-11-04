@@ -211,18 +211,18 @@ fn linux_tun_setup_commands_include_linux_rule_filters() {
     assert!(rendered.contains(&"rule add sport 1000-2000 goto 9010 priority 9000".to_owned()));
     assert!(rendered.contains(&"rule add dport 443 goto 9010 priority 9001".to_owned()));
     assert!(rendered.contains(&"rule add dport 8000-8100 goto 9010 priority 9001".to_owned()));
-    assert!(rendered.contains(&"rule add uidrange 3000 goto 9010 priority 9002".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 3000-3000 goto 9010 priority 9002".to_owned()));
     assert!(rendered.contains(&"rule add uidrange 4000-4999 goto 9010 priority 9002".to_owned()));
     assert!(rendered.contains(&"rule add iif br-lan goto 9005 priority 9003".to_owned()));
     assert!(rendered.contains(&"rule add goto 9010 priority 9004".to_owned()));
     assert!(rendered.contains(&"rule add priority 9005".to_owned()));
-    assert!(rendered.contains(&"rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
+    assert!(rendered.contains(&"rule add uidrange 1000-1000 goto 9008 priority 9006".to_owned()));
     assert!(rendered.contains(&"rule add uidrange 2000-2999 goto 9008 priority 9006".to_owned()));
     assert!(rendered.contains(&"rule add goto 9010 priority 9007".to_owned()));
     assert!(rendered.contains(&"rule add priority 9008".to_owned()));
     assert!(rendered.contains(&"rule add priority 9010".to_owned()));
     assert!(rendered.contains(&"-6 rule add sport 53 goto 9010 priority 9000".to_owned()));
     assert!(rendered.contains(&"-6 rule add dport 443 goto 9010 priority 9001".to_owned()));
-    assert!(rendered.contains(&"-6 rule add uidrange 1000 goto 9008 priority 9006".to_owned()));
+    assert!(rendered.contains(&"-6 rule add uidrange 1000-1000 goto 9008 priority 9006".to_owned()));
     assert!(rendered.contains(&"-6 rule add priority 9010".to_owned()));
 }

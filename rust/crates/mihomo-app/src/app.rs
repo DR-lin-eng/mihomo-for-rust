@@ -252,12 +252,30 @@ impl RunningApp {
             .collect();
         state.apply_selected_proxy_mapping(&selected);
         // Validate before releasing listeners; rebind only after they close.
-        state
+        let prepared = state
             .build_runtime_tunnel()
             .map_err(|err| ListenerServiceError::Rule(err.to_string()))?;
         state
             .build_dns_runtime()
             .map_err(|err| ListenerServiceError::Rule(err.to_string()))?;
+        prewarm_cold_outbounds(&state)
+            .map_err(|error| ListenerServiceError::Rule(error.to_string()))?;
+        if !self.stopped && self.state.resolved_boot.home_dir == state.resolved_boot.home_dir
+            && supports_policy_reload(&self.state.document, &state.document)
+            && self.listener_service.as_ref().is_some_and(|service| service.can_reload_policy(&state))
+            && self.runtime_tunnel.dns_runtime().zip(prepared.dns_runtime())
+                .is_some_and(|(current, next)| current.lock().unwrap().has_same_policy(&next.lock().unwrap()))
+        {
+            if let Some(service) = &mut self.listener_service { service.stop_background_workers(); }
+            self.runtime_tunnel.apply_prepared_policy(&prepared);
+            mihomo_core::set_log_level(&state.document.log_level);
+            *self.shared_bootstrap_state.lock().unwrap() = state.clone();
+            if let Some(service) = &mut self.listener_service { service.start_background_workers(&state); }
+            self.state = state;
+            mihomo_core::push_log(mihomo_core::LogLevel::Info,
+                "[Config] policy reloaded with existing listeners and TCP connections");
+            return Ok(());
+        }
         let mut previous = self.shared_bootstrap_state.lock().unwrap().clone();
         previous.document.mode = self.runtime_tunnel.current_mode();
         let previous_dns = self
@@ -299,6 +317,25 @@ impl RunningApp {
             thread::park_timeout(Duration::from_secs(3600));
         }
     }
+}
+
+/// A staged policy swap is valid only while every socket, DNS setting, TUN
+/// option, routing mark and controller setting keeps its existing semantics.
+fn supports_policy_reload(
+    previous: &mihomo_config::RuntimeConfigDocument,
+    next: &mihomo_config::RuntimeConfigDocument,
+) -> bool {
+    let mut fixed = previous.clone();
+    fixed.mode = next.mode.clone();
+    fixed.log_level = next.log_level.clone();
+    fixed.proxies = next.proxies.clone();
+    fixed.proxy_groups = next.proxy_groups.clone();
+    fixed.proxy_providers = next.proxy_providers.clone();
+    fixed.rules = next.rules.clone();
+    fixed.sub_rules = next.sub_rules.clone();
+    fixed.rule_providers = next.rule_providers.clone();
+    fixed.sniffer = next.sniffer.clone();
+    fixed == *next
 }
 
 fn prewarm_cold_outbounds(state: &BootstrapState) -> Result<(), mihomo_transport::TransportError> {

@@ -232,6 +232,7 @@ impl Write for PrefixedStream {
 impl TcpStream for PrefixedStream {
     fn read_timeout(&self)->io::Result<Option<std::time::Duration>>{self.inner.read_timeout()}
     fn set_read_timeout(&self,timeout:Option<std::time::Duration>)->io::Result<()>{self.inner.set_read_timeout(timeout)}
+    fn set_timeouts(&self,read:Option<std::time::Duration>,write:Option<std::time::Duration>)->io::Result<()>{self.inner.set_timeouts(read,write)}
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         self.inner.try_clone_box()
     }

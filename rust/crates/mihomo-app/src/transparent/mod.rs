@@ -7,6 +7,8 @@ use mihomo_core::{Metadata, NetworkKind, PacketEnvelope, SessionKind, UdpPacket,
 use mihomo_dns::DnsRuntime;
 use mihomo_runtime::RuntimeTunnel;
 
+pub(crate) const TRANSPARENT_UDP_IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
 #[cfg(any(target_os = "linux", target_os = "android"))]
 mod linux_android;
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
@@ -42,13 +44,14 @@ pub(crate) fn handle_tproxy_udp_packet(
     special_rules: String,
     dns_runtime: Option<DnsRuntime>,
     session_kind: SessionKind,
+    session_pool: Arc<crate::tun_packet::TunUdpSessionPool>,
 ) -> io::Result<()> {
     let packet = Arc::new(TransparentUdpPacket {
         payload: ByteWindow::freeze(payload),
         inbound_listener_addr,
         original_client_addr: peer_addr,
         original_target_addr: target_addr,
-        tunnel: Arc::clone(&tunnel),
+        tunnel: Arc::downgrade(&tunnel),
     });
     let metadata = Metadata {
         network: NetworkKind::Udp,
@@ -63,12 +66,8 @@ pub(crate) fn handle_tproxy_udp_packet(
         ..Metadata::default()
     };
     let envelope = PacketEnvelope::new(packet, metadata);
-    let mut session = crate::listener_service::SystemUdpSession::new(tunnel.clone(), dns_runtime)?;
-    let _ = tunnel.send_udp_packet(&envelope, &mut session)?;
-    if let Some((response, responder)) = session.recv_once()? {
-        tunnel.write_back_udp(&envelope, ByteWindow::freeze(response), responder)?;
-    }
-    Ok(())
+    session_pool.send_envelope_live(peer_addr, target_addr, tunnel, envelope, dns_runtime,
+        TRANSPARENT_UDP_IDLE_TIMEOUT)
 }
 
 struct TransparentUdpPacket {
@@ -76,13 +75,15 @@ struct TransparentUdpPacket {
     inbound_listener_addr: SocketAddr,
     original_client_addr: SocketAddr,
     original_target_addr: SocketAddr,
-    tunnel: Arc<RuntimeTunnel>,
+    tunnel: std::sync::Weak<RuntimeTunnel>,
 }
 
 impl WriteBack for TransparentUdpPacket {
     fn write_back(&self, payload: ByteWindow, source: Option<SocketAddr>) -> io::Result<usize> {
         let source = source.unwrap_or(self.original_target_addr);
-        let conn = create_or_get_local_conn(&source, &self.original_client_addr, &self.tunnel)?;
+        let tunnel = self.tunnel.upgrade().ok_or_else(||
+            io::Error::new(io::ErrorKind::Interrupted, "UDP runtime stopped"))?;
+        let conn = create_or_get_local_conn(&source, &self.original_client_addr, &tunnel)?;
         conn.send(payload.as_slice())
     }
 }

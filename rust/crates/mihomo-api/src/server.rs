@@ -1798,9 +1798,10 @@ impl ApiController {
                     Ok(payload) => payload,
                     Err(_) => return error_response(400, "Body invalid"),
                 };
-                if !self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
-                    && !self.snapshot.groups.iter().any(|entry| entry.name == group_name)
-                {
+                let exists = self.runtime_tunnel.as_ref().map(|runtime| runtime.has_proxy(&group_name))
+                    .unwrap_or_else(|| self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
+                        || self.snapshot.groups.iter().any(|entry| entry.name == group_name));
+                if !exists {
                     return self.not_found();
                 }
                 let Some(runtime_tunnel) = &self.runtime_tunnel else {
@@ -1860,17 +1861,17 @@ impl ApiController {
     fn handle_delete_request(&self, path: &str) -> ApiHttpResponse {
         if let Some(raw_name) = path.strip_prefix("/proxies/") {
             let group_name = percent_decode(raw_name);
-            if !self.snapshot.proxies.iter().any(|entry| entry.name == group_name)
-                && !self.snapshot.groups.iter().any(|entry| entry.name == group_name)
+            let snapshot = self.current_snapshot();
+            if !snapshot.proxies.iter().any(|entry| entry.name == group_name)
+                && !snapshot.groups.iter().any(|entry| entry.name == group_name)
             {
                 return self.not_found();
             }
-            let is_group = self.snapshot.groups.iter().any(|entry| entry.name == group_name);
+            let is_group = snapshot.groups.iter().any(|entry| entry.name == group_name);
             if !is_group {
                 return error_response(400, "Must be a Selector");
             }
-            if self
-                .snapshot
+            if snapshot
                 .groups
                 .iter()
                 .find(|entry| entry.name == group_name)
@@ -2424,6 +2425,8 @@ struct ConnectionPayload {
     rule: String,
     #[serde(rename = "rulePayload")]
     rule_payload: String,
+    #[serde(rename="kernelOffload")]
+    kernel_offload: bool,
     metadata: ConnectionMetadataPayload,
 }
 
@@ -2598,6 +2601,7 @@ fn connection_payload_from_snapshot(snapshot: ActiveConnectionSnapshot) -> Conne
         provider_chains: snapshot.provider_chains,
         rule: crate::snapshot_types::controller_rule_type_name(&snapshot.rule).to_owned(),
         rule_payload: snapshot.rule_payload,
+        kernel_offload: snapshot.kernel_offload,
         metadata: ConnectionMetadataPayload {
             network: format!("{:?}", snapshot.metadata.network).to_ascii_lowercase(),
             session_type: format!("{:?}", snapshot.metadata.kind).to_ascii_lowercase(),
@@ -5340,6 +5344,45 @@ tls:
 
         server.shutdown();
         let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn controller_updates_and_unpins_groups_added_by_a_policy_reload() {
+        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+            "secret: test-secret\n", std::path::Path::new("/tmp"),
+        ).unwrap();
+        let state = mihomo_runtime::BootstrapState {
+            resolved_boot: mihomo_config::BootOptions::default().resolve(
+                std::path::Path::new("/tmp"), &mihomo_config::BootEnvironment::default()),
+            document, provider_sources: Default::default(), registry,
+        };
+        let runtime = Arc::new(state.build_runtime_tunnel().unwrap());
+        let shared = Arc::new(std::sync::Mutex::new(state));
+        let controller = ApiController::from_running_state(shared.clone(), runtime.clone()).unwrap();
+        let (document, _, registry) = mihomo_runtime::bootstrap_from_yaml(
+            "secret: test-secret\nproxy-groups:\n  - {name: added, type: select, proxies: [DIRECT, REJECT]}\n  - {name: added-auto, type: url-test, proxies: [DIRECT, REJECT]}\n",
+            std::path::Path::new("/tmp"),
+        ).unwrap();
+        let mut next = shared.lock().unwrap().clone();
+        next.document = document;
+        next.registry = registry;
+        runtime.apply_prepared_policy(&next.build_runtime_tunnel().unwrap());
+        *shared.lock().unwrap() = next;
+        let update = controller.handle_request(&ApiHttpRequest {
+            method: "PUT".into(), target: "/proxies/added".into(),
+            headers: BTreeMap::from([("authorization".into(), "Bearer test-secret".into())]),
+            body: br#"{"name":"REJECT"}"#.to_vec(),
+        });
+        assert_eq!(update.status_code, 204);
+        assert_eq!(runtime.group_selected("added").as_deref(), Some("REJECT"));
+        runtime.set_group_selected("added-auto", "REJECT").unwrap();
+        let delete = controller.handle_request(&ApiHttpRequest {
+            method: "DELETE".into(), target: "/proxies/added-auto".into(),
+            headers: BTreeMap::from([("authorization".into(), "Bearer test-secret".into())]),
+            body: Vec::new(),
+        });
+        assert_eq!(delete.status_code, 204);
+        assert_eq!(runtime.group_selected("added-auto"), None);
     }
 
     #[test]

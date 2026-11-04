@@ -79,6 +79,8 @@ fn bridge_tls_server_stream(
     let tls_stream = StreamOwned::new(conn, stream);
     let (client, server) = local_tcp_stream_pair()?;
     client.set_nodelay(true)?;
+    client.set_read_timeout(Some(std::time::Duration::from_secs(15)))?;
+    client.set_write_timeout(Some(std::time::Duration::from_secs(15)))?;
     server.set_nodelay(true)?;
     server.set_nonblocking(true)?;
     crate::blocking_executor::spawn_blocking(move || run_tls_bridge_loop(tls_stream, server));
@@ -97,6 +99,7 @@ fn run_tls_bridge_loop(
     mut tls: StreamOwned<ServerConnection, TcpStream>,
     mut plain: TcpStream,
 ) {
+    let handshake_deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     let mut plain_to_tls = Vec::new();
     let mut plain_to_tls_offset = 0usize;
     let mut tls_to_plain = Vec::new();
@@ -107,6 +110,10 @@ fn run_tls_bridge_loop(
     let mut buf = [0_u8; 16 * 1024];
 
     loop {
+        if tls.conn.is_handshaking() && std::time::Instant::now() >= handshake_deadline {
+            let _ = plain.shutdown(std::net::Shutdown::Both);
+            return;
+        }
         let mut progressed = false;
 
         if plain_open && plain_to_tls_offset >= plain_to_tls.len() {

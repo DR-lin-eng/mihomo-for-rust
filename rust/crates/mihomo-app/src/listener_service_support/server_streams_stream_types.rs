@@ -174,6 +174,35 @@ impl Write for ServerTlsStream {
 }
 
 impl mihomo_core::TcpStream for ServerTlsStream {
+    fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
+        self.0
+            .lock()
+            .map_err(|_| io::Error::other("server tls stream mutex poisoned"))?
+            .sock
+            .read_timeout()
+    }
+
+    fn set_read_timeout(&self, timeout: Option<std::time::Duration>) -> io::Result<()> {
+        self.0
+            .lock()
+            .map_err(|_| io::Error::other("server tls stream mutex poisoned"))?
+            .sock
+            .set_read_timeout(timeout)
+    }
+
+    fn set_timeouts(
+        &self,
+        read: Option<std::time::Duration>,
+        write: Option<std::time::Duration>,
+    ) -> io::Result<()> {
+        let stream = self
+            .0
+            .lock()
+            .map_err(|_| io::Error::other("server tls stream mutex poisoned"))?;
+        stream.sock.set_read_timeout(read)?;
+        stream.sock.set_write_timeout(write)
+    }
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Ok(Box::new(self.clone()))
     }
@@ -200,6 +229,22 @@ impl mihomo_core::TcpStream for ServerTlsStream {
 }
 
 impl mihomo_core::TcpStream for ServerWebsocketStream {
+    fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
+        self.inner.read_timeout()
+    }
+
+    fn set_read_timeout(&self, timeout: Option<std::time::Duration>) -> io::Result<()> {
+        self.inner.set_read_timeout(timeout)
+    }
+
+    fn set_timeouts(
+        &self,
+        read: Option<std::time::Duration>,
+        write: Option<std::time::Duration>,
+    ) -> io::Result<()> {
+        self.inner.set_timeouts(read, write)
+    }
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Ok(Box::new(Self::new(self.inner.try_clone_box()?)))
     }
@@ -234,6 +279,22 @@ impl Write for PrefixedTcpStream {
 }
 
 impl mihomo_core::TcpStream for PrefixedTcpStream {
+    fn read_timeout(&self) -> io::Result<Option<std::time::Duration>> {
+        self.inner.read_timeout()
+    }
+
+    fn set_read_timeout(&self, timeout: Option<std::time::Duration>) -> io::Result<()> {
+        self.inner.set_read_timeout(timeout)
+    }
+
+    fn set_timeouts(
+        &self,
+        read: Option<std::time::Duration>,
+        write: Option<std::time::Duration>,
+    ) -> io::Result<()> {
+        self.inner.set_timeouts(read, write)
+    }
+
     fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
         Err(io::Error::new(
             io::ErrorKind::Unsupported,

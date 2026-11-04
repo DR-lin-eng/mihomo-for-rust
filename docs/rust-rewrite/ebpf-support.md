@@ -1,5 +1,7 @@
 # Linux eBPF 支持（Rust，2026-11-01）
 
+后续版本增加了独立的 `ebpf.direct-offload` 内核 DIRECT 路径，配置、行为与限制见 [内核 DIRECT 转发](kernel-direct-offload.md)。下文对 `auto-redir` 和 `redirect-to-tun` 的捕获语义继续有效。
+
 Rust 核心新增了 TC eBPF 加载器，支持 Clash 历史配置中的 `ebpf.redirect-to-tun` 和 `ebpf.auto-redir`。这两项能力曾存在于 Go v1.17.0，当前 MetaCubeX 文档与源码已没有原先的 eBPF 模块；本轮按历史数据路径恢复配置兼容，并复用了现有 Rust TUN / redir 运行时。
 
 这里的 eBPF 用于内核流量捕获和重定向。代理协议、TLS、Smart 选路及数据转发仍由 Rust 核心执行；它不是 OpenWrt 的硬件流量卸载，也不证明吞吐一定高于 nftables / iptables。

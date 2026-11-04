@@ -1,0 +1,193 @@
+{
+  "passed": true,
+  "case": "interrupted-startup",
+  "checks": [
+    {
+      "name": "startup interrupted after 0s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "startup interrupted after 0.003s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "startup interrupted after 0.01s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "startup interrupted after 0.03s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "startup interrupted after 0.06s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "startup interrupted after 0.12s recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal cleanup preserves foreign rules",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "normal cleanup preserves foreign routes",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned rules are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "owned routes are removed",
+      "passed": true,
+      "detail": {
+        "rules": [
+          {
+            "priority": 0,
+            "src": "all",
+            "table": "local"
+          },
+          {
+            "priority": 9999,
+            "src": "198.51.100.0",
+            "srclen": 24,
+            "table": "main",
+            "protocol": "openr"
+          },
+          {
+            "priority": 32766,
+            "src": "all",
+            "table": "main"
+          },
+          {
+            "priority": 32767,
+            "src": "all",
+            "table": "default"
+          }
+        ],
+        "routes": [
+          {
+            "dst": "203.0.113.0/24",
+            "dev": "ar-lan",
+            "protocol": "openr",
+            "scope": "link",
+            "flags": []
+          }
+        ]
+      }
+    }
+  ],
+  "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+}

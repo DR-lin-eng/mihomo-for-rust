@@ -1,0 +1,13 @@
+allow-lan: true
+ipv6: false
+external-controller: 127.0.0.1:19091
+log-level: warning
+tun:
+  enable: true
+  device: ar-tun
+  stack: mixed
+  auto-route: true
+  auto-redirect: false
+ebpf:
+  direct-offload: [missing-lan]
+rules: ['MATCH,DIRECT']

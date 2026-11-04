@@ -1,0 +1,906 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "rust-direct: original TCP works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: new group is visible through the controller",
+      "passed": true,
+      "detail": {
+        "name": "choose",
+        "type": "Selector",
+        "all": [
+          "alternate",
+          "DIRECT"
+        ],
+        "now": "alternate",
+        "testUrl": "",
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": true,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "rust-direct: controller can select a newly added group",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: old TCP survives removing its outbound definition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: connection identity and counters survive reload",
+      "passed": true,
+      "detail": {
+        "before": {
+          "id": "4611686018427387905",
+          "upload": 13,
+          "download": 13,
+          "start": "2026-11-03T03:25:43.382Z",
+          "chains": [
+            "DIRECT"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": true,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36644",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        },
+        "after": {
+          "id": "4611686018427387905",
+          "upload": 27,
+          "download": 27,
+          "start": "2026-11-03T03:25:43.382Z",
+          "chains": [
+            "DIRECT"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": true,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36644",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "rust-direct: new TCP uses the new registry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: new chain names the new outbound",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387906",
+        "upload": 12,
+        "download": 12,
+        "start": "2026-11-03T03:25:43.460Z",
+        "chains": [
+          "alternate",
+          "choose"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "36652",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "18080",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "rust-direct: old TCP survives a new REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: new TCP obeys the REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: invalid policy is rejected before publication",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: failed reload leaves the existing TCP usable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: restoring the policy keeps the old TCP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: kernel TCP programs stay attached during policy reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: transaction IDs survive shared DNS responses",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-direct: different EDNS DO bits use separate upstream queries",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "rust-tun-direct: original TCP works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: new group is visible through the controller",
+      "passed": true,
+      "detail": {
+        "name": "choose",
+        "type": "Selector",
+        "all": [
+          "alternate",
+          "DIRECT"
+        ],
+        "now": "alternate",
+        "testUrl": "",
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": true,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "rust-tun-direct: controller can select a newly added group",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: old TCP survives removing its outbound definition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: connection identity and counters survive reload",
+      "passed": true,
+      "detail": {
+        "before": {
+          "id": "1",
+          "upload": 13,
+          "download": 13,
+          "start": "2026-11-03T03:25:44.688Z",
+          "chains": [
+            "DIRECT"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36672",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        },
+        "after": {
+          "id": "1",
+          "upload": 27,
+          "download": 27,
+          "start": "2026-11-03T03:25:44.688Z",
+          "chains": [
+            "DIRECT"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36672",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "rust-tun-direct: new TCP uses the new registry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: new chain names the new outbound",
+      "passed": true,
+      "detail": {
+        "id": "2",
+        "upload": 12,
+        "download": 12,
+        "start": "2026-11-03T03:25:44.782Z",
+        "chains": [
+          "alternate",
+          "choose"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": false,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "36676",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "18080",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "rust-tun-direct: old TCP survives a new REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: new TCP obeys the REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: invalid policy is rejected before publication",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: failed reload leaves the existing TCP usable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: restoring the policy keeps the old TCP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: transaction IDs survive shared DNS responses",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-direct: different EDNS DO bits use separate upstream queries",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "rust-tun-socks: original TCP works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: new group is visible through the controller",
+      "passed": true,
+      "detail": {
+        "name": "choose",
+        "type": "Selector",
+        "all": [
+          "alternate",
+          "DIRECT"
+        ],
+        "now": "alternate",
+        "testUrl": "",
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": true,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "rust-tun-socks: controller can select a newly added group",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: old TCP survives removing its outbound definition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: connection identity and counters survive reload",
+      "passed": true,
+      "detail": {
+        "before": {
+          "id": "1",
+          "upload": 13,
+          "download": 13,
+          "start": "2026-11-03T03:25:46.011Z",
+          "chains": [
+            "bench"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36702",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        },
+        "after": {
+          "id": "1",
+          "upload": 27,
+          "download": 27,
+          "start": "2026-11-03T03:25:46.011Z",
+          "chains": [
+            "bench"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "tun",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36702",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_tun__",
+            "inboundUser": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "rust-tun-socks: new TCP uses the new registry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: new chain names the new outbound",
+      "passed": true,
+      "detail": {
+        "id": "2",
+        "upload": 12,
+        "download": 12,
+        "start": "2026-11-03T03:25:46.101Z",
+        "chains": [
+          "alternate",
+          "choose"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": false,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "36714",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "18080",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "rust-tun-socks: old TCP survives a new REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: new TCP obeys the REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: invalid policy is rejected before publication",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: failed reload leaves the existing TCP usable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: restoring the policy keeps the old TCP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: transaction IDs survive shared DNS responses",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-tun-socks: different EDNS DO bits use separate upstream queries",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "rust-redir-socks: original TCP works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: new group is visible through the controller",
+      "passed": true,
+      "detail": {
+        "name": "choose",
+        "type": "Selector",
+        "all": [
+          "alternate",
+          "DIRECT"
+        ],
+        "now": "alternate",
+        "testUrl": "",
+        "emptyFallback": "COMPATIBLE",
+        "hidden": false,
+        "icon": "",
+        "alive": true,
+        "history": [],
+        "extra": {},
+        "udp": true,
+        "xudp": false,
+        "uot": false,
+        "interface": "",
+        "routing-mark": 0,
+        "provider-name": "",
+        "dialer-proxy": "",
+        "tfo": false,
+        "mptcp": false,
+        "smux": false
+      }
+    },
+    {
+      "name": "rust-redir-socks: controller can select a newly added group",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: old TCP survives removing its outbound definition",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: connection identity and counters survive reload",
+      "passed": true,
+      "detail": {
+        "before": {
+          "id": "1",
+          "upload": 13,
+          "download": 13,
+          "start": "2026-11-03T03:25:47.547Z",
+          "chains": [
+            "bench"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36726",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        },
+        "after": {
+          "id": "1",
+          "upload": 27,
+          "download": 27,
+          "start": "2026-11-03T03:25:47.547Z",
+          "chains": [
+            "bench"
+          ],
+          "providerChains": [
+            ""
+          ],
+          "rule": "Match",
+          "rulePayload": "",
+          "kernelOffload": false,
+          "metadata": {
+            "network": "tcp",
+            "type": "redir",
+            "sourceIP": "192.0.2.2",
+            "sourcePort": "36726",
+            "destinationIP": "203.0.113.30",
+            "destinationPort": "18080",
+            "sourceGeoIP": [],
+            "destinationGeoIP": [],
+            "sourceIPASN": "",
+            "destinationIPASN": "",
+            "inboundIP": "",
+            "inboundPort": "",
+            "host": "",
+            "dnsMode": "normal",
+            "uid": 0,
+            "process": "",
+            "processPath": "",
+            "specialProxy": "",
+            "specialRules": "",
+            "remoteDestination": "",
+            "dscp": 0,
+            "sniffHost": "",
+            "inboundName": "__top_level_redir__",
+            "inboundUser": ""
+          }
+        }
+      }
+    },
+    {
+      "name": "rust-redir-socks: new TCP uses the new registry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: new chain names the new outbound",
+      "passed": true,
+      "detail": {
+        "id": "2",
+        "upload": 12,
+        "download": 12,
+        "start": "2026-11-03T03:25:47.747Z",
+        "chains": [
+          "alternate",
+          "choose"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": false,
+        "metadata": {
+          "network": "tcp",
+          "type": "redir",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "36740",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "18080",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_redir__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "rust-redir-socks: old TCP survives a new REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: new TCP obeys the REJECT rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: invalid policy is rejected before publication",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: failed reload leaves the existing TCP usable",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: restoring the policy keeps the old TCP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: transaction IDs survive shared DNS responses",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "rust-redir-socks: different EDNS DO bits use separate upstream queries",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "unchanged TUN route provider permits policy reload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "changed TUN route provider rebuilds the network plan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "traffic works after rebuilding a changed route provider",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "core_sha256": "bab3c7a83b169b911afa3856ee9f47ce13e4d5512026dd8ccc2bd26e087c2c15"
+}

@@ -1,0 +1,169 @@
+{
+  "checks": [
+    {
+      "name": "TCP IPv4 redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "UDP IPv4 redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "TCP IPv6 redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "VLAN redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "IPv4 options redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "IPv6 extension redirect",
+      "passed": true,
+      "detail": 7
+    },
+    {
+      "name": "private IPv4 bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "link-local IPv6 bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "private IPv6 bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "multicast IPv6 bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "ICMP bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "IPv4 fragments bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "ARP bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "truncated IP packet bypass",
+      "passed": true,
+      "detail": 0
+    },
+    {
+      "name": "auto-redir destination rewrite 0",
+      "passed": true,
+      "detail": "020000000001020000000002080045000028000100004006f6cbc0000202c0000201303945e300000064000000005002ffffb55e0000"
+    },
+    {
+      "name": "auto-redir IP/TCP checksum 0",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir destination rewrite 1",
+      "passed": true,
+      "detail": "02000000000102000000000208004600002c000100004006f3c5c0000202c000020101010101303a45e300000064000000005002ffffb55d0000"
+    },
+    {
+      "name": "auto-redir IP/TCP checksum 1",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir destination rewrite 2",
+      "passed": true,
+      "detail": "02000000000102000000000281000064080045000028000100004006f6cbc0000202c0000201303b45e300000064000000005002ffffb55c0000"
+    },
+    {
+      "name": "auto-redir IP/TCP checksum 2",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir destination rewrite 3",
+      "passed": true,
+      "detail": "02000000000102000000000286dd600000000014064020010db800010000000000000000000220010db8000100000000000000000001303945e300000064000000005002ffffddeb0000"
+    },
+    {
+      "name": "auto-redir IP/TCP checksum 3",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir destination rewrite 4",
+      "passed": true,
+      "detail": "02000000000102000000000286dd60000000001c004020010db800010000000000000000000220010db80001000000000000000000010600000000000000303a45e300000064000000005002ffffddea0000"
+    },
+    {
+      "name": "auto-redir IP/TCP checksum 4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reply original source address restored IPv4",
+      "passed": true,
+      "detail": "0200000000010200000000020800450000280001000040067cc2cb00710ac000020201bb303900000064000000005012ffff7f6d0000"
+    },
+    {
+      "name": "reply checksum IPv4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "reply original source address restored IPv6",
+      "passed": true,
+      "detail": "02000000000102000000000286dd600000000014064020010db800020000000000000000001020010db800010000000000000000000201bb303900000064000000005012ffff21f40000"
+    },
+    {
+      "name": "reply checksum IPv6",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "simultaneous tuple collision is rejected",
+      "passed": true,
+      "detail": 2
+    },
+    {
+      "name": "tuple collision cannot corrupt established destination",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir bypass UDP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir bypass TCP DNS",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "auto-redir bypass private TCP",
+      "passed": true,
+      "detail": null
+    }
+  ]
+}

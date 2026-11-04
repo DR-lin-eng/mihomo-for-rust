@@ -2321,6 +2321,7 @@ dependencies = [
  "base64 0.22.1",
  "fancy-regex",
  "httpdate",
+ "libc",
  "maxminddb",
  "mihomo-buf",
  "mihomo-config",
@@ -2412,6 +2413,8 @@ dependencies = [
  "libc",
  "mihomo-core",
  "mihomo-inbound",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

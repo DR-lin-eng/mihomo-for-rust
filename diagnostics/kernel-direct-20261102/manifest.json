@@ -1,0 +1,333 @@
+{
+  "generated_at": "2026-11-02T12:31:34.090012+00:00",
+  "git_head": "889b2645e478319a7805ca151f560f85f6627bc0",
+  "worktree_dirty": true,
+  "target": "aarch64-unknown-linux-musl",
+  "compiler": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+  "artifacts": {
+    "bin/Clash.Core": {
+      "sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "size": 28543784
+    },
+    "bin/Clash.Core.gz": {
+      "sha256": "43674ffcbd9e26afa51bc9d7b86161cafa52fd598c0f21a0e7af8e24dba4c065",
+      "size": 12792329
+    },
+    "bin/Clash.Core.sha256": {
+      "sha256": "78124ec8cdfb226598173f0613e100fa05ef6dc3f1eb1b45dadf88cc0dfe88ad",
+      "size": 77
+    },
+    "bin/Clash.Core.before-kernel-direct": {
+      "sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "size": 28347176
+    },
+    "bin/mihomo-rust-openwrt-arm64-kernel-direct": {
+      "sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "size": 28543784
+    }
+  },
+  "source_sha256": {
+    "rust/crates/mihomo-config/src/document.rs": "f1925d0e02d5958211b4c4dcf496265454cf59a551e51c685c73f33ead712f6a",
+    "rust/crates/mihomo-config/src/validation.rs": "d05b6aa90ff1ecbfcb0a78a7f9a01753881e4288e0a747581a05ebcd68bc22f2",
+    "rust/crates/mihomo-config/src/tests.rs": "044c3465132100ffa474d996567c6c2a5e1d5a45330ca252abdc1b72fb2565b8",
+    "rust/crates/mihomo-ebpf/src/lib.rs": "4fcae0a5a88fa67251859dd866da7f2274ffc52576322e0c0e0386315ee04ce8",
+    "rust/crates/mihomo-ebpf/src/direct_types.rs": "fe10a5b90e7b65ecaba21552ce54a961d06e67fbcf6d8b5406f1ec1af81d8fd9",
+    "rust/crates/mihomo-ebpf/src/linux.rs": "5af1ca829fc72a4db47e75fad6cc4c3c9e93b9e0803bfe773b3e73d8c6403f89",
+    "rust/crates/mihomo-ebpf/src/linux/direct.rs": "ff1cce9c49506da3e6c8484bd463a81973d216b7490320eac29de7e48bf96857",
+    "rust/crates/mihomo-ebpf/bpf/direct.c": "912ca70e46c47b1b222828e3658f8d4f92d025ba0434a01c736923cc898c7837",
+    "rust/crates/mihomo-ebpf/bpf/direct.bpfel.o": "b1c330d85857660eb0a6d0ed721cf0374818cf07ef30d711f0e0061494ab7f7b",
+    "rust/crates/mihomo-ebpf/bpf/direct.bpfeb.o": "8e042207f0ae83b8174c2144dc15cdaa1a0c970b6994236f53d71c99859dc3ad",
+    "rust/crates/mihomo-app/src/tun_kernel_direct.rs": "3eac77c0c8d4921642461271d10eb5161a1364a55e1308b15dba662d021c20e2",
+    "rust/crates/mihomo-app/src/tun_worker_loop.rs": "e506491ad298b612794c3399f5858bd1ac8fe5a0c43cc6a6c54e8e65ccf68120",
+    "rust/crates/mihomo-app/src/listener_service_runner.rs": "961454dd8dccea4718e78691458b0f0f4b0c6e74628b3842eba0d0312bd5ce5a",
+    "rust/crates/mihomo-runtime/src/kernel_direct.rs": "b0a87043226c6c573bb1fb8b445696a0b433fcdb7f1ed7956bca1b3ee78d7cbe",
+    "rust/crates/mihomo-runtime/src/tunnel_runtime.rs": "1cfdc51cb3324d6c7b64ee0f39ce3fa28738d24a669995cbb99de9cc33e490a6",
+    "rust/crates/mihomo-rules/src/engine.rs": "b97bf22979b2a7deca890fc7a38c4762b69692bf791acb0826ff2ec691177226",
+    "rust/crates/mihomo-api/src/server.rs": "34d1bdc701aebd4a7739f30e548c6ab33bba9eef17978affdefb95c801131895",
+    "scripts/kernel-direct-smoke.py": "eb22885b79f2973e7fe27aa642c666003f1f2f928ccd037b196cc3b58dcc5cc7",
+    "scripts/kernel-direct-packet-tests.py": "4f6e6eb9a7e55d2890502fcce3bb268491c2a1ee221d7b006de4dd0f1a7de6f9",
+    "scripts/build-ebpf.sh": "27f4a03fb98f4c6664a0991ac3e10fc4331c03d4f7120d0e0a077ddbed1181ab"
+  },
+  "runtime_tests": [
+    {
+      "name": "final-lifecycle",
+      "passed": true,
+      "checks": 69,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-lifecycle.json.gz",
+      "evidence_sha256": "15eb836550aade93e0ac546a6e9ab12180b371c2a52af7410f66659449c1c515",
+      "performance": null
+    },
+    {
+      "name": "final-auto-route",
+      "passed": true,
+      "checks": 59,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-auto-route.json.gz",
+      "evidence_sha256": "3114bffba30f5d5ec3a81436641f921d8194f89ff76b50e9e7325a2f925584b0",
+      "performance": null
+    },
+    {
+      "name": "final-nat",
+      "passed": true,
+      "checks": 59,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-nat.json.gz",
+      "evidence_sha256": "c2bef7cb8e97d21b47aa00c75e060709cc1ff0b8ea8c072d86813a45db7f5ff1",
+      "performance": null
+    },
+    {
+      "name": "final-packets",
+      "passed": true,
+      "checks": 35,
+      "core_sha256": null,
+      "object_sha256": "b1c330d85857660eb0a6d0ed721cf0374818cf07ef30d711f0e0061494ab7f7b",
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-packets.json.gz",
+      "evidence_sha256": "44edcb4b95ac69650d5c4eeeb1bbb5e1508448ad551af78590ddf3629487cdf3",
+      "performance": null
+    },
+    {
+      "name": "final-legacy-packets",
+      "passed": true,
+      "checks": 33,
+      "core_sha256": null,
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-legacy-packets.json.gz",
+      "evidence_sha256": "a4641dc65260a97150cfa6dc16aa4d85bd67e8ebccdbfef98129be5d298ef4e6",
+      "performance": null
+    },
+    {
+      "name": "final-legacy-ebpf",
+      "passed": true,
+      "checks": 39,
+      "core_sha256": null,
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-legacy-ebpf.json.gz",
+      "evidence_sha256": "0ec9593a74586b02223819d4e1264c08bc394b05fc677342151038d83d4b2223",
+      "performance": null
+    },
+    {
+      "name": "final-tls",
+      "passed": true,
+      "checks": 11,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-tls.json.gz",
+      "evidence_sha256": "452d363e77087f5bae1697bd1d42b01508820d13bd243426a5a78426827a56d6",
+      "performance": null
+    },
+    {
+      "name": "final-lan",
+      "passed": true,
+      "checks": 13,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-lan.json.gz",
+      "evidence_sha256": "c8736125083b144bc5d0eaaf416bfd761e3012b3fd29d379f60d09b92a14eccb",
+      "performance": null
+    },
+    {
+      "name": "final-tun",
+      "passed": true,
+      "checks": 21,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-tun.json.gz",
+      "evidence_sha256": "7d45a51c69f1f82389bbc44d24e2d1e0c5cdafd957ee2d88af8e8f0df06843f6",
+      "performance": null
+    },
+    {
+      "name": "final-domain",
+      "passed": true,
+      "checks": 93,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-domain.json.gz",
+      "evidence_sha256": "503f3bf3450d704ff3e2fceae045777c3870922f233a70119874cae1f7a6c1ac",
+      "performance": null
+    },
+    {
+      "name": "final-rules",
+      "passed": true,
+      "checks": 30,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-rules.json.gz",
+      "evidence_sha256": "f7157a35f841c4579f8b80cbd163df74b7aa05a7781fdfd7212decc4c657e6bc",
+      "performance": null
+    },
+    {
+      "name": "final-traffic",
+      "passed": true,
+      "checks": 110,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-traffic.json.gz",
+      "evidence_sha256": "51fadff8f5fc86fd773d0874b4ffc3b38d2c2888a8703cae969934f0ff3744e2",
+      "performance": null
+    },
+    {
+      "name": "final-cold-start",
+      "passed": true,
+      "checks": 20,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-cold-start.json.gz",
+      "evidence_sha256": "6a13a20e4d3c4b12cad9f78042eab18cb6a7709a6612b70fb8a5ea711c24a86a",
+      "performance": null
+    },
+    {
+      "name": "final-game",
+      "passed": true,
+      "checks": 10,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/final-game.json.gz",
+      "evidence_sha256": "a37030344e0e5f83f9707bbca4986c0990e3c64eb300dd446db477440a71b454",
+      "performance": null
+    },
+    {
+      "name": "user-r1",
+      "passed": true,
+      "checks": 13,
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/user-r1.json.gz",
+      "evidence_sha256": "3294d6817493a65243ea3d5cdab3ee03531febe9ae848ea01e5d968dff8400d1",
+      "performance": {
+        "bytes": 4660685216,
+        "seconds": 6.0,
+        "mbps": 6214.246954666667,
+        "core_cpu_seconds": 7.6
+      }
+    },
+    {
+      "name": "user-r2",
+      "passed": true,
+      "checks": 13,
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/user-r2.json.gz",
+      "evidence_sha256": "06209d315ee785ef2d85146978089ff727b9710eb4978bf924458fc35111bcc8",
+      "performance": {
+        "bytes": 4776520820,
+        "seconds": 6.0,
+        "mbps": 6368.694426666667,
+        "core_cpu_seconds": 6.95
+      }
+    },
+    {
+      "name": "kernel-r1",
+      "passed": true,
+      "checks": 60,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/kernel-r1.json.gz",
+      "evidence_sha256": "dafb2a461f4ace80e27832b47dc6c3b70348e0301a2c28879913750204e4990c",
+      "performance": {
+        "bytes": 4918479448,
+        "seconds": 6.0,
+        "mbps": 6557.972597333333,
+        "core_cpu_seconds": 0.0
+      }
+    },
+    {
+      "name": "kernel-r2",
+      "passed": true,
+      "checks": 60,
+      "core_sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+      "object_sha256": null,
+      "evidence": "diagnostics/kernel-direct-20261102/raw/kernel-r2.json.gz",
+      "evidence_sha256": "d3ae66dbe044a08c88e3a9d5cb87ad91f4e90633a2e7d3030581183b3eda0826",
+      "performance": {
+        "bytes": 4883125520,
+        "seconds": 6.0,
+        "mbps": 6510.834026666667,
+        "core_cpu_seconds": 0.01
+      }
+    }
+  ],
+  "logs": {
+    "tun-tests.log": {
+      "sha256": "1243382e39a419d950d76ff8a0d0ec15230ee7faea7941165fe7e70de935a576",
+      "results": [
+        {
+          "passed": 46,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "arm64-build.log": {
+      "sha256": "508bdbfbac1560d3a7696183ccbfde595a335368b4f37f7770a0432b21e0caaf",
+      "results": []
+    },
+    "libraries.log": {
+      "sha256": "7a7ef21f3b977a5a0750f0c63a1169f91f40bd26d3a387096e3501ca8f9b3b48",
+      "results": [
+        {
+          "passed": 66,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 25,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 32,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 400,
+          "failed": 0,
+          "ignored": 1
+        }
+      ]
+    },
+    "controller-tests.log": {
+      "sha256": "d6d465112012cd6865b81db8694b25df73af2db7ae145a759e7e333de9ab7bb2",
+      "results": [
+        {
+          "passed": 13,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    }
+  },
+  "performance": {
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "streams": 8,
+    "seconds_per_run": 6,
+    "runs": 2,
+    "all_payloads_validated": true,
+    "user_mean_mbps": 6291.470690666667,
+    "kernel_mean_mbps": 6534.403312,
+    "user_mean_core_cpu_seconds": 7.275,
+    "kernel_mean_core_cpu_seconds": 0.005,
+    "boundary": "Only the Rust process CPU time is measured; Linux networking and eBPF work can execute in other contexts."
+  },
+  "device_accessed": false,
+  "limitations": [
+    "Explicit LAN direct-offload opt-in required; source interface must be Ethernet, including bridge/veth/WiFi.",
+    "Linux forwarding, normal routing/firewall and required WAN NAT must already exist.",
+    "Automatic/unfixed groups, required sniffing, nondefault socket options, tuple conflict and capacity exhaustion stay in userspace.",
+    "Tests validate Docker LinuxKit networking; not all OpenWrt kernel or device combinations."
+  ]
+}

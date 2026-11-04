@@ -1,0 +1,218 @@
+[
+  {
+    "path": "docs/rust-rewrite/dae-inspired-improvements.md",
+    "new": true,
+    "before_sha256": null,
+    "sha256": "29de6bb1fa2b9f4e3567affb6d628ad1546be4538f5a2900f147e074595731d5"
+  },
+  {
+    "path": "rust/Cargo.lock",
+    "new": false,
+    "before_sha256": "7d75a475ace071d35cc3a45c05b38dbb15598ef4ee574d44abb0a6117efc3b37",
+    "sha256": "ab6412e76372af4572e4c46d8e9ce5e2c03c79bf79da77cc85efce9b69102a44"
+  },
+  {
+    "path": "rust/README.md",
+    "new": false,
+    "before_sha256": "58ea2bfaaeba72b217c71bf1eda2958c6891cd999fb848e10ca802096c7c2714",
+    "sha256": "ee27c7f138fc77d7520e8f207b412dc5e15d8b92e7b85fea855e7badcba6f198"
+  },
+  {
+    "path": "rust/crates/mihomo-api/src/server.rs",
+    "new": false,
+    "before_sha256": "34d1bdc701aebd4a7739f30e548c6ab33bba9eef17978affdefb95c801131895",
+    "sha256": "133484ac02143d08f29ce01423187ad3cbc6b74b9e5853c1895c3a9c8765a542"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/app.rs",
+    "new": false,
+    "before_sha256": "670a7730a6f165b18ab4e25dbd1a30fc08fa99cb5b54f38656ca4e239e6bbb3a",
+    "sha256": "501d3d940f2a8a2b03ecf9575db514e194465bcacdbc2673e1c325ac73b2f3d1"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/dns_transport_core.rs",
+    "new": false,
+    "before_sha256": "a4ede9c317993f1db647299ac0a7904cdd3a55556a17388942edaadaa2745c1c",
+    "sha256": "90280948ea3f4e435381730d95d9747229976d1da612a3185aa1c9c60007596a"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/listener_service_runner.rs",
+    "new": false,
+    "before_sha256": "961454dd8dccea4718e78691458b0f0f4b0c6e74628b3842eba0d0312bd5ce5a",
+    "sha256": "6a7eba3e0c8862d590efbf46f53172ed9961cb72f4c0a0037cb8ff1434996f04"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/listener_service_runtime_streams.rs",
+    "new": false,
+    "before_sha256": "ecb053b1091d5df1303f690d86ddbfe1a879b5b0f37a869c11915ab6f6d4758f",
+    "sha256": "d228720a6d7b305bcd6eeff8412403ea9d57c56d02a3ad453ce66ede46174228"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/listener_service_runtime_udp.rs",
+    "new": false,
+    "before_sha256": "64b30e78aa3477c73f3eab0bf5703347e41337e5885c3cddf8bcb52e01988558",
+    "sha256": "86997e6464aaf56f1e04072275fe083e1bafa7500ef12ec42bfba90db9c26a64"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/listener_udp_dispatch.rs",
+    "new": false,
+    "before_sha256": "fb460646256a4835fa88e8b35216e462dde3e7766e9db5ff477c75ff5bbdcfe8",
+    "sha256": "ae49bd9e2ec3fe2791a983e6ffcf3fc01876003bb965e8c843b3b6d5516696ba"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tests/body_tcp_and_inbound.rs",
+    "new": false,
+    "before_sha256": "94e2d7954ad84c99f4cf666bfad75b1e7ed20b5500dfba000ce01bc1a26a4c2b",
+    "sha256": "cad496222aa80e377c1efaa6e56282a79ae5fdddb6687ca68162086ca14d58da"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tests/support_servers_and_transparent.rs",
+    "new": false,
+    "before_sha256": "3f2502aaab492e4dbced6d96baf2b0bd51f01c21bb3e77c7bb20c959c06ca6cd",
+    "sha256": "23cec7cbe75a35322b307e8dd3724401dcb67186fa93cc453a165d86c0c594de"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/transparent/mod.rs",
+    "new": false,
+    "before_sha256": "1add3200aac68fa137b69e03d379b5ead5b674ad2b0fe79dbe1a57539a2c0758",
+    "sha256": "ab131f15550bc3a9d0d83bfc35748207154da1244b223ba453225d7ac9359e3c"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tun_packet.rs",
+    "new": false,
+    "before_sha256": "0192b0ae015f84dc2c76c6f4e92a8e658e8876b8e9b6f3c0657d15d9c090c1a5",
+    "sha256": "e11bb35aaeb13071a5e9bab7e70c44f78e7ebdfa244b063a1dcba56d03bbf0fd"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tun_udp_receiver.rs",
+    "new": false,
+    "before_sha256": "9ea61830f18b1b3cd14d6ebeb139c0ffa5d912f9bc6c523f1b9ed51471c90fcb",
+    "sha256": "cb8e69a810ec63e391ef9e136388e3533bdd1616bacee87e93b894119b449842"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tun_worker.rs",
+    "new": false,
+    "before_sha256": "a99154e7f1cd4f061addba10b9e2ceabf6af83f9dfe6617e9cc26dc5a79493b3",
+    "sha256": "b1665edb1d7c7827ce875ba42581ebeca42b9694cb91b59f498d28c9b83e874f"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tun_worker_io.rs",
+    "new": false,
+    "before_sha256": "824a84a4c82456e5e4d2f4e09f10d4553f581cd3c7fb5da4362e32ba952684d3",
+    "sha256": "6d1f6cfad70cc793bde1adcc54b56a021fbdbcf39fb788c05721467cbb86a407"
+  },
+  {
+    "path": "rust/crates/mihomo-app/src/tun_worker_loop.rs",
+    "new": false,
+    "before_sha256": "e506491ad298b612794c3399f5858bd1ac8fe5a0c43cc6a6c54e8e65ccf68120",
+    "sha256": "2d2692f1d3d4157e7c856c5050af6ec5438decdf4b1836ae66989f358c48eba0"
+  },
+  {
+    "path": "rust/crates/mihomo-core/src/flow.rs",
+    "new": false,
+    "before_sha256": "33b719daa4601def562d2fa02d446c7d6cf8d3d868ead2781cac441d819cdae6",
+    "sha256": "9f6333201d6172cda9ac8c55f85cd5e051e83edf535a847e430b1219c2108cc9"
+  },
+  {
+    "path": "rust/crates/mihomo-dns/src/coalescing.rs",
+    "new": true,
+    "before_sha256": null,
+    "sha256": "30e06e977af29b335fb4be675770c9c871bdf6d27dccd7ce16c4529fdfd904f2"
+  },
+  {
+    "path": "rust/crates/mihomo-dns/src/lib.rs",
+    "new": false,
+    "before_sha256": "cccbc50d3ef48efbde23c672813ea5d53e62e5bbd7e48d14fc28d2c0c69b1766",
+    "sha256": "2cc85f606c5da5a9477c34c5feb965220336727438360269545da9352eb7cba5"
+  },
+  {
+    "path": "rust/crates/mihomo-dns/src/runtime.rs",
+    "new": false,
+    "before_sha256": "b1f5dd83a06458aacd430261f44ff204ac1a8a6d53aca4ede43ae9dbef7fe130",
+    "sha256": "707da5876a20c28f507a74c26b6e98e028b917a0faebd73b6cbc79f662846bc0"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/Cargo.toml",
+    "new": false,
+    "before_sha256": "763fdc7dee6b2137ae835d8d99f9fee5f69661362c111a7bb506365efef1b6e4",
+    "sha256": "73986dd10b8e88bd40adba8ac58100bc8637de82704702baf0f17eb5da58acf0"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/lib.rs",
+    "new": false,
+    "before_sha256": "5bea4eb62e89015c3b1709135bd984200b494483b7210a864c7107cff5a378bd",
+    "sha256": "5ce53ee0018c0d23b73e0c542c27ceebf7dee8262c7f62281b376c4fbcfa627c"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/reload_tests.rs",
+    "new": true,
+    "before_sha256": null,
+    "sha256": "5c0d9d79b50c98ea23e3f77f3a361d2a8cb2d686abc763df5767a5dccbc0ff8f"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/sniffer.rs",
+    "new": false,
+    "before_sha256": "8379d734e6dcb3939eae51cfdcf1abb48d3b263e227a12ffa408d34c1fd24090",
+    "sha256": "c7fda0aa4b53e41a043dbbcd5007439f3b81dbf1fd32434aec319cbb7cff8fb0"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/tcp.rs",
+    "new": false,
+    "before_sha256": "54cf10b27349fa9b3407e4a132998931883575830acb313620bf030468a62583",
+    "sha256": "1bad7e17d01324996af9fb71234553670e0e2510d9861f393b6b0cda9cc5c4e9"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/tcp_splice.rs",
+    "new": true,
+    "before_sha256": null,
+    "sha256": "a1f2e6ee56d8e09be1c1119a3c596564e1cb67fab2dc674b11ef198a6cde7ec2"
+  },
+  {
+    "path": "rust/crates/mihomo-runtime/src/tunnel_runtime.rs",
+    "new": false,
+    "before_sha256": "1cfdc51cb3324d6c7b64ee0f39ce3fa28738d24a669995cbb99de9cc33e490a6",
+    "sha256": "8cb21bcbe0575518fc9d154d257f12d98b2b11ff3ee2813a934fa3f3503848eb"
+  },
+  {
+    "path": "rust/crates/mihomo-transport/src/stream_prefix.rs",
+    "new": false,
+    "before_sha256": "32447ff4a9d8447b723f64b4d3f3b511103ba8dcd21d25ae79aa3a2d54981dc7",
+    "sha256": "a863530e16cc9d2da6888bbe16a41108b2bb8a83707c4148b22bda364f874e10"
+  },
+  {
+    "path": "rust/crates/mihomo-tun/Cargo.toml",
+    "new": false,
+    "before_sha256": "b27729ef93efd9ea2913d77e15bc4944c80925bcb0b22d6051a4504276c309ed",
+    "sha256": "e2394a8ddbc32f217cf5f32e8f2aa2d5fdd12ec22e5bf0a65bec3d2a658761a1"
+  },
+  {
+    "path": "rust/crates/mihomo-tun/src/lib.rs",
+    "new": false,
+    "before_sha256": "90006763330af4304ee1324ead027a8060b9ebe8c912bc5294cf7fcaa6fc6920",
+    "sha256": "7156649156d97ce185c7ed10a8cc964095b29b1204031f098c3b9a5988804501"
+  },
+  {
+    "path": "rust/crates/mihomo-tun/src/linux.rs",
+    "new": false,
+    "before_sha256": "4d769173cd3b2284af122460272f1b095c7e0c98f47008c1c2de2aa97e14bafa",
+    "sha256": "1ed26a1d7a68a443c053b7d4f8ef474b9f0c9e87be57ae5a988964f2ab3bf5e1"
+  },
+  {
+    "path": "rust/crates/mihomo-tun/src/linux_routes.rs",
+    "new": true,
+    "before_sha256": null,
+    "sha256": "b53fda03c37d9430764509cdffc0e87163bc0e41020c955baecd451439fba251"
+  },
+  {
+    "path": "rust/crates/mihomo-tun/src/tests.rs",
+    "new": false,
+    "before_sha256": "9f88f19e0ee0c5d95f0e550a2eff359ac19c7cda912996b5c1361ee2539de7ab",
+    "sha256": "5f592c783778b25cada1837c6683f7ee4f8be9f9b12ce93949c6bb8e24d2167d"
+  },
+  {
+    "path": "scripts/domain-routing-smoke.py",
+    "new": false,
+    "before_sha256": "6cb0ebf6c6f6bf13c2f78d63a06ebe952d6ea351adbdb9089a6f40238fefd182",
+    "sha256": "f1abc2151fead01b8c39ee95358290c1fed11f051c5c793b5e4fbd2b610004de"
+  }
+]

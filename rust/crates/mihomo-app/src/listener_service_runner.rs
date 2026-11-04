@@ -27,6 +27,9 @@ pub struct RunningListenerService {
     shutdown: Arc<AtomicBool>,
     udp_queue: Arc<UdpDispatchQueue>,
     join_handles: Vec<JoinHandle<()>>,
+    background_shutdown: Arc<AtomicBool>,
+    background_handles: Vec<JoinHandle<()>>,
+    route_sources_hash: Option<[u8; 32]>,
     detected_default_interface: Option<String>,
     tun_auto_redirect: Option<crate::tun_auto_redirect::TunAutoRedirectGuard>,
     ebpf: Option<Arc<mihomo_ebpf::EbpfRuntime>>,
@@ -72,6 +75,9 @@ impl RunningListenerService {
             shutdown: Arc::clone(&shutdown),
             udp_queue: Arc::clone(&udp_queue),
             join_handles: Vec::new(),
+            background_shutdown: Arc::new(AtomicBool::new(false)),
+            background_handles: Vec::new(),
+            route_sources_hash: None,
             detected_default_interface: None,
             tun_auto_redirect: None,
             ebpf: None,
@@ -90,6 +96,7 @@ impl RunningListenerService {
         join_handles.append(&mut udp_workers);
         startup_trace::mark("listener-service:udp-workers-ready");
         let tun_specs = mihomo_runtime::build_tun_runtime_specs(&state.document);
+        service.route_sources_hash = route_sources_hash(&tun_specs, tun_rule_provider_sources.as_ref());
         let detected_default_interface = configure_tun_default_interface(&tun_specs);
         let mut tun_workers = crate::tun_worker::spawn_tun_workers(
             &tun_specs,
@@ -277,18 +284,27 @@ impl RunningListenerService {
                 let runtime = Arc::new(runtime);
                 tunnel.set_ebpf_runtime(Some(Arc::clone(&runtime)));
                 service.ebpf = Some(runtime);
+                if !state.document.ebpf.direct_offload.is_empty() {
+                    let weak=Arc::downgrade(&tunnel);let stop=shutdown.clone();
+                    join_handles.push(thread::spawn(move||{
+                        while !stop.load(Ordering::Relaxed) {
+                            if let Some(tunnel)=weak.upgrade(){tunnel.sync_kernel_direct();}else{break;}
+                            thread::sleep(Duration::from_millis(100));
+                        }
+                    }));
+                }
             }
         }
 
         let mut healthcheck_workers =
-            spawn_provider_healthcheck_workers(state, Arc::clone(&tunnel), Arc::clone(&shutdown));
+            spawn_provider_healthcheck_workers(state, Arc::clone(&tunnel), Arc::clone(&service.background_shutdown));
         startup_trace::mark("listener-service:healthcheck-workers-ready");
 
-        join_handles.append(&mut healthcheck_workers);
-        join_handles.extend(spawn_smart_workers(
+        service.background_handles.append(&mut healthcheck_workers);
+        service.background_handles.extend(spawn_smart_workers(
             state,
             Arc::clone(&tunnel),
-            Arc::clone(&shutdown),
+            Arc::clone(&service.background_shutdown),
         ));
         startup_trace::mark("listener-service:done");
 
@@ -302,10 +318,36 @@ impl RunningListenerService {
     }
 
     pub fn has_background_tasks(&self) -> bool {
-        !self.join_handles.is_empty()
+        !self.join_handles.is_empty() || !self.background_handles.is_empty()
+    }
+
+    pub(crate) fn stop_background_workers(&mut self) {
+        self.background_shutdown.store(true, Ordering::Release);
+        self.smart_tunnel.stop_smart_probes();
+        for handle in self.background_handles.drain(..) { let _ = handle.join(); }
+    }
+
+    pub(crate) fn can_reload_policy(&self, state: &BootstrapState) -> bool {
+        if self.shutdown.load(Ordering::Acquire) { return false; }
+        let specs = mihomo_runtime::build_tun_runtime_specs(&state.document);
+        let sources = if specs.iter().any(|spec| !spec.config.route_address_set.is_empty()
+            || !spec.config.route_exclude_address_set.is_empty()) {
+            state.provider_sources_for_snapshot().ok()
+        } else { None };
+        self.route_sources_hash.is_some() && self.route_sources_hash == route_sources_hash(&specs, sources.as_ref())
+    }
+
+    pub(crate) fn start_background_workers(&mut self, state: &BootstrapState) {
+        self.background_shutdown = Arc::new(AtomicBool::new(false));
+        self.background_handles = spawn_provider_healthcheck_workers(
+            state, self.smart_tunnel.clone(), self.background_shutdown.clone());
+        self.background_handles.extend(spawn_smart_workers(
+            state, self.smart_tunnel.clone(), self.background_shutdown.clone()));
     }
 
     pub fn shutdown(&mut self) {
+        self.shutdown.store(true, Ordering::Relaxed);
+        self.stop_background_workers();
         if let Some(ebpf) = self.ebpf.take() {
             ebpf.shutdown();
         }
@@ -324,6 +366,37 @@ impl RunningListenerService {
             mihomo_transport::clear_default_interface_name();
         }
     }
+}
+
+fn route_sources_hash(
+    specs: &[TunRuntimeSpec], sources: Option<&mihomo_runtime::ProviderContentSources>,
+) -> Option<[u8; 32]> {
+    if !specs.iter().any(|spec| !spec.config.route_address_set.is_empty()
+        || !spec.config.route_exclude_address_set.is_empty()) {
+        return Some([0; 32]);
+    }
+    let sources = sources?;
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    for (kind, entries) in [(b'f', &sources.file_contents), (b'h', &sources.http_contents)] {
+        hash.update([kind]);
+        for (key, value) in entries {
+            hash.update((key.len() as u64).to_le_bytes());
+            hash.update(key.as_bytes());
+            hash.update((value.len() as u64).to_le_bytes());
+            hash.update(value.as_bytes());
+        }
+    }
+    for (kind, entries) in [(b'F', &sources.file_blobs), (b'H', &sources.http_blobs)] {
+        hash.update([kind]);
+        for (key, value) in entries {
+            hash.update((key.len() as u64).to_le_bytes());
+            hash.update(key.as_bytes());
+            hash.update((value.len() as u64).to_le_bytes());
+            hash.update(value);
+        }
+    }
+    Some(hash.finalize().into())
 }
 
 impl Drop for RunningListenerService {

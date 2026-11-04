@@ -5220,23 +5220,24 @@ listeners:
         write_test_sudoku_mux_frame(&mut *stream, TEST_SUDOKU_MUX_FRAME_DATA, 2, b"helloB");
         write_test_sudoku_mux_frame(&mut *stream, TEST_SUDOKU_MUX_FRAME_CLOSE, 2, &[]);
 
-        let (frame_type1, stream_id1, payload1) = read_test_sudoku_mux_frame(&mut *stream);
-        assert_eq!(frame_type1, TEST_SUDOKU_MUX_FRAME_DATA);
-        assert_eq!(stream_id1, 1);
-        assert_eq!(payload1, b"replyA");
-        let (frame_type1_fin, stream_id1_fin, payload1_fin) = read_test_sudoku_mux_frame(&mut *stream);
-        assert_eq!(frame_type1_fin, TEST_SUDOKU_MUX_FRAME_CLOSE);
-        assert_eq!(stream_id1_fin, 1);
-        assert!(payload1_fin.is_empty());
-
-        let (frame_type2, stream_id2, payload2) = read_test_sudoku_mux_frame(&mut *stream);
-        assert_eq!(frame_type2, TEST_SUDOKU_MUX_FRAME_DATA);
-        assert_eq!(stream_id2, 2);
-        assert_eq!(payload2, b"replyB");
-        let (frame_type2_fin, stream_id2_fin, payload2_fin) = read_test_sudoku_mux_frame(&mut *stream);
-        assert_eq!(frame_type2_fin, TEST_SUDOKU_MUX_FRAME_CLOSE);
-        assert_eq!(stream_id2_fin, 2);
-        assert!(payload2_fin.is_empty());
+        // Different mux streams may reply in either order. Preserve the
+        // per-stream DATA/CLOSE ordering and check every payload and frame.
+        let mut seen = std::collections::HashMap::new();
+        for _ in 0..4 {
+            let (frame_type, stream_id, payload) = read_test_sudoku_mux_frame(&mut *stream);
+            seen.entry(stream_id)
+                .or_insert_with(Vec::new)
+                .push((frame_type, payload));
+        }
+        for (stream_id, expected) in [(1, b"replyA"), (2, b"replyB")] {
+            let frames = seen.remove(&stream_id).expect("expected both mux streams");
+            assert_eq!(frames.len(), 2);
+            assert_eq!(frames[0].0, TEST_SUDOKU_MUX_FRAME_DATA);
+            assert_eq!(frames[0].1, expected);
+            assert_eq!(frames[1].0, TEST_SUDOKU_MUX_FRAME_CLOSE);
+            assert!(frames[1].1.is_empty());
+        }
+        assert!(seen.is_empty());
 
         upstream_a_worker.join().unwrap();
         upstream_b_worker.join().unwrap();

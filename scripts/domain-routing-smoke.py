@@ -108,7 +108,9 @@ if job['mode']=='dns':
 elif job['mode']=='udp':
  s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.settimeout(5);s.connect((job['ip'],job['port']))
  for part in job['packets']:s.send(bytes.fromhex(part));time.sleep(.025)
- data=s.recv(65535);print(data.decode(),flush=True);s.close()
+ replies=[json.loads(s.recv(65535)) for _ in job['packets']]
+ result=replies[0];result['reply_sha256']=[reply['sha256'] for reply in replies]
+ print(json.dumps(result),flush=True);s.close()
 else:
  s=socket.create_connection((job['ip'],job['port']),timeout=6);s.settimeout(6)
  if job.get('tls'):s=ssl._create_unverified_context().wrap_socket(s,server_hostname=job['host'])
@@ -231,6 +233,7 @@ try:
         wait_for(lambda:len([hit for hit in hits if hit['kind']=='udp'])>=before+len(case['packets']))
         sent=[hit for hit in hits if hit['kind']=='udp'][before:];expected=[hashlib.sha256(bytes.fromhex(packet)).hexdigest() for packet in case['packets']]
         check('QUIC exact datagrams '+case['domain'],[hit['sha256'] for hit in sent]==expected,sent)
+        check('QUIC all echoed datagrams '+case['domain'],sorted(result['reply_sha256'])==sorted(expected),result)
     check('wire HTTPS query still forwarded',('hints.test',65) in dns_hits,dns_hits)
     try:
         client(dict(mode='tcp',ip='203.0.113.214',port=443,host='eof.test',tls=True,request=b'GET / HTTP/1.1\r\nHost: eof.test\r\n\r\n'.hex()))

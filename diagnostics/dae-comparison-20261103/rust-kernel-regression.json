@@ -1,0 +1,1428 @@
+{
+  "passed": false,
+  "checks": [
+    {
+      "name": "DIRECT enabled only when configured",
+      "passed": true,
+      "detail": {
+        "supported": true,
+        "running": true,
+        "interfaces": [],
+        "direct_offload": {
+          "enabled": true,
+          "running": true,
+          "interfaces": [
+            "kd-lan"
+          ],
+          "program_ids": [
+            6457,
+            6458,
+            6459
+          ],
+          "capacity": 4096,
+          "flows": 0,
+          "upload": 0,
+          "download": 0
+        }
+      }
+    },
+    {
+      "name": "TCP echo 203.0.113.30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TCP is tracked as configured DIRECT path 203.0.113.30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387905",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:04.968Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "58608",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP payload counters 203.0.113.30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387905",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:04.968Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "58608",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "large TCP bytes 203.0.113.30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "large TCP counters 203.0.113.30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387905",
+        "upload": 262160,
+        "download": 262160,
+        "start": "2026-11-03T00:27:04.968Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "58608",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "DELETE stops existing kernel TCP 203.0.113.30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP echo 203.0.113.30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP kernel counters 203.0.113.30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387906",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:05.605Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "52363",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "fragmented UDP 203.0.113.30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fragmented UDP counted once 203.0.113.30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387906",
+        "upload": 16400,
+        "download": 16400,
+        "start": "2026-11-03T00:27:05.605Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "52363",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP echo 198.18.0.4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TCP is tracked as configured DIRECT path 198.18.0.4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387907",
+        "upload": 14,
+        "download": 14,
+        "start": "2026-11-03T00:27:05.822Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "57102",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP payload counters 198.18.0.4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387907",
+        "upload": 14,
+        "download": 14,
+        "start": "2026-11-03T00:27:05.822Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "57102",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "large TCP bytes 198.18.0.4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "large TCP counters 198.18.0.4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387907",
+        "upload": 262158,
+        "download": 262158,
+        "start": "2026-11-03T00:27:05.822Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "57102",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "DELETE stops existing kernel TCP 198.18.0.4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP echo 198.18.0.4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP kernel counters 198.18.0.4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387908",
+        "upload": 14,
+        "download": 14,
+        "start": "2026-11-03T00:27:06.456Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "47886",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "fragmented UDP 198.18.0.4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fragmented UDP counted once 198.18.0.4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387908",
+        "upload": 16398,
+        "download": 16398,
+        "start": "2026-11-03T00:27:06.456Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "47886",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP echo 2001:db8:3::30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TCP is tracked as configured DIRECT path 2001:db8:3::30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387909",
+        "upload": 18,
+        "download": 18,
+        "start": "2026-11-03T00:27:06.671Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "42034",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP payload counters 2001:db8:3::30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387909",
+        "upload": 18,
+        "download": 18,
+        "start": "2026-11-03T00:27:06.671Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "42034",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "large TCP bytes 2001:db8:3::30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "large TCP counters 2001:db8:3::30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387909",
+        "upload": 262162,
+        "download": 262162,
+        "start": "2026-11-03T00:27:06.671Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "42034",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "DELETE stops existing kernel TCP 2001:db8:3::30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP echo 2001:db8:3::30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP kernel counters 2001:db8:3::30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387910",
+        "upload": 18,
+        "download": 18,
+        "start": "2026-11-03T00:27:07.307Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "41705",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "fragmented UDP 2001:db8:3::30",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fragmented UDP counted once 2001:db8:3::30",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387910",
+        "upload": 16402,
+        "download": 16402,
+        "start": "2026-11-03T00:27:07.307Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "41705",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP echo fdfe:dcba::4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "TCP is tracked as configured DIRECT path fdfe:dcba::4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387911",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:07.534Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "41786",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct6.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "TCP payload counters fdfe:dcba::4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387911",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:07.534Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "41786",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct6.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "large TCP bytes fdfe:dcba::4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "large TCP counters fdfe:dcba::4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387911",
+        "upload": 262160,
+        "download": 262160,
+        "start": "2026-11-03T00:27:07.534Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "41786",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct6.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "DELETE stops existing kernel TCP fdfe:dcba::4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP echo fdfe:dcba::4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP kernel counters fdfe:dcba::4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387912",
+        "upload": 16,
+        "download": 16,
+        "start": "2026-11-03T00:27:08.162Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "54863",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct6.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "fragmented UDP fdfe:dcba::4",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fragmented UDP counted once fdfe:dcba::4",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387912",
+        "upload": 16400,
+        "download": 16400,
+        "start": "2026-11-03T00:27:08.162Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "2001:db8:1::2",
+          "sourcePort": "54863",
+          "destinationIP": "2001:db8:3::30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct6.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "first datagram can be fragmented",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP session before idle expiry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "UDP session after idle expiry",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "expired UDP creates new tracked flow",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387915",
+        "upload": 10,
+        "download": 10,
+        "start": "2026-11-03T00:27:10.687Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "45679",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "UDP policy before mode switch",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mode change invalidates UDP offload",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "mode changed flow is userspace",
+      "passed": true,
+      "detail": {
+        "id": "9223372036854775809",
+        "upload": 10,
+        "download": 10,
+        "start": "2026-11-03T00:27:11.215Z",
+        "chains": [
+          "DIRECT",
+          "GLOBAL"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "",
+        "rulePayload": "",
+        "kernelOffload": false,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "50202",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "normal",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "UDP after rule mode restored",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IP-CIDR resolves fake-IP before final action",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IP-CIDR decision is kernel offloaded",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387905",
+        "upload": 7,
+        "download": 7,
+        "start": "2026-11-03T00:27:11.769Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "IPCIDR",
+        "rulePayload": "203.0.113.30/32",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "53954",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "ip-rule.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "sniff-required flow still forwards",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "sniff-required flow stays userspace",
+      "passed": true,
+      "detail": {
+        "id": "1",
+        "upload": 37,
+        "download": 37,
+        "start": "2026-11-03T00:27:12.040Z",
+        "chains": [
+          "DIRECT"
+        ],
+        "providerChains": [
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": false,
+        "metadata": {
+          "network": "tcp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "47742",
+          "destinationIP": "",
+          "destinationPort": "33205",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "direct.test",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "explicit selector DIRECT forwards",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "explicit selector DIRECT uses kernel",
+      "passed": true,
+      "detail": {
+        "id": "4611686018427387905",
+        "upload": 13,
+        "download": 13,
+        "start": "2026-11-03T00:27:12.304Z",
+        "chains": [
+          "DIRECT",
+          "choose-direct"
+        ],
+        "providerChains": [
+          "",
+          ""
+        ],
+        "rule": "Match",
+        "rulePayload": "",
+        "kernelOffload": true,
+        "metadata": {
+          "network": "udp",
+          "type": "tun",
+          "sourceIP": "192.0.2.2",
+          "sourcePort": "41584",
+          "destinationIP": "203.0.113.30",
+          "destinationPort": "53761",
+          "sourceGeoIP": [],
+          "destinationGeoIP": [],
+          "sourceIPASN": "",
+          "destinationIPASN": "",
+          "inboundIP": "",
+          "inboundPort": "",
+          "host": "direct.test",
+          "dnsMode": "fakeip",
+          "uid": 0,
+          "process": "",
+          "processPath": "",
+          "specialProxy": "",
+          "specialRules": "",
+          "remoteDestination": "",
+          "dscp": 0,
+          "sniffHost": "",
+          "inboundName": "__top_level_tun__",
+          "inboundUser": ""
+        }
+      }
+    },
+    {
+      "name": "selector change invalidates offloaded UDP",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "REJECT domain never becomes a kernel DIRECT flow",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "final counter probe forwards",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "kernel counters advance",
+      "passed": true,
+      "detail": {
+        "enabled": true,
+        "running": true,
+        "interfaces": [
+          "kd-lan"
+        ],
+        "program_ids": [
+          6475,
+          6476,
+          6477
+        ],
+        "capacity": 4096,
+        "flows": 1,
+        "upload": 13,
+        "download": 13
+      }
+    },
+    {
+      "name": "failed interface reload is rejected",
+      "passed": true,
+      "detail": 400
+    },
+    {
+      "name": "failed reload restores old DIRECT path",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal reload restores DIRECT path",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "foreign TC filter survives shutdown",
+      "passed": true,
+      "detail": [
+        {
+          "protocol": "all",
+          "pref": 100,
+          "kind": "matchall",
+          "chain": 0
+        },
+        {
+          "protocol": "all",
+          "pref": 100,
+          "kind": "matchall",
+          "chain": 0,
+          "options": {
+            "handle": 1,
+            "not_in_hw": true,
+            "actions": [
+              {
+                "order": 1,
+                "kind": "gact",
+                "control_action": {
+                  "type": "continue"
+                },
+                "prob": {
+                  "random_type": "none",
+                  "control_action": {
+                    "type": "pass"
+                  },
+                  "val": 0
+                },
+                "index": 1,
+                "ref": 1,
+                "bind": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "normal shutdown removes DIRECT programs",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "normal shutdown removes owned routing mark rule",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "fixture execution",
+      "passed": false,
+      "detail": "RuntimeError('[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=0 proxies=6 groups=1 providers=0 controllers=127.0.0.1:40379 bound_listeners=1\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=0 proxies=6 groups=1 providers=0 controllers=127.0.0.1:40379 bound_listeners=1\\napp start error: failed to start tun workers: failed to configure linux tun interface with `/sbin/ip rule add to 198.18.0.0/30 lookup 2022 priority 9000`: RTNETLINK answers: File exists\\n')"
+    },
+    {
+      "name": "final shutdown removes direct programs",
+      "passed": false,
+      "detail": null
+    },
+    {
+      "name": "crash-recovered routing ownership cleaned",
+      "passed": false,
+      "detail": null
+    }
+  ],
+  "work": "/tmp/kernel-direct-bancvyvf",
+  "offload": "on",
+  "auto_route": true,
+  "lifecycle": true,
+  "masquerade": true,
+  "performance": null,
+  "sha256": "428f40ba519b9eee1cd00c9588d351d5eaa48d5ed059ad6d871e82b63ad55562",
+  "core_log": "[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=0 proxies=6 groups=1 providers=0 controllers=127.0.0.1:40379 bound_listeners=1\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\n[TUN] interface kd-tun started ipv4=[\"198.18.0.1/30\"] ipv6=[\"fdfe:dcba::1/126\"] auto-route=true\ncommand=run platform=linux invariants=9 subsystems=7 openwrt_profiles=7 variants=standard,zero-copy-tcp,zero-copy-tcp-udp,openwrt-software-offload,openwrt-hardware-offload config_source=file listeners=0 proxies=6 groups=1 providers=0 controllers=127.0.0.1:40379 bound_listeners=1\napp start error: failed to start tun workers: failed to configure linux tun interface with `/sbin/ip rule add to 198.18.0.0/30 lookup 2022 priority 9000`: RTNETLINK answers: File exists\n"
+}

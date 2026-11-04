@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-default = ["ssh-transport"]
+default = []
 ssh-transport = ["dep:ssh2"]
 ssh-transport-tests = ["ssh-transport", "dep:russh", "dep:ssh-key"]
 

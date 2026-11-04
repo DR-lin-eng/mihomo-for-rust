@@ -167,6 +167,9 @@ pub struct TopLevelSnifferConfig {
 /// Legacy Clash TC eBPF configuration. Programs are attached only when lists are nonempty.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct EbpfConfig {
+    /// LAN interfaces whose verified DIRECT flows use the kernel packet path.
+    #[serde(default, rename="direct-offload")]
+    pub direct_offload: Vec<String>,
     #[serde(default, rename="redirect-to-tun")]
     pub redirect_to_tun: Vec<String>,
     #[serde(default, rename="auto-redir")]
@@ -175,7 +178,7 @@ pub struct EbpfConfig {
     pub bypass_mark: u32,
 }
 impl EbpfConfig {
-    pub fn enabled(&self)->bool { !self.redirect_to_tun.is_empty() || !self.auto_redir.is_empty() }
+    pub fn enabled(&self)->bool { !self.redirect_to_tun.is_empty() || !self.auto_redir.is_empty() || !self.direct_offload.is_empty() }
     pub fn effective_bypass_mark(&self)->u32 { if self.bypass_mark==0 { 0x636c746d } else { self.bypass_mark } }
 }
 

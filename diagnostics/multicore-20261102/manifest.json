@@ -1,0 +1,633 @@
+{
+  "generated_at": "2026-11-02T10:01:59.898514+00:00",
+  "git_head": "889b2645e478319a7805ca151f560f85f6627bc0",
+  "worktree_dirty": true,
+  "target": "aarch64-unknown-linux-musl",
+  "compiler": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+  "build_command": "CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CC_aarch64_unknown_linux_musl=musl-gcc CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc RUSTFLAGS=\"-C target-feature=+crt-static\" cargo build --release --locked --target aarch64-unknown-linux-musl -p mihomo-app --bin mihomo; strip ELF",
+  "environment": {
+    "platform": "Docker Linux/arm64 on Apple M4 host",
+    "cpu_affinity_default": "0-7",
+    "cpu_quota": "unlimited",
+    "test_topology": "local SOCKS5 source, raw validated streams, SO_MARK policy route into actual TUN",
+    "cpu_sampling": "independent process reads /proc/<pid>/task/*/stat and /connections every approximately 100ms"
+  },
+  "source_sha256": {
+    "rust/crates/mihomo-app/src/tun_worker.rs": "10cf894be5dcb3e42c5f8672d18e6ba1e367d27ba6789ca14ecb874bb217d70c",
+    "rust/crates/mihomo-app/src/tun_worker_io.rs": "824a84a4c82456e5e4d2f4e09f10d4553f581cd3c7fb5da4362e32ba952684d3",
+    "rust/crates/mihomo-app/src/tun_worker_loop.rs": "afea9d8037f0d0434c341ec994f720b0ad1eb747a08d44c716f4075c3598a708",
+    "rust/crates/mihomo-app/src/tun_worker_tcp.rs": "7a6abe076e5ee376c014d5ec5f2116b7b7abfa701f05355d3ecdb81078e6ca9c",
+    "rust/crates/mihomo-app/src/tun_worker_tcp_dispatch.rs": "7dbaa2affb10f7f3ddba1e3a46b113afb3006650be3437175e27779f73776eab",
+    "rust/crates/mihomo-runtime/src/traffic.rs": "3b3422dedcffe09238139af0362a130a7de5d471df177c23af8fc0cb66f57ddc",
+    "scripts/multicore-smoke.py": "55dd3d855de2b5d3d5e1b63b5cabf59b054cd9dfc915208f084ff27d015d723d",
+    "scripts/multicore-monitor.py": "e35417401c4ad8352a8d7c695bbd191c5a6e5ed94a62cbbdb4eb123e912bd064"
+  },
+  "artifacts": {
+    "bin/Clash.Core": {
+      "size": 28347176,
+      "sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e"
+    },
+    "bin/Clash.Core.gz": {
+      "size": 12703524,
+      "sha256": "4f28c14374146271d01c63c792d3258a2e6d59e5ab811d825972e3fe4195c2a3"
+    },
+    "bin/Clash.Core.sha256": {
+      "size": 77,
+      "sha256": "538cb9bef7a706c270e3714815a7c628ec5c66b3663e2656c82afefa7ec1072b"
+    },
+    "bin/Clash.Core.before-multicore": {
+      "size": 28347176,
+      "sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446"
+    },
+    "bin/mihomo-rust-openwrt-arm64-multicore-fix": {
+      "size": 28347176,
+      "sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e"
+    }
+  },
+  "logs": {
+    "tun-tests.log": {
+      "sha256": "598935563e954b447c3e9c917612ce5a187fa330190719f4f58ba295ec2652ca",
+      "results": [
+        {
+          "passed": 46,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "arm64-build.log": {
+      "sha256": "46ee59d37994a84814bdce894a4925c3f882612fa1fda26e87f80e36954078f9",
+      "results": []
+    },
+    "arm64-clean.log": {
+      "sha256": "848bbbf9bc9d379941d43b43cfc11e6f13f885bd5da93a302f6b8e5ec4601d87",
+      "results": []
+    },
+    "runtime-tests.log": {
+      "sha256": "58e05dc21cca123d77d33d4356717c049bd4d08e82d644f8eaeb4264562d1944",
+      "results": [
+        {
+          "passed": 399,
+          "failed": 0,
+          "ignored": 1
+        }
+      ]
+    },
+    "controller-tests.log": {
+      "sha256": "bf2003a1272eb60b78cd914917cfa60e707a2b01198145689cab6c80415afe90",
+      "results": [
+        {
+          "passed": 13,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    "traffic-tests.log": {
+      "sha256": "923ff390d07d7d002297bee63e3bff146521250a6937d0310d2605517f25d83c",
+      "results": [
+        {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "case": "16-client upload",
+      "baseline_files": [
+        "baseline-perf-up1",
+        "baseline-perf-up2"
+      ],
+      "final_files": [
+        "final-perf-up1",
+        "final-perf-up2"
+      ],
+      "baseline_mbps": 1757.51168,
+      "final_mbps": 3754.819584,
+      "ratio": 2.136440756968397,
+      "baseline_hottest_thread_percent": 77.5625,
+      "final_hottest_thread_percent": 43.0625,
+      "max_final_api_seconds": 0.01335541601292789
+    },
+    {
+      "case": "64-client download",
+      "baseline_files": [
+        "baseline-tun64-down-final1",
+        "baseline-tun64-down-final2"
+      ],
+      "final_files": [
+        "final-perf-tun64-down1",
+        "final-perf-tun64-down2"
+      ],
+      "baseline_mbps": 2482.24496,
+      "final_mbps": 5698.595016,
+      "ratio": 2.2957424056971396,
+      "baseline_hottest_thread_percent": 63.1875,
+      "final_hottest_thread_percent": 10.375,
+      "max_final_api_seconds": 0.009979374939575791
+    },
+    {
+      "case": "single-client download",
+      "baseline_files": [
+        "baseline-perf-single"
+      ],
+      "final_files": [
+        "final-perf-single"
+      ],
+      "baseline_mbps": 6424.152652,
+      "final_mbps": 6413.607968,
+      "ratio": 0.9983585875723677,
+      "baseline_hottest_thread_percent": 83.125,
+      "final_hottest_thread_percent": 83.375,
+      "max_final_api_seconds": 0.012545709032565355
+    },
+    {
+      "case": "16-client mixed download",
+      "baseline_files": [
+        "baseline-perf-mixed"
+      ],
+      "final_files": [
+        "final-perf-mixed"
+      ],
+      "baseline_mbps": 6186.008576,
+      "final_mbps": 6257.508352,
+      "ratio": 1.011558305346908,
+      "baseline_hottest_thread_percent": 0.8750000000000001,
+      "final_hottest_thread_percent": 0.8750000000000001,
+      "max_final_api_seconds": 0.013304832973517478
+    },
+    {
+      "case": "4-core 16-client upload",
+      "baseline_files": [
+        "baseline-perf-4core"
+      ],
+      "final_files": [
+        "final-perf-4core"
+      ],
+      "baseline_mbps": 1685.979136,
+      "final_mbps": 5439.356928,
+      "ratio": 3.22623027287569,
+      "baseline_hottest_thread_percent": 77.0,
+      "final_hottest_thread_percent": 54.87499999999999,
+      "max_final_api_seconds": 0.00892391602974385
+    }
+  ],
+  "runtime_tests": [
+    {
+      "name": "baseline-perf-up1",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-perf-up1.json.gz",
+      "evidence_sha256": "74dd25e63ef153570888cac060c672b1aec86655f641a129c6a072e4fb2d54de",
+      "mbps": 1800.208384,
+      "cpu_seconds": 9.800000000000002,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "baseline-perf-up2",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-perf-up2.json.gz",
+      "evidence_sha256": "f1ab2766e62b550e8dc4da938921df4c24b5a02b12990fdf7f6fd25577c92a4c",
+      "mbps": 1714.814976,
+      "cpu_seconds": 9.84,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "baseline-tun64-down-final1",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-tun64-down-final1.json.gz",
+      "evidence_sha256": "01c4bc337ec9743789459d75dc7cf1677db7a605ec6e718805da719d04e9b3ef",
+      "mbps": 2464.811276,
+      "cpu_seconds": 10.079999999999972,
+      "test_seconds": 8.0,
+      "clients": 64,
+      "inbound": "tun",
+      "direction": "download"
+    },
+    {
+      "name": "baseline-tun64-down-final2",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-tun64-down-final2.json.gz",
+      "evidence_sha256": "dd71c762c9fa692d249a83904665fda3a69aa442da32874f193506acab386e56",
+      "mbps": 2499.678644,
+      "cpu_seconds": 10.009999999999977,
+      "test_seconds": 8.0,
+      "clients": 64,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "baseline-perf-single",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-perf-single.json.gz",
+      "evidence_sha256": "e8dcca7c8173d5ccca7a3fa7a2fd04daa81bc2cccdc6da199be9616b06627cb1",
+      "mbps": 6424.152652,
+      "cpu_seconds": 8.3,
+      "test_seconds": 8.0,
+      "clients": 1,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "baseline-perf-mixed",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-perf-mixed.json.gz",
+      "evidence_sha256": "03d04a533518ac39289fad7045626ffdc8b87ad6d23201738103c566132b349f",
+      "mbps": 6186.008576,
+      "cpu_seconds": 1.0800000000000005,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "mixed",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "baseline-perf-4core",
+      "category": "performance",
+      "core_sha256": "5ac7183cc097eeda2ccc88ea383a34d2db7df980b38f710dbf83a290d1dae446",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/baseline-perf-4core.json.gz",
+      "evidence_sha256": "dc5550b913f0c4049eb48ae4465b2da500d5d81b72707456858026f15e724e69",
+      "mbps": 1685.979136,
+      "cpu_seconds": 9.75,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "final-perf-up1",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-up1.json.gz",
+      "evidence_sha256": "69efa571d9d0bf6d122d37addaa5b3e5d9dea25b887c99b7ff502199f209a652",
+      "mbps": 3763.798016,
+      "cpu_seconds": 26.409999999999997,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-up2",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-up2.json.gz",
+      "evidence_sha256": "2ff570c9551eff1eb0aa27b55df4335a361da00ced0bf8ea23b4978bf0c0fed2",
+      "mbps": 3745.841152,
+      "cpu_seconds": 26.369999999999994,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-tun64-down1",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-tun64-down1.json.gz",
+      "evidence_sha256": "db3b30bca2637fdd765c07fd87500015f0dfbd30f8d5a6e930dc1111f97f351b",
+      "mbps": 5681.374452,
+      "cpu_seconds": 7.319999999999985,
+      "test_seconds": 8.0,
+      "clients": 64,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-tun64-down2",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-tun64-down2.json.gz",
+      "evidence_sha256": "3a3298271732c4ae9beefa2f4c57afb0f4de998078e73e89a296e43aa6a07369",
+      "mbps": 5715.81558,
+      "cpu_seconds": 7.219999999999993,
+      "test_seconds": 8.0,
+      "clients": 64,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-single",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-single.json.gz",
+      "evidence_sha256": "c2ef5b5f84e97f7c77e17f69d9f35c7b7d051750d19793af1aefb0caeef787a5",
+      "mbps": 6413.607968,
+      "cpu_seconds": 8.33,
+      "test_seconds": 8.0,
+      "clients": 1,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-mixed",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-mixed.json.gz",
+      "evidence_sha256": "cecb3ed7378425de7f1d1c981535e45951e7a38a51270b0e9f1a5e2d018772fa",
+      "mbps": 6257.508352,
+      "cpu_seconds": 1.0000000000000004,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "mixed",
+      "direction": "download",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "final-perf-4core",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-4core.json.gz",
+      "evidence_sha256": "1dd0a142e12c907ad3db813805c268286d78691c3a3cf73efd8fbbf7fa1cebd2",
+      "mbps": 5439.356928,
+      "cpu_seconds": 21.219999999999995,
+      "test_seconds": 8.0,
+      "clients": 16,
+      "inbound": "tun",
+      "direction": "upload",
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "final-perf-1core",
+      "category": "performance",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 3,
+      "evidence": "diagnostics/multicore-20261102/raw/final-perf-1core.json.gz",
+      "evidence_sha256": "4131852c5452693c1cd9c1bffd9a8907f2922f3569c429306a7a586ff366c8a1",
+      "mbps": 4999.787592,
+      "cpu_seconds": 1.3800000000000001,
+      "test_seconds": 4.0,
+      "clients": 4,
+      "inbound": "tun",
+      "direction": "download",
+      "cpu_affinity": [
+        0
+      ]
+    },
+    {
+      "name": "final-tls",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 10,
+      "evidence": "diagnostics/multicore-20261102/raw/final-tls.json.gz",
+      "evidence_sha256": "49a1068edf95c789542fa80979c487c939cd2affb2d46b166aeb8617df5cd095",
+      "inbound": "tun"
+    },
+    {
+      "name": "final-tls-drop",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 11,
+      "evidence": "diagnostics/multicore-20261102/raw/final-tls-drop.json.gz",
+      "evidence_sha256": "a82fd362c0de30ac52e60d0851ad2b45fdd14fb72c47c907480a8ba2d29b5d66",
+      "inbound": "tun"
+    },
+    {
+      "name": "final-tls-ss",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 10,
+      "evidence": "diagnostics/multicore-20261102/raw/final-tls-ss.json.gz",
+      "evidence_sha256": "3c447d261c85fc0187d1278bfb57eee55c2d0a2c8b4ed29ecb681503d6b878a7",
+      "inbound": "tun"
+    },
+    {
+      "name": "final-lan",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 13,
+      "evidence": "diagnostics/multicore-20261102/raw/final-lan.json.gz",
+      "evidence_sha256": "4d2ba554df8b1611a8daf1d29e79d16384a293620f131ef64e6a9ff59f2d3fa1"
+    },
+    {
+      "name": "final-tun",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 21,
+      "evidence": "diagnostics/multicore-20261102/raw/final-tun.json.gz",
+      "evidence_sha256": "9a65fed1c85fb1916617a55758777a2b89a2aa4f564e865aca040c38e4208734"
+    },
+    {
+      "name": "final-domain",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 93,
+      "evidence": "diagnostics/multicore-20261102/raw/final-domain.json.gz",
+      "evidence_sha256": "c22e20e7299658dbc83fac62926e77c258e5deee6cb60db8a6dad4d8923594a4"
+    },
+    {
+      "name": "final-traffic",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 110,
+      "evidence": "diagnostics/multicore-20261102/raw/final-traffic.json.gz",
+      "evidence_sha256": "257a7fde46c7dcaf07124b0d1b0c849a9fc7055c837c91af92598c57bfd42fab",
+      "inbound": "mixed"
+    },
+    {
+      "name": "final-cold-start",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 20,
+      "evidence": "diagnostics/multicore-20261102/raw/final-cold-start.json.gz",
+      "evidence_sha256": "15b285fcdcde8dd4a03bdcf97ccf1d74829e9f9b851c3209e5b2ee36eaa20e25"
+    },
+    {
+      "name": "final-game",
+      "category": "regression",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 10,
+      "evidence": "diagnostics/multicore-20261102/raw/final-game.json.gz",
+      "evidence_sha256": "a7329e15b3648d58928a7cfdbcd0dae65687b72797358396214ca38c104ac32d"
+    },
+    {
+      "name": "final-idle",
+      "category": "idle",
+      "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+      "passed": true,
+      "checks": 0,
+      "evidence": "diagnostics/multicore-20261102/raw/final-idle.json.gz",
+      "evidence_sha256": "083c4225e4a78fd33a1169ca8a57c9388f2c5fd51f9cb50f25ff78a8d384b5c9",
+      "cpu_seconds": 0.03,
+      "idle_percent_of_one_cpu": 0.5999712860915347
+    }
+  ],
+  "regression_checks": 298,
+  "limits": [
+    "Local controlled throughput is not an Internet speed or router benchmark.",
+    "Single encrypted TCP/QUIC stream still has protocol ordering limits.",
+    "Eight-core and four-core runs are separate host scheduling conditions, not a proof of linear scaling.",
+    "Controller snapshots keep all byte-recording shards locked through counter collection to preserve consistency."
+  ]
+}

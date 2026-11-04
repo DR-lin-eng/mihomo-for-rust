@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use mihomo_buf::ByteWindow;
 use mihomo_core::{BoxedTcpStream, ConnectionContext, DnsMode, Metadata, PacketEnvelope, TcpStream, Tunnel, UdpSession};
-use mihomo_dns::DnsRuntime;
+use mihomo_dns::{DnsError, DnsRuntime};
 use mihomo_rules::{RuleSet, RuntimeRuleSnapshot};
 use mihomo_transport::{
     GrpcOptions as TransportGrpcOptions,
@@ -31,6 +31,7 @@ use crate::healthcheck::{record_health_state, ProxyHealthSnapshot, ProxyHealthSt
 const RULE_FALLBACK_TARGET: &str = "COMPATIBLE";
 const DNS_RULES_PROXY: &str = "RULES";
 const UDP_CONNECTION_IDLE_TIMEOUT_MS: u64 = 30_000;
+const TCP_CONNECTION_IDLE_AGE_MS: u64 = 30_000;
 
 pub struct RuntimeTunnel {
     mode: Mutex<String>,
@@ -41,6 +42,7 @@ pub struct RuntimeTunnel {
     rules: RwLock<Arc<RuleSet>>,
     pub(crate) sniffer: RwLock<Arc<crate::sniffer::Sniffer>>,
     dns_runtime: RwLock<Option<Arc<Mutex<DnsRuntime>>>>,
+    dns_queries: mihomo_dns::SharedDnsQueries,
     pub(crate) candidate_states: Mutex<BTreeMap<String, CandidateState>>,
     udp_relay: Mutex<QueuedUdpRelay>,
     last_error: Mutex<Option<String>>,
@@ -49,6 +51,9 @@ pub struct RuntimeTunnel {
     active_connections: Mutex<BTreeMap<u64, Arc<TrackedConnection>>>,
     active_udp_connections: Mutex<BTreeMap<String, Arc<TrackedConnection>>>,
     next_udp_connection_id: AtomicU64,
+    kernel_direct: Mutex<BTreeMap<mihomo_ebpf::DirectFlowKey, KernelTracked>>,
+    kernel_policy_gate: Mutex<()>,
+    kernel_policy_generation: AtomicU64,
     proxy_health: Mutex<BTreeMap<String, ProxyHealthState>>,
 }
 
@@ -384,6 +389,7 @@ pub struct ActiveConnectionSnapshot {
     pub provider_chains: Vec<String>,
     pub rule: String,
     pub rule_payload: String,
+    pub kernel_offload: bool,
 }
 
 struct TrackedConnection {
@@ -468,6 +474,7 @@ impl RuntimeTunnel {
             rules: RwLock::new(Arc::new(RuleSet::default())),
             sniffer: RwLock::new(Arc::new(crate::sniffer::Sniffer::default())),
             dns_runtime: RwLock::new(None),
+            dns_queries: mihomo_dns::SharedDnsQueries::default(),
             candidate_states: Mutex::new(BTreeMap::new()),
             udp_relay: Mutex::new(QueuedUdpRelay::default()),
             last_error: Mutex::new(None),
@@ -476,6 +483,9 @@ impl RuntimeTunnel {
             active_connections: Mutex::new(BTreeMap::new()),
             active_udp_connections: Mutex::new(BTreeMap::new()),
             next_udp_connection_id: AtomicU64::new(1),
+            kernel_direct: Mutex::new(BTreeMap::new()),
+            kernel_policy_gate: Mutex::new(()),
+            kernel_policy_generation: AtomicU64::new(0),
             proxy_health: Mutex::new(BTreeMap::new()),
         }
     }
@@ -519,6 +529,19 @@ impl RuntimeTunnel {
         self.dns_runtime.read().unwrap().as_ref().map(Arc::clone)
     }
 
+    pub fn udp_policy_generation(&self) -> u64 {
+        self.kernel_policy_generation.load(Ordering::Acquire)
+    }
+
+    pub fn coalesce_dns_query(
+        &self,
+        scope: usize,
+        packet: &[u8],
+        resolve: impl FnOnce() -> Result<Option<Vec<u8>>, DnsError>,
+    ) -> Result<Option<Vec<u8>>, DnsError> {
+        self.dns_queries.resolve(scope, packet, resolve)
+    }
+
     pub fn current_mode(&self) -> String {
         self.mode.lock().unwrap().clone()
     }
@@ -528,7 +551,9 @@ impl RuntimeTunnel {
         if !matches!(normalized.as_str(), "direct" | "global" | "rule") {
             return Err(RuntimeControlError::InvalidMode(mode.to_owned()));
         }
+        let _gate=self.kernel_policy_gate.lock().unwrap();
         *self.mode.lock().unwrap() = normalized;
+        self.invalidate_kernel_udp();
         Ok(())
     }
 
@@ -560,14 +585,19 @@ impl RuntimeTunnel {
     }
 
     pub fn set_rule_disabled(&self, index: usize, disabled: bool) -> bool {
-        self.rules.read().unwrap().set_rule_disabled(index, disabled)
+        let _gate=self.kernel_policy_gate.lock().unwrap();
+        let changed=self.rules.read().unwrap().set_rule_disabled(index, disabled);
+        if changed {self.invalidate_kernel_udp();}changed
     }
 
     pub fn replace_rule_set(&self, rules: RuleSet) {
+        let _gate=self.kernel_policy_gate.lock().unwrap();
         *self.rules.write().unwrap() = Arc::new(rules);
+        self.invalidate_kernel_udp();
     }
 
     pub fn replace_dns_runtime(&self, dns_runtime: Option<DnsRuntime>) {
+        let _gate=self.kernel_policy_gate.lock().unwrap();
         let previous = self.dns_runtime();
         *self.dns_runtime.write().unwrap() = dns_runtime.map(|mut runtime| {
             if let Some(previous) = previous.as_ref() {
@@ -576,6 +606,7 @@ impl RuntimeTunnel {
             }
             Arc::new(Mutex::new(runtime))
         });
+        self.invalidate_kernel_udp();
     }
 
     pub fn seed_dns_fake_ip_state(&self, runtime: &mut DnsRuntime) {
@@ -600,7 +631,13 @@ impl RuntimeTunnel {
         }
     }
 
-    pub fn replace_registry(&self, mut registry: RuntimeRegistry) {
+    pub fn replace_registry(&self, registry: RuntimeRegistry) {
+        let _gate=self.kernel_policy_gate.lock().unwrap();
+        self.replace_registry_locked(registry);
+    }
+
+    fn replace_registry_locked(&self, mut registry: RuntimeRegistry) {
+        self.invalidate_kernel_udp();
         self.smart_advanced.invalidate();
         {
             let current = self.registry.lock().unwrap();
@@ -626,6 +663,27 @@ impl RuntimeTunnel {
             }
         }
         *self.registry.lock().unwrap() = registry;
+    }
+
+    /// Publish prepared policy while keeping live TCP streams, their tracking
+    /// records, DNS allocations, TUN workers and kernel TCP flow permissions.
+    pub fn apply_prepared_policy(&self, prepared: &RuntimeTunnel) {
+        let _gate = self.kernel_policy_gate.lock().unwrap();
+        let registry = prepared.registry_snapshot();
+        let unchanged = {
+            let current = self.registry.lock().unwrap();
+            registry.proxies.keys().filter(|name|
+                current.proxies.contains_key(*name)
+                    && current.proxy_definitions.get(*name) == registry.proxy_definitions.get(*name))
+                .cloned().collect::<std::collections::BTreeSet<_>>()
+        };
+        self.replace_registry_locked(registry);
+        *self.rules.write().unwrap() = Arc::clone(&prepared.rules.read().unwrap());
+        *self.sniffer.write().unwrap() = Arc::clone(&prepared.sniffer.read().unwrap());
+        *self.mode.lock().unwrap() = prepared.current_mode();
+        *self.smart_context.lock().unwrap() = prepared.smart_context.lock().unwrap().clone();
+        self.candidate_states.lock().unwrap().retain(|name, _| unchanged.contains(name));
+        self.proxy_health.lock().unwrap().retain(|name, _| unchanged.contains(name));
     }
 
     pub fn registry_snapshot(&self) -> RuntimeRegistry {
@@ -657,6 +715,7 @@ impl RuntimeTunnel {
     }
 
     pub fn traffic_snapshot(&self) -> TrafficSnapshot {
+        self.sync_kernel_direct();
         self.traffic.snapshot()
     }
 
@@ -668,6 +727,7 @@ impl RuntimeTunnel {
     pub fn connections_with_traffic_snapshot(
         &self,
     ) -> (TrafficSnapshot, Vec<ActiveConnectionSnapshot>) {
+        self.sync_kernel_direct();
         self.traffic
             .with_snapshot(|traffic| (traffic, self.collect_connections_snapshot()))
     }
@@ -687,6 +747,7 @@ impl RuntimeTunnel {
                 provider_chains: tracked.provider_chains.clone(),
                 rule: tracked.rule.clone(),
                 rule_payload: tracked.rule_payload.clone(),
+                kernel_offload: tracked.id&(1_u64<<62)!=0&&tracked.id&(1_u64<<63)==0,
             })
             .collect::<Vec<_>>();
         let now = self.traffic.elapsed_ms();
@@ -702,6 +763,7 @@ impl RuntimeTunnel {
             provider_chains: tracked.provider_chains.clone(),
             rule: tracked.rule.clone(),
             rule_payload: tracked.rule_payload.clone(),
+            kernel_offload: false,
         }));
         snapshots
     }
@@ -712,6 +774,7 @@ impl RuntimeTunnel {
     ) -> Result<(String, crate::ResolvedProxyPath), ExecutionError> {
         let mut metadata = metadata.clone();
         self.preprocess_metadata_for_routing(&mut metadata)?;
+        let _gate = self.kernel_policy_gate.lock().unwrap();
         if metadata.smart_rule.is_none() {
             metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
         }
@@ -741,6 +804,7 @@ impl RuntimeTunnel {
         }
         let mut metadata = metadata.clone();
         self.preprocess_metadata_for_routing(&mut metadata)?;
+        let _gate = self.kernel_policy_gate.lock().unwrap();
         let mode = self.mode.lock().unwrap().clone();
         if mode == "direct" && metadata.special_proxy.trim().is_empty() {
             let _ = metadata
@@ -1390,6 +1454,7 @@ impl RuntimeTunnel {
     }
 
     pub fn close_connection(&self, id: u64) -> bool {
+        if id & (1_u64<<62)!=0 && id & (1_u64<<63)==0 {return self.close_kernel_connection(id);}
         if let Some(connection) = self.active_connections.lock().unwrap().get(&id).cloned() {
             let mut handles = connection.handles.lock().unwrap();
             for handle in handles.iter_mut() {
@@ -1410,6 +1475,7 @@ impl RuntimeTunnel {
     }
 
     pub fn close_all_connections(&self) -> usize {
+        let kernel_count=self.close_all_kernel_connections();
         let connections = self
             .active_connections
             .lock()
@@ -1427,7 +1493,60 @@ impl RuntimeTunnel {
         let udp_count = udp.len();
         for connection in udp.values() { connection.cancel_udp(); }
         udp.clear();
-        connections.len() + udp_count
+        connections.len() + udp_count + kernel_count
+    }
+
+    /// Release one tracked TCP five-tuple when the blocking executor is close
+    /// to exhaustion. Idle connections are selected first; if every tracked
+    /// connection is active, the oldest one is released as a last resort so a
+    /// new connection can still make progress on small devices.
+    pub fn age_connection_under_pressure(&self) -> bool {
+        let now = self.traffic.elapsed_ms();
+        let candidates = self
+            .active_connections
+            .lock()
+            .unwrap()
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        let Some(connection) = candidates
+            .iter()
+            .filter(|connection| {
+                now.saturating_sub(connection.last_activity_elapsed_ms.load(Ordering::Relaxed))
+                    >= TCP_CONNECTION_IDLE_AGE_MS
+            })
+            .min_by_key(|connection| {
+                (
+                    connection.last_activity_elapsed_ms.load(Ordering::Relaxed),
+                    connection.start_unix_ms,
+                    connection.id,
+                )
+            })
+            .or_else(|| {
+                candidates.iter().min_by_key(|connection| {
+                    (
+                        connection.last_activity_elapsed_ms.load(Ordering::Relaxed),
+                        connection.start_unix_ms,
+                        connection.id,
+                    )
+                })
+            })
+        else {
+            return false;
+        };
+        // Remove it from the snapshot immediately. The relay will unregister
+        // the same id when its I/O loop observes the shutdown; keeping it in
+        // the map until then would make repeated pressure checks select the
+        // same tuple over and over.
+        self.active_connections
+            .lock()
+            .unwrap()
+            .remove(&connection.id);
+        let mut handles = connection.handles.lock().unwrap();
+        for handle in handles.iter_mut() {
+            let _ = handle.shutdown_all();
+        }
+        true
     }
 
     pub fn has_proxy(&self, name: &str) -> bool {
@@ -1460,6 +1579,7 @@ impl RuntimeTunnel {
         group: &str,
         candidate: &str,
     ) -> Result<(), RuntimeControlError> {
+        let _gate=self.kernel_policy_gate.lock().unwrap();
         let mut registry = self.registry.lock().unwrap();
         if !registry.proxies.contains_key(group) {
             return Err(RuntimeControlError::ProxyNotFound(group.to_owned()));
@@ -1474,10 +1594,13 @@ impl RuntimeTunnel {
             });
         }
         view.runtime.set_selected(candidate.to_owned());
+        drop(registry);
+        self.invalidate_kernel_udp();
         Ok(())
     }
 
     pub fn clear_group_selected(&self, group: &str) -> Result<(), RuntimeControlError> {
+        let _gate=self.kernel_policy_gate.lock().unwrap();
         let mut registry = self.registry.lock().unwrap();
         if !registry.proxies.contains_key(group) {
             return Err(RuntimeControlError::ProxyNotFound(group.to_owned()));
@@ -1486,6 +1609,8 @@ impl RuntimeTunnel {
             return Err(RuntimeControlError::GroupNotFound(group.to_owned()));
         };
         view.runtime.clear_selected();
+        drop(registry);
+        self.invalidate_kernel_udp();
         Ok(())
     }
 
@@ -1560,6 +1685,7 @@ impl RuntimeTunnel {
     pub fn selected_target(&self, metadata: &Metadata) -> String {
         let mut metadata = metadata.clone();
         let _ = self.preprocess_metadata_for_routing(&mut metadata);
+        let _gate = self.kernel_policy_gate.lock().unwrap();
         let mode = self.mode.lock().unwrap().clone();
         let registry = self.registry.lock().unwrap();
         let rules = Arc::clone(&self.rules.read().unwrap());
@@ -1586,10 +1712,11 @@ impl RuntimeTunnel {
         if let Some(result) = self.try_connect_direct_tcp(&metadata, &mut dialer)? {
             return Ok(result);
         }
-        metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
         let mut executor = mihomo_transport::TcpTransportExecutor::new(dialer);
         let mut attempts = 0;
         loop {
+            let policy_gate = self.kernel_policy_gate.lock().unwrap();
+            metadata.smart_rule=self.rules.read().unwrap().smart_rule_identity(&metadata);
             let states = self.candidate_states.lock().unwrap().clone();
             let mode = self.mode.lock().unwrap().clone();
             let rules = Arc::clone(&self.rules.read().unwrap());
@@ -1599,6 +1726,7 @@ impl RuntimeTunnel {
                 let plan = build_execution_plan(&mut registry, &target, Some(&metadata), &states)?;
                 if plan.hops.len() == 1 && matches!(plan.hops[0].spec, ExecutionHopSpec::Dns(_)) {
                     drop(registry);
+                    drop(policy_gate);
                     return self.connect_dns_tcp().map(|stream| (stream, plan));
                 }
                 let transport = crate::build_transport_plan_from_execution_plan(&plan, &metadata)?;
@@ -1606,6 +1734,7 @@ impl RuntimeTunnel {
                 let pinned = plan.selected_path.iter().any(|name| registry.groups.get(name).is_some_and(|view|view.runtime.smart.is_some() && view.runtime.selected().is_some()));
                 (plan, transport, smart_route, pinned)
             };
+            drop(policy_gate);
             if smart_route && metadata.kind != mihomo_core::SessionKind::Inner {
                 if let Some(result)=self.connect_smart_race(&metadata,&plan,executor.dialer()) {return result;}
             }
@@ -1695,6 +1824,11 @@ impl RuntimeTunnel {
         upstream: &mut dyn TcpStream,
         plan: Option<&ExecutionPlan>,
     ) -> io::Result<TcpRelayStats> {
+        // Inbound handshake deadlines protect the blocking executor. Once a
+        // connection reaches the relay it is an established flow and must be
+        // allowed to stay idle without inheriting that short deadline.
+        let _ = context.stream_mut().set_timeouts(None, None);
+        let _ = upstream.set_timeouts(None, None);
         let tracked = {
             let mut handles = Vec::new();
             if let Ok(handle) = context.stream_mut().try_clone_box() {
@@ -1717,6 +1851,7 @@ impl RuntimeTunnel {
             Some(&tracked.upload),
             Some(&tracked.download),
             Some(&self.traffic),
+            Some(&tracked.last_activity_elapsed_ms),
         );
         self.unregister_connection(context.id());
         let stats = result.map_err(|error| {
@@ -1969,6 +2104,8 @@ impl RuntimeTunnel {
     }
 }
 
+include!("kernel_direct.rs");
+
 pub(crate) struct DnsAwareSystemTcpDialer {
     dns_runtime: Option<Arc<Mutex<DnsRuntime>>>,
     timeout_ms: Option<u64>,
@@ -2190,7 +2327,7 @@ mod tests {
     use std::collections::VecDeque;
     use std::io::{self, Cursor, Read, Write};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener};
-    use std::sync::{Arc, Mutex};
+    use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 
     use mihomo_buf::ByteWindow;
     use mihomo_config::parse_runtime_config_document;
@@ -2254,6 +2391,35 @@ mod tests {
     impl mihomo_core::TcpStream for SharedStream {
         fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
             Ok(Box::new(SharedStream(Arc::clone(&self.0))))
+        }
+    }
+
+    struct CloseProbe(Arc<AtomicBool>);
+
+    impl Read for CloseProbe {
+        fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+            Ok(0)
+        }
+    }
+
+    impl Write for CloseProbe {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl mihomo_core::TcpStream for CloseProbe {
+        fn try_clone_box(&self) -> io::Result<BoxedTcpStream> {
+            Ok(Box::new(Self(Arc::clone(&self.0))))
+        }
+
+        fn shutdown_all(&mut self) -> io::Result<()> {
+            self.0.store(true, Ordering::Release);
+            Ok(())
         }
     }
 
@@ -6255,6 +6421,35 @@ proxies:
         let traffic = tunnel.traffic_snapshot();
         assert_eq!(traffic.up_total, 7);
         assert_eq!(traffic.down_total, 6);
+    }
+
+    #[test]
+    fn blocking_pressure_ages_oldest_tracked_tcp_five_tuple() {
+        let document = parse_runtime_config_document("mode: direct").unwrap();
+        let tunnel = RuntimeTunnel::new(
+            document.mode.clone(),
+            build_runtime_registry(&document).unwrap(),
+        );
+        let first_closed = Arc::new(AtomicBool::new(false));
+        let second_closed = Arc::new(AtomicBool::new(false));
+        tunnel.register_connection(
+            10,
+            Metadata::default(),
+            None,
+            vec![Box::new(CloseProbe(Arc::clone(&first_closed)))],
+        );
+        tunnel.register_connection(
+            11,
+            Metadata::default(),
+            None,
+            vec![Box::new(CloseProbe(Arc::clone(&second_closed)))],
+        );
+
+        assert!(tunnel.age_connection_under_pressure());
+        assert!(first_closed.load(Ordering::Acquire));
+        assert!(!second_closed.load(Ordering::Acquire));
+        assert!(tunnel.age_connection_under_pressure());
+        assert!(second_closed.load(Ordering::Acquire));
     }
 
     #[test]

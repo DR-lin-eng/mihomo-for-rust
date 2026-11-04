@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-11-02T10:33:10.498073+00:00",
+  "git_head": "889b2645e478319a7805ca151f560f85f6627bc0",
+  "core_sha256": "0702d75a8ddbc31cb6f33133c97df10b7da05a11f91e66bea25d8ca9a2e2888e",
+  "production_code_changed": false,
+  "source_sha256": {
+    "rust/crates/mihomo-ebpf/bpf/mihomo.c": "42245f5a11bc13b99a69346b048e18088fa3b7b3dd742b58c29886ea6d25ed97",
+    "rust/crates/mihomo-ebpf/bpf/mihomo.bpfel.o": "3716844dc534f3ad1451aadbe9bba99805ac3125f6332e03a6ac4ada85109c99",
+    "rust/crates/mihomo-ebpf/src/linux.rs": "f6a9f5fc0c6d91f88d598d9715b5162ac166e18e7c238d04d73ab051a7b95ada",
+    "rust/crates/mihomo-config/src/document.rs": "0be700a70385303c2465b31954b43fc4fa413f995378edda72bc121bc1e63408",
+    "rust/crates/mihomo-core/src/socket_mark.rs": "86473219b6c7900ca47367232206e336327fea3bbbded61267d3550805911c0c",
+    "rust/crates/mihomo-runtime/src/tcp.rs": "54cf10b27349fa9b3407e4a132998931883575830acb313620bf030468a62583",
+    "rust/crates/mihomo-runtime/src/execution.rs": "e32f9f1b88e5d65114b778b59bc2dd9e50dac631865fef73cbc52979d1a36118",
+    "rust/crates/mihomo-app/src/listener_udp_session_ops.rs": "75a7f673fb992706b86737124b10800702c721e0e191d3cbf223af7f95148423",
+    "rust/crates/mihomo-transport/src/executor.rs": "83f47b2974e9064b653914386d13116c12fa281ce9d74fc0eee11c48355840fd",
+    "rust/crates/mihomo-transport/src/transport_types.rs": "fae4d90f36590534c7c31fc635f2eeecfe4c286882d4e8734d7053322d3a247e",
+    "rust/crates/mihomo-platform/src/capabilities.rs": "82ad006b1ee14dada29160d2a9f91ab3e3c2aa629501096b2f4855e7ee101be9",
+    "rust/crates/mihomo-platform/src/optimization.rs": "22370366a78ef83a3137b4fcc38e43558f55aa04e0618730101e50ef10b3f990",
+    "scripts/ebpf-smoke.py": "1fc4e02fb15a0a3ceecdc31897967665c46f074337d7e3610839dd8f8c34f345",
+    "scripts/ebpf-packet-tests.py": "e813a85000bf13d1c9ba25cfd4d2af197024e81f20e3d90efc60a4334868f741"
+  },
+  "tests": [
+    {
+      "name": "ebpf-runtime",
+      "checks": 39,
+      "passed": true,
+      "evidence": "diagnostics/direct-ebpf-20261102/raw/ebpf-runtime.json.gz",
+      "sha256": "018d3b400568363598246c3842eb6ec2ede7d92109f8a9612e879ec9dea2cfd5"
+    },
+    {
+      "name": "ebpf-packets",
+      "checks": 33,
+      "passed": true,
+      "evidence": "diagnostics/direct-ebpf-20261102/raw/ebpf-packets.json.gz",
+      "sha256": "a4641dc65260a97150cfa6dc16aa4d85bd67e8ebccdbfef98129be5d298ef4e6"
+    },
+    {
+      "name": "no-ebpf",
+      "checks": 1,
+      "passed": true,
+      "evidence": "diagnostics/direct-ebpf-20261102/raw/no-ebpf.json.gz",
+      "sha256": "c74f07ded2ffda116686fa7c80446cf470dd4dd146a41b5fb0a92738a54bc0b4"
+    }
+  ],
+  "conclusions": {
+    "ebpf_captures_and_redirects": true,
+    "direct_socket_bypass_mark": true,
+    "rule_based_direct_kernel_flow_offload": false,
+    "tcp_relay_uses_read_write": true,
+    "configuration_without_ebpf_running": false
+  },
+  "device_accessed": false
+}

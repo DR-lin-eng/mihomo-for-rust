@@ -15,6 +15,34 @@ const LINUX_IFNAMSIZ: usize = 16;
 const DEFAULT_IPROUTE2_TABLE_INDEX: i32 = 2022;
 const DEFAULT_IPROUTE2_RULE_INDEX: i32 = 9000;
 
+#[path = "linux_routes.rs"]
+mod routes;
+pub use routes::LinuxTunRouteGuard;
+
+pub struct LinuxTunDevice {
+    file: File,
+    routes: Option<LinuxTunRouteGuard>,
+}
+
+impl LinuxTunDevice {
+    pub fn into_parts(self) -> (File, Option<LinuxTunRouteGuard>) {
+        (self.file, self.routes)
+    }
+}
+
+impl std::ops::Deref for LinuxTunDevice {
+    type Target = File;
+    fn deref(&self) -> &File { &self.file }
+}
+
+impl std::ops::DerefMut for LinuxTunDevice {
+    fn deref_mut(&mut self) -> &mut File { &mut self.file }
+}
+
+impl AsRawFd for LinuxTunDevice {
+    fn as_raw_fd(&self) -> std::os::fd::RawFd { self.file.as_raw_fd() }
+}
+
 #[repr(C)]
 union LinuxIfReqData {
     flags: libc::c_short,
@@ -27,7 +55,7 @@ struct LinuxIfReq {
     data: LinuxIfReqData,
 }
 
-pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<File> {
+pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<LinuxTunDevice> {
     let file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -50,6 +78,11 @@ pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<File> {
         data: LinuxIfReqData { pad: [0; 24] },
     };
     let requested_name = requested_linux_tun_name(spec)?;
+    // Claim the route lease before binding a new interface. An ip child from
+    // a killed predecessor may still hold the old device until exec/exit.
+    let mut routes = if spec.config.auto_route {
+        Some(LinuxTunRouteGuard::acquire(spec, &requested_name)?)
+    } else { None };
     for (index, byte) in requested_name.bytes().enumerate() {
         ifreq.name[index] = byte as libc::c_char;
     }
@@ -76,14 +109,21 @@ pub fn open_linux_tun_device(spec: &TunRuntimeSpec) -> io::Result<File> {
     }
     let actual_name = linux_ifreq_name(&ifreq);
     if !actual_name.is_empty() {
-        configure_linux_tun_interface(spec, &actual_name)?;
+        if let Some(owner) = routes.as_mut() {
+            owner.set_device(&actual_name);
+            for command in linux_tun_setup_commands(spec, &actual_name) {
+                owner.configure(command)?;
+            }
+        } else {
+            configure_linux_tun_interface(spec, &actual_name)?;
+        }
         let message = format!(
             "[TUN] interface {actual_name} started ipv4={:?} ipv6={:?} auto-route={}",
             spec.config.inet4_address, spec.config.inet6_address, spec.config.auto_route);
         eprintln!("{message}");
         mihomo_core::push_log(mihomo_core::LogLevel::Info, message);
     }
-    Ok(file)
+    Ok(LinuxTunDevice { file, routes })
 }
 
 pub fn requested_linux_tun_name(spec: &TunRuntimeSpec) -> io::Result<String> {
@@ -727,11 +767,8 @@ fn render_u16_range(start: u16, end: u16) -> String {
 }
 
 fn render_u32_range(start: u32, end: u32) -> String {
-    if start == end {
-        start.to_string()
-    } else {
-        format!("{start}-{end}")
-    }
+    // iproute2 requires START-END for uidrange, including singleton UIDs.
+    format!("{start}-{end}")
 }
 
 fn collect_u16_ranges(values: &[u16], ranges: &[String]) -> Vec<(u16, u16)> {

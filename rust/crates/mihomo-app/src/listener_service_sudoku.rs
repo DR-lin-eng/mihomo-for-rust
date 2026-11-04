@@ -195,6 +195,7 @@ pub(super) fn handle_sudoku_connection(
             });
         },
         SudokuAcceptedStream::Udp { stream } => {
+            let _ = stream.set_timeouts(None, None);
             let local_addr = SocketAddr::from(([0, 0, 0, 0], 0));
             let peer_addr = peer_addr.unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 0)));
             let stream = Arc::new(Mutex::new(stream));

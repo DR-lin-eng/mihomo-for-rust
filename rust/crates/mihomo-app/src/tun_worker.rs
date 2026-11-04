@@ -19,6 +19,10 @@ use mihomo_runtime::{dispatch_tun_tcp_stream, RuntimeTunnel};
 use mihomo_tun::{TunRuntimeSpec, TunUdpRuntimeMode};
 #[cfg(target_os = "linux")]
 use mihomo_tun::open_linux_tun_device;
+#[cfg(target_os = "linux")]
+type TunRouteGuard = mihomo_tun::LinuxTunRouteGuard;
+#[cfg(not(target_os = "linux"))]
+type TunRouteGuard = ();
 
 use crate::listener_udp_support::udp_worker_threads;
 use crate::tun_icmp_packet::parse_tun_icmp_packet;
@@ -27,6 +31,8 @@ use crate::tun_tcp_packet::{parse_tun_tcp_packet, ParsedTunTcpPacket, TunTcpFlow
 use crate::tun_tcp_stack::{TunTcpPassiveStack, TunTcpStreamHandle};
 
 const TUN_PACKET_BUFFER_SIZE: usize = 64 * 1024;
+#[path="tun_kernel_direct.rs"]
+mod kernel_direct;
 #[cfg(unix)]
 const TUN_WORKER_POLL_TIMEOUT_MS: i32 = 20;
 const TUN_UDP_QUEUE_DEPTH_PER_WORKER: usize = 64;
@@ -206,6 +212,7 @@ fn spawn_tun_udp_workers(queue: Arc<TunUdpDispatchQueue>) -> Vec<JoinHandle<()>>
 }
 
 include!("tun_worker_tcp.rs");
+include!("tun_worker_tcp_dispatch.rs");
 include!("tun_worker_loop.rs");
 include!("tun_worker_io.rs");
 

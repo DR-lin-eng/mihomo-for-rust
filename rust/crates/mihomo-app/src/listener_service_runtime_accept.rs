@@ -36,6 +36,12 @@ pub(super) fn accept_loop(
     udp_queue: Arc<UdpDispatchQueue>,
 ) {
     while !shutdown.load(Ordering::Relaxed) {
+        if crate::blocking_executor::blocking_workers_under_pressure() {
+            // Free one established five-tuple before admitting another task.
+            // This is deliberately gradual so a short burst does not reset
+            // every live connection on a small router.
+            tunnel.age_connection_under_pressure();
+        }
         match accept_with_shutdown_poll(&listener, &shutdown) {
             Ok((stream, _)) => {
                 let peer_addr = stream.peer_addr().ok();
@@ -45,6 +51,9 @@ pub(super) fn accept_loop(
                 let handler = handler.clone();
                 let dns_runtime = dns_runtime.clone();
                 let udp_queue = Arc::clone(&udp_queue);
+                if crate::blocking_executor::blocking_workers_under_pressure() {
+                    tunnel.age_connection_under_pressure();
+                }
                 crate::blocking_executor::spawn_blocking(move || {
                     if let Err(err) = dispatch_connection(
                         handler,
@@ -86,6 +95,21 @@ pub(super) fn dispatch_connection(
     dns_runtime: Option<DnsRuntime>,
     udp_queue: Arc<UdpDispatchQueue>,
 ) -> Result<(), ListenerRuntimeError> {
+    // The common HTTP/SOCKS/mixed handlers perform a synchronous client
+    // handshake before a tracked relay exists. A peer that sends no bytes must
+    // not occupy a blocking worker forever. Established relays clear these
+    // deadlines when they register the connection. Protocol-specific inbound
+    // handlers own their handshake and timeout policy.
+    if matches!(
+        &handler,
+        ManagedTcpListenerHandler::Http(_)
+            | ManagedTcpListenerHandler::Socks(_)
+            | ManagedTcpListenerHandler::Mixed(_)
+    ) {
+        let handshake_timeout = Some(std::time::Duration::from_secs(15));
+        let _ = stream.set_read_timeout(handshake_timeout);
+        let _ = stream.set_write_timeout(handshake_timeout);
+    }
     match handler {
         ManagedTcpListenerHandler::Http(config) => {
             let stream = wrap_http_listener_stream(&config, stream)?;

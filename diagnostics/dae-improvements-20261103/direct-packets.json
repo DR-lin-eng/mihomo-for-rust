@@ -1,0 +1,189 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "IPv4 TCP forward rewrite",
+      "passed": true,
+      "detail": {
+        "code": 0
+      }
+    },
+    {
+      "name": "IPv4 TCP forward checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP reverse fake source",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP reverse checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP retransmissions counted once",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP impossible ACK cannot inflate counters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP controller close drops outgoing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 TCP controller close drops reply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP forward rewrite",
+      "passed": true,
+      "detail": {
+        "code": 0
+      }
+    },
+    {
+      "name": "IPv4 UDP forward checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP reverse fake source",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP reverse checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP payload counters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP controller close drops outgoing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 UDP controller close drops reply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 ICMP quoted fake destination restored",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv4 ICMP checksum preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP forward rewrite",
+      "passed": true,
+      "detail": {
+        "code": 0
+      }
+    },
+    {
+      "name": "IPv6 TCP forward checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP reverse fake source",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP reverse checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP retransmissions counted once",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP impossible ACK cannot inflate counters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP controller close drops outgoing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 TCP controller close drops reply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP forward rewrite",
+      "passed": true,
+      "detail": {
+        "code": 0
+      }
+    },
+    {
+      "name": "IPv6 UDP forward checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP reverse fake source",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP reverse checksum",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP payload counters",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP controller close drops outgoing",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 UDP controller close drops reply",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 ICMP quoted fake destination restored",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "IPv6 ICMP checksum preserved",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "unclassified LAN TCP is sent to TUN",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "object_sha256": "b1c330d85857660eb0a6d0ed721cf0374818cf07ef30d711f0e0061494ab7f7b"
+}
