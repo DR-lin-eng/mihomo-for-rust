@@ -24,6 +24,16 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/MetaCubeX/mihomo"
 version = "0.1.0"
 
+# Keep distribution binaries small while retaining normal unwinding semantics.
+# Thin LTO gives most of the cross-crate dead-code elimination benefit without
+# the memory and build-time cost of a full LTO link.
+[profile.release]
+opt-level = "z"
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+debug = 0
+
 # Fixed Aya 0.13.1 with one additive constructor for TC programs without CO-RE.
 [patch.crates-io]
 aya = { path = "third-party/aya" }

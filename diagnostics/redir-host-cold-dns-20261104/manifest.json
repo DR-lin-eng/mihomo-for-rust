@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-04",
+  "base_commit": "ce0108261fb9e8a5b03366d54fd649f84ca53cfc",
+  "baseline_core": "bin/Clash.Core",
+  "baseline_sha256": "0dd44a427402f135d50a866cc678cb2c54a2c9475cea21d2689e6c9c9574635c",
+  "candidate_core": "bin/mihomo-dns-cold-linux-arm64-20261104",
+  "candidate_sha256": "99df65724f4879451bbcaf4913a548184c3fefa035a168d52b8d96d89e6012a8",
+  "docker_image": "rust:1.88",
+  "platform": "linux/arm64",
+  "dns_tests": {
+    "passed": 67,
+    "failed": 0
+  },
+  "baseline_smoke": {
+    "passed": 26,
+    "total": 42
+  },
+  "final_smoke": {
+    "passed": 42,
+    "total": 42
+  },
+  "public_domain": "www.hacg.me",
+  "cloudflare_core_queries": {
+    "successful": 18,
+    "total": 18
+  },
+  "source_sha256": {
+    "rust/crates/mihomo-dns/src/runtime.rs": "3728a95a68437bb78876abb4082e4f245b48ebf416a45106800708d799389e5c",
+    "rust/crates/mihomo-dns/src/cold_start_tests.rs": "a114ee831d70d646f4d54e18a43a244ed861751d7e02e307d93ae75ee781d4c3",
+    "scripts/redir-host-cold-dns-smoke.py": "bd9c3d247cb341e0e111edbefbbb053093ce2029a0ab5a02aedcfad8bcad5176"
+  },
+  "evidence_sha256": {
+    "raw/baseline.json": "795036affc01a6369af9415c55f0fc26e5154f9877aeedb6451a0f6750abb22c",
+    "raw/build.log": "774987ba14f2326bedb3a614183e8ffba48b1fc943555bebd84081976daee957",
+    "raw/dns-tests.log": "a9e752b4c334485a0eba0ac85196ab9ffd5e8d4165117a822c9d2f14bcbe7ba8",
+    "raw/domain-final.json": "587af179be55d38d78685a850eb9e9b7ff1bc8a89b0cc3505a85430607a9fafd",
+    "raw/final.json": "b8cebeb647d09b0964f97e355aba52deedc69081736d6768592a7bd94c9da167",
+    "raw/probe-core-domain.py": "d675f636180dea969ab40fc07b044bd21196ff878d0dfbe81e5b0a543d1e292d",
+    "raw/public-upstreams.json": "b1b82d18d6f1dfc907d5192a976e4e33851631103f2b19ed89c66c9d536dcc29"
+  },
+  "scope": "Controlled loopback cold DNS reproduction and public DoH probes from Docker. Router configuration/logs unavailable; no deployment performed. Candidate is GNU Linux ARM64, not an OpenWrt musl artifact."
+}

@@ -24,4 +24,6 @@ docker run --rm -v "$PWD:/work" -w /work rust:1.88 cargo test --workspace
 
 The pinned toolchain uses the minimal profile, and from the repository root the default `make build` and `make test` targets already fall back to this Docker-based Rust toolchain path when `cargo` is unavailable locally. The Docker fallback uses isolated target directories for build, test, and release flows so it does not block on a local or concurrent Rust build that is using `rust/target`.
 
+Release builds use the size-oriented Cargo profile (`opt-level = "z"`, thin LTO, one codegen unit, and symbol stripping). On the ARM64 Docker builder this reduces the glibc release executable from about 33.9 MiB to about 16.1 MiB; the Alpine image uses a static musl build of about 15.2 MiB. Normal panic/unwinding behavior is preserved.
+
 To keep the default Rust mainline build lighter and avoid pulling vendored OpenSSL into every release build, SSH transport support is gated out of the default Rust feature set for now. The same opt-in applies to SSH-specific end-to-end tests in `mihomo-app`. Re-enable it explicitly when the cutover is ready to carry that native dependency in the mainline.

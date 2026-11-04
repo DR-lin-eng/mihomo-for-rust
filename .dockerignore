@@ -1,0 +1,9 @@
+# The image only needs the Rust workspace. Keep local build products and the
+# legacy Go tree out of the Docker build context.
+*
+!rust/
+!rust/**
+rust/target
+rust/target-*
+rust/.cargo-home*
+rust/.mimosa

@@ -371,14 +371,20 @@ impl DnsRuntime {
         upstream: &mut impl DnsUpstream,
     ) -> Result<Vec<u8>, DnsError> {
         let query = crate::packet::parse_dns_query_packet(packet)?;
-        let fallback_only = self.should_only_query_fallback(&query.host);
+        let policy = self.match_nameserver_policy(&query.host);
+        let fallback_only = policy.is_none() && self.should_only_query_fallback(&query.host);
         let servers = if fallback_only {
             self.config.fallback.clone()
         } else {
-            self.select_query_relay_nameservers(&query.host)
+            policy
+                .clone()
+                .unwrap_or_else(|| self.select_query_relay_nameservers(&query.host))
         };
         let response = upstream.exchange(&servers, packet);
-        let fallback = !self.config.fallback.is_empty() && !fallback_only;
+        let fallback = !self.config.fallback.is_empty()
+            && !fallback_only
+            && policy.is_none()
+            && !servers.iter().any(|server| server.starts_with("rcode://"));
         let response = match response {
             Ok(response) => {
                 let ips = crate::packet::parse_dns_response(
@@ -386,7 +392,13 @@ impl DnsRuntime {
                     query.request_id,
                     query.query_type,
                 )?;
-                if fallback && ips.iter().any(|ip| self.should_ip_fallback(*ip)) {
+                // Match Go's ipExchange: empty A/AAAA answers (including
+                // NXDOMAIN) can use fallback. Other record types cannot be
+                // judged by their IP list; preserve their wire response.
+                let should_fallback = fallback
+                    && matches!(query.query_type, DnsRecordType::A | DnsRecordType::Aaaa)
+                    && (ips.is_empty() || ips.iter().any(|ip| self.should_ip_fallback(*ip)));
+                if should_fallback {
                     upstream.exchange(&self.config.fallback, packet)?
                 } else {
                     response
@@ -625,19 +637,22 @@ impl DnsRuntime {
     }
 
     pub fn select_nameservers(&self, host: &str) -> Vec<String> {
+        self.match_nameserver_policy(host).unwrap_or_else(|| {
+            if self.config.nameserver.is_empty() {
+                vec!["system://".to_owned()]
+            } else {
+                self.config.nameserver.clone()
+            }
+        })
+    }
+
+    fn match_nameserver_policy(&self, host: &str) -> Option<Vec<String>> {
         let host = normalize(host);
         self.nameserver_policies
             .iter()
             .find(|policy| policy.matches(&host))
             .map(|policy| policy.servers.clone())
             .filter(|servers| !servers.is_empty())
-            .unwrap_or_else(|| {
-                if self.config.nameserver.is_empty() {
-                    vec!["system://".to_owned()]
-                } else {
-                    self.config.nameserver.clone()
-                }
-            })
     }
 
     pub fn select_proxy_server_nameservers(&self, host: &str) -> Vec<String> {
