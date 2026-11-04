@@ -1496,12 +1496,15 @@ impl RuntimeTunnel {
         connections.len() + udp_count + kernel_count
     }
 
-    /// Release one tracked TCP five-tuple when the blocking executor is close
-    /// to exhaustion. Idle connections are selected first; if every tracked
-    /// connection is active, the oldest one is released as a last resort so a
-    /// new connection can still make progress on small devices.
+    /// Release one idle tracked TCP five-tuple when the blocking executor is
+    /// close to exhaustion. Active transfers must remain intact; handshake
+    /// deadlines and the bounded executor queue handle pressure when no idle
+    /// tuple is available.
     pub fn age_connection_under_pressure(&self) -> bool {
-        let now = self.traffic.elapsed_ms();
+        self.age_connection_under_pressure_at(self.traffic.elapsed_ms())
+    }
+
+    fn age_connection_under_pressure_at(&self, now: u64) -> bool {
         let candidates = self
             .active_connections
             .lock()
@@ -1521,15 +1524,6 @@ impl RuntimeTunnel {
                     connection.start_unix_ms,
                     connection.id,
                 )
-            })
-            .or_else(|| {
-                candidates.iter().min_by_key(|connection| {
-                    (
-                        connection.last_activity_elapsed_ms.load(Ordering::Relaxed),
-                        connection.start_unix_ms,
-                        connection.id,
-                    )
-                })
             })
         else {
             return false;
@@ -6444,12 +6438,23 @@ proxies:
             None,
             vec![Box::new(CloseProbe(Arc::clone(&second_closed)))],
         );
+        tunnel
+            .active_connections
+            .lock()
+            .unwrap()
+            .get(&10)
+            .unwrap()
+            .last_activity_elapsed_ms
+            .store(
+                0,
+                Ordering::Relaxed,
+            );
 
-        assert!(tunnel.age_connection_under_pressure());
+        assert!(tunnel.age_connection_under_pressure_at(super::TCP_CONNECTION_IDLE_AGE_MS + 1));
         assert!(first_closed.load(Ordering::Acquire));
         assert!(!second_closed.load(Ordering::Acquire));
-        assert!(tunnel.age_connection_under_pressure());
-        assert!(second_closed.load(Ordering::Acquire));
+        assert!(!tunnel.age_connection_under_pressure());
+        assert!(!second_closed.load(Ordering::Acquire));
     }
 
     #[test]
