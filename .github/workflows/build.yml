@@ -3,372 +3,55 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Tag version to release"
+        description: Release version
         required: true
-  push:
-    paths-ignore:
-      - "docs/**"
-      - "README.md"
-      - ".github/ISSUE_TEMPLATE/**"
-    branches:
-      - Meta
-    tags:
-      - "v*"
-  pull_request:
-    branches:
-      - Meta
-
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
-  cancel-in-progress: true
-
-env:
-  REGISTRY: docker.io
-  CARGO_BUILD_JOBS: 2
-  CARGO_INCREMENTAL: 0
-  CARGO_PROFILE_TEST_DEBUG: 0
-  CARGO_PROFILE_RELEASE_STRIP: symbols
-
+permissions:
+  contents: read
 jobs:
-  verify:
-    uses: ./.github/workflows/test.yml
-
-  rust-build:
-    runs-on: ${{ matrix.jobs.runner }}
+  macos-arm64:
+    name: Build macOS ARM64 on Intel
+    runs-on: macos-26-intel
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        jobs:
-          - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v1, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v2, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: shell }
-          - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu, output: linux-amd64-v3, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v3", smoke: shell }
-          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, output: linux-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, output: openwrt-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v1, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v2, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: shell }
-          - { runner: macos-26-intel, target: x86_64-apple-darwin, output: darwin-amd64-v3, binary_name: mihomo, archive: gz, verify: test, rustflags: "-C target-cpu=x86-64-v3", smoke: shell }
-          - { runner: macos-latest, target: aarch64-apple-darwin, output: darwin-arm64, binary_name: mihomo, archive: gz, verify: test, smoke: shell }
-          - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v1, binary_name: mihomo.exe, archive: zip, verify: test, smoke: powershell }
-          - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v2, binary_name: mihomo.exe, archive: zip, verify: test, rustflags: "-C target-cpu=x86-64-v2", smoke: powershell }
-          - { runner: windows-latest, target: x86_64-pc-windows-msvc, output: windows-amd64-v3, binary_name: mihomo.exe, archive: zip, verify: test, smoke: powershell }
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.sha }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+          ref: d8fe7e84559f92d9b6124e28a8d1db20fe99594f
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.88.0
-          targets: ${{ matrix.jobs.target }}
-
-      - name: Verify Rust installation
-        run: rustc --version && cargo --version
-
-      - name: Set variables
+          targets: aarch64-apple-darwin
+      - name: Configure version and SDK
         shell: bash
         env:
-          INPUT_VERSION: ${{ github.event.inputs.version }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="$(printf '%s' "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]')-$(git rev-parse --short HEAD)"
-          VERSION="${VERSION//\//-}"
-          if [ -n "$INPUT_VERSION" ]; then
-            [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo 'Invalid release version' >&2; exit 1; }
-            VERSION="$INPUT_VERSION"
-          fi
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "MIHOMO_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || exit 1
+          echo "MIHOMO_VERSION=$INPUT_VERSION" >> "$GITHUB_ENV"
           echo "MIHOMO_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-
-      - name: Compile Rust tests
-        if: ${{ matrix.jobs.verify == 'test' }}
-        run: cargo test --manifest-path rust/Cargo.toml --workspace --no-run --locked
-
-      - name: Install musl toolchain
-        if: ${{ matrix.jobs.target == 'aarch64-unknown-linux-musl' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - name: Build Rust binary
-        env:
-          RUSTFLAGS: ${{ matrix.jobs.rustflags }}
+          echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
+      - name: Build ARM64 kernel
+        run: cargo build --manifest-path rust/Cargo.toml --locked --release --target aarch64-apple-darwin -p mihomo-app --bin mihomo
+      - name: Verify architecture and package
         shell: bash
         run: |
-          if [ "${{ matrix.jobs.target }}" = "aarch64-unknown-linux-musl" ]; then
-            export CC_aarch64_unknown_linux_musl=musl-gcc
-            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc
-            export RUSTFLAGS="${RUSTFLAGS} -C target-feature=+crt-static"
-          fi
-          cargo build --manifest-path rust/Cargo.toml -p mihomo-app --bin mihomo --release --locked --target ${{ matrix.jobs.target }}
-
-      - name: Set up Go for shim smoke
-        if: ${{ matrix.jobs.output == 'linux-amd64-v1' }}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
-        with:
-          go-download-base-url: 'https://github.com/MetaCubeX/go/releases/download/build'
-          go-version: '1.26'
-
-      - name: Smoke test Go shim handoff to Rust
-        if: ${{ matrix.jobs.output == 'linux-amd64-v1' }}
-        env:
-          GOCACHE: ${{ runner.temp }}/go-build
-          GOMODCACHE: ${{ runner.temp }}/go-mod
-          MIHOMO_RUST_BINARY: ${{ github.workspace }}/rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }}
-        run: |
-          go build -o mihomo-go-shim .
-          ./mihomo-go-shim -v
-
-      - name: Smoke test Rust binary
-        if: ${{ matrix.jobs.smoke == 'shell' }}
-        run: |
-          rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }} -v
-
-      - name: Smoke test Rust binary on Windows
-        if: ${{ matrix.jobs.smoke == 'powershell' }}
-        shell: pwsh
-        run: |
-          & "rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }}" -v
-
-      - name: Package Rust artifact
-        if: ${{ matrix.jobs.archive == 'gz' }}
-        run: |
-          cp rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }} mihomo-${{ matrix.jobs.output }}
-          gzip -c mihomo-${{ matrix.jobs.output }} > mihomo-${{ matrix.jobs.output }}-${VERSION}.gz
-          rm mihomo-${{ matrix.jobs.output }}
-          echo "${VERSION}" > version.txt
+          CORE=rust/target/aarch64-apple-darwin/release/mihomo
+          file "$CORE"
+          test "$(lipo -archs "$CORE")" = arm64
+          otool -L "$CORE"
+          gzip -n -c "$CORE" > "mihomo-darwin-arm64-${MIHOMO_VERSION}.gz"
+          printf '%s\n' "$MIHOMO_VERSION" > version.txt
           git rev-parse HEAD > commit.txt
-
-      - name: Package Rust artifact zip
-        if: ${{ matrix.jobs.archive == 'zip' }}
-        shell: pwsh
-        run: |
-          Copy-Item "rust/target/${{ matrix.jobs.target }}/release/${{ matrix.jobs.binary_name }}" "mihomo-${{ matrix.jobs.output }}.exe"
-          Compress-Archive -Path "mihomo-${{ matrix.jobs.output }}.exe" -DestinationPath "mihomo-${{ matrix.jobs.output }}-${env:VERSION}.zip" -Force
-          Remove-Item "mihomo-${{ matrix.jobs.output }}.exe"
-          Set-Content -Path version.txt -Value $env:VERSION
-          git rev-parse HEAD | Set-Content -Path commit.txt
-
-      - name: Archive Rust artifacts
-        uses: actions/upload-artifact@v7
+          test "$(cat commit.txt)" = d8fe7e84559f92d9b6124e28a8d1db20fe99594f
+      - uses: actions/upload-artifact@v7
         with:
-          name: "rust-${{ matrix.jobs.output }}"
+          name: rust-darwin-arm64
           path: |
-            mihomo-${{ matrix.jobs.output }}-*.gz
-            mihomo-${{ matrix.jobs.output }}-*.zip
+            mihomo-darwin-arm64-*.gz
             version.txt
             commit.txt
           if-no-files-found: error
-
-  upload-prerelease:
-    permissions: write-all
-    if: ${{ github.event_name != 'workflow_dispatch' && github.ref_type == 'branch' && !startsWith(github.event_name, 'pull_request') }}
-    needs: [rust-build, verify]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download workflow artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: bin/
-          pattern: rust-*
-          merge-multiple: true
-
-      - name: Calculate checksums
-        run: |
-          cd bin/
-          find . -type f -not -name "checksums.*" -not -name "version.txt" | sort | xargs sha256sum > checksums.txt
-          cat checksums.txt
-        shell: bash
-
-      - name: Delete current release assets
-        uses: 8Mi-Tech/delete-release-assets-action@main
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: Prerelease-${{ github.ref_name }}
-          deleteOnlyFromDrafts: false
-
-      - name: Set Env
-        run: |
-          echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Tag Repo
-        uses: richardsimko/update-tag@v1
-        with:
-          tag_name: Prerelease-${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - run: |
-          cat > release.txt << 'EOF'
-          Release created at  ${{ env.BUILDTIME }}
-          Synchronize ${{ github.ref_name }} branch code updates, keeping only the latest version
-          <br>
-          [我应该下载哪个文件? / Which file should I download?](https://github.com/MetaCubeX/mihomo/wiki/FAQ)
-          [二进制文件筛选 / Binary file selector](https://metacubex.github.io/Meta-Docs/startup/#_1)
-          [查看文档 / Docs](https://metacubex.github.io/Meta-Docs/)
-          EOF
-
-      - name: Upload Prerelease
-        uses: softprops/action-gh-release@v3
-        if: ${{ success() }}
-        with:
-          tag_name: Prerelease-${{ github.ref_name }}
-          files: |
-            bin/*
-          prerelease: true
-          generate_release_notes: true
-          body_path: release.txt
-
-  upload-release:
-    permissions: write-all
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
-    needs: [rust-build, verify]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: '0'
-          fetch-tags: 'true'
-
-      - name: Get tags
-        run: |
-          echo "CURRENTVERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-          git fetch --tags
-          echo "PREVERSION=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
-
-      - name: Tag the tested commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if git rev-parse "refs/tags/${CURRENTVERSION}" >/dev/null 2>&1; then
-            test "$(git rev-list -n 1 "${CURRENTVERSION}")" = "$GITHUB_SHA"
-          else
-            git tag "${CURRENTVERSION}" "$GITHUB_SHA"
-            git push origin "refs/tags/${CURRENTVERSION}"
-          fi
-
-      - name: Generate release notes
-        run: |
-          cp ./.github/genReleaseNote.sh ./
-          bash ./genReleaseNote.sh -v ${PREVERSION}...${CURRENTVERSION}
-          rm ./genReleaseNote.sh
-          cat >> release.md << EOF
-
-          Rust kernels built by GitHub Actions from commit \`${GITHUB_SHA}\`.
-
-          OpenWrt / mobile WiFi ARM64: download \`mihomo-openwrt-arm64-${CURRENTVERSION}.gz\`, decompress it, and rename the executable to \`Clash.Core\` when required by your launcher.
-
-          Verify downloads against \`checksums.txt\`. Platform and CPU variants are included in each filename; AMD64 v1 is the baseline variant.
-
-          Build: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
-          EOF
-
-      - uses: actions/download-artifact@v8
-        with:
-          path: bin/
-          pattern: rust-*
-          merge-multiple: true
-
-      - name: Verify artifacts and calculate checksums
-        shell: bash
-        run: |
-          test "$(find bin -maxdepth 1 -type f \( -name '*.gz' -o -name '*.zip' \) | wc -l)" -eq 12
-          test "$(tr -d '\r\n' < bin/commit.txt)" = "$GITHUB_SHA"
-          cd bin
-          find . -maxdepth 1 -type f \( -name '*.gz' -o -name '*.zip' \) -print0 | sort -z | xargs -0 sha256sum > checksums.txt
-          sha256sum --check checksums.txt
-
-      - name: Upload Release
-        uses: softprops/action-gh-release@v3
-        if: ${{ success() }}
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          target_commitish: ${{ github.sha }}
-          files: bin/*
-          fail_on_unmatched_files: true
-          prerelease: ${{ contains(github.event.inputs.version, '-') }}
-          draft: true
-          body_path: release.md
-
-      - name: Publish completed release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
-          PRERELEASE: ${{ contains(github.event.inputs.version, '-') }}
-        run: gh release edit "$RELEASE_VERSION" --draft=false --prerelease="$PRERELEASE"
-
-  docker:
-    if: ${{ github.repository == 'MetaCubeX/mihomo' && !startsWith(github.event_name, 'pull_request') }}
-    permissions: write-all
-    needs: [rust-build, verify]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-        with:
-          version: latest
-
-      - name: Extract Docker metadata
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        id: meta_alpha
-        uses: docker/metadata-action@v6
-        with:
-          images: '${{ env.REGISTRY }}/${{ github.repository }}'
-
-      - name: Extract Docker metadata
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
-        id: meta_release
-        uses: docker/metadata-action@v6
-        with:
-          images: '${{ env.REGISTRY }}/${{ github.repository }}'
-          tags: |
-            ${{ github.event.inputs.version }}
-          flavor: |
-            latest=true
-          labels: org.opencontainers.image.version=${{ github.event.inputs.version }}
-
-      - name: Login to docker REGISTRY
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_HUB_USER }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Build and push Docker image
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          platforms: |
-            linux/amd64
-            linux/arm64
-          tags: ${{ steps.meta_alpha.outputs.tags }}
-          labels: ${{ steps.meta_alpha.outputs.labels }}
-
-      - name: Build and push Docker image
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          platforms: |
-            linux/amd64
-            linux/arm64
-          tags: ${{ steps.meta_release.outputs.tags }}
-          labels: ${{ steps.meta_release.outputs.labels }}
